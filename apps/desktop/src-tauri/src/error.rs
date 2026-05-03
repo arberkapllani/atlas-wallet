@@ -2,7 +2,7 @@
 
 use serde::Serialize;
 
-#[derive(Debug, thiserror::Error, Serialize)]
+#[derive(Debug, thiserror::Error, Serialize, specta::Type)]
 #[serde(tag = "kind", content = "message")]
 pub enum CmdError {
     #[error("not initialized: {0}")]

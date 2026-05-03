@@ -7,7 +7,7 @@ use thiserror::Error;
 pub type ChainResult<T> = std::result::Result<T, ChainError>;
 
 /// Failure modes shared across every chain.
-#[derive(Debug, Error, Serialize, Deserialize)]
+#[derive(Debug, Error, Serialize, Deserialize, specta::Type)]
 #[serde(tag = "kind", content = "message")]
 pub enum ChainError {
     /// Address validation failed.
@@ -34,7 +34,7 @@ pub enum ChainError {
 }
 
 /// A cryptocurrency asset (native or token).
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 pub struct Asset {
     /// Stable identifier — usually the lowercase ticker (`btc`, `eth`, `usdc`).
     pub id: String,
@@ -51,7 +51,7 @@ pub struct Asset {
 /// `value` is denominated in the asset's smallest unit (sat for BTC,
 /// wei for ETH). We use `u128` as a JSON-friendly carrier for any
 /// realistic balance.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 pub struct Amount {
     /// Integer value in base units.
     pub value: u128,
@@ -83,7 +83,7 @@ impl Amount {
 }
 
 /// Three canonical fee tiers presented to the user.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 pub struct FeeOption {
     /// `"slow" | "normal" | "fast"`.
     pub level: String,
@@ -96,7 +96,7 @@ pub struct FeeOption {
 }
 
 /// User-supplied request to send funds.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 pub struct TxRequest {
     /// Sender address (must be one we can derive the private key for).
     pub from: String,
@@ -111,7 +111,7 @@ pub struct TxRequest {
 }
 
 /// A signed transaction, ready for broadcast.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 pub struct SignedTx {
     /// Hex-encoded raw transaction bytes.
     pub raw_hex: String,

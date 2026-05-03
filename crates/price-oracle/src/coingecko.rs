@@ -13,7 +13,7 @@ const TTL: Duration = Duration::from_secs(5 * 60);
 const BASE_URL: &str = "https://api.coingecko.com/api/v3/simple/price";
 
 /// A single cached price observation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 pub struct PricePoint {
     /// Price in the requested fiat currency.
     pub price: f64,

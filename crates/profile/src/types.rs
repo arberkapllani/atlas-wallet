@@ -5,24 +5,25 @@ use std::path::PathBuf;
 use uuid::Uuid;
 
 /// A `(chain_id, address)` pair tracked by a watch-only profile.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 pub struct WatchAccount {
     /// Chain identifier (e.g. `"btc"`, `"eth"`, `"polygon"`).
     pub chain_id: String,
     /// Public address (no private key material).
     pub address: String,
     /// Optional human label.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
     pub label: Option<String>,
 }
 
 /// What kind of profile this is.
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ProfileKind {
     /// Hot wallet — encrypted seed lives at `vault_path`.
     Hot {
         /// Path to the encrypted vault blob (relative to `data_dir`).
+        #[specta(type = String)]
         vault_file: PathBuf,
     },
     /// Watch-only wallet — list of public addresses only.
@@ -53,7 +54,7 @@ pub struct Profile {
 }
 
 /// Frontend-friendly summary of a profile.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 pub struct ProfileSummary {
     /// Stable id (as string for JS).
     pub id: String,

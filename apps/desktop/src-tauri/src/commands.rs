@@ -22,7 +22,7 @@ use uuid::Uuid;
 // Chain catalog
 // =============================================================================
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, specta::Type)]
 pub struct ChainSummary {
     pub id: String,
     pub display_name: String,
@@ -33,6 +33,7 @@ pub struct ChainSummary {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn list_chains(_state: State<'_, Arc<AppState>>) -> CmdResult<Vec<ChainSummary>> {
     let mut out = Vec::new();
     out.push(ChainSummary {
@@ -76,7 +77,7 @@ pub async fn list_chains(_state: State<'_, Arc<AppState>>) -> CmdResult<Vec<Chai
 // Token registry
 // =============================================================================
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, specta::Type)]
 pub struct TokenSummary {
     pub id: String,
     pub symbol: String,
@@ -89,6 +90,7 @@ pub struct TokenSummary {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn list_tokens(_state: State<'_, Arc<AppState>>) -> CmdResult<Vec<TokenSummary>> {
     Ok(atlas_token_registry::TOKENS
         .iter()
@@ -113,18 +115,21 @@ pub async fn list_tokens(_state: State<'_, Arc<AppState>>) -> CmdResult<Vec<Toke
 // =============================================================================
 
 #[tauri::command]
+#[specta::specta]
 pub async fn list_profiles(state: State<'_, Arc<AppState>>) -> CmdResult<Vec<ProfileSummary>> {
     let reg = state.profiles.read().await;
     Ok(reg.profiles().iter().map(ProfileSummary::from).collect())
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn active_profile(state: State<'_, Arc<AppState>>) -> CmdResult<Option<ProfileSummary>> {
     let reg = state.profiles.read().await;
     Ok(reg.active().map(ProfileSummary::from))
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn switch_profile(state: State<'_, Arc<AppState>>, id: String) -> CmdResult<()> {
     let uuid = parse_uuid(&id)?;
     {
@@ -137,6 +142,7 @@ pub async fn switch_profile(state: State<'_, Arc<AppState>>, id: String) -> CmdR
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn rename_profile(
     state: State<'_, Arc<AppState>>,
     id: String,
@@ -149,6 +155,7 @@ pub async fn rename_profile(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn delete_profile(state: State<'_, Arc<AppState>>, id: String) -> CmdResult<()> {
     let uuid = parse_uuid(&id)?;
     let was_active = {
@@ -165,13 +172,14 @@ pub async fn delete_profile(state: State<'_, Arc<AppState>>, id: String) -> CmdR
     Ok(())
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, specta::Type)]
 pub struct CreateWatchOnlyArgs {
     pub name: String,
     pub accounts: Vec<WatchAccount>,
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn create_watch_only_profile(
     state: State<'_, Arc<AppState>>,
     args: CreateWatchOnlyArgs,
@@ -191,6 +199,7 @@ pub async fn create_watch_only_profile(
 
 /// `true` if the registry currently has at least one hot profile.
 #[tauri::command]
+#[specta::specta]
 pub async fn vault_exists(state: State<'_, Arc<AppState>>) -> CmdResult<bool> {
     let reg = state.profiles.read().await;
     Ok(reg
@@ -200,11 +209,12 @@ pub async fn vault_exists(state: State<'_, Arc<AppState>>) -> CmdResult<bool> {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn is_unlocked(state: State<'_, Arc<AppState>>) -> CmdResult<bool> {
     Ok(state.mnemonic.read().await.is_some())
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, specta::Type)]
 pub struct CreateWalletArgs {
     pub password: String,
     pub word_count: u8,
@@ -215,6 +225,7 @@ pub struct CreateWalletArgs {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn create_wallet(
     state: State<'_, Arc<AppState>>,
     args: CreateWalletArgs,
@@ -245,7 +256,7 @@ pub async fn create_wallet(
     Ok(phrase)
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, specta::Type)]
 pub struct ImportWalletArgs {
     pub password: String,
     pub phrase: String,
@@ -256,6 +267,7 @@ pub struct ImportWalletArgs {
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn import_wallet(
     state: State<'_, Arc<AppState>>,
     args: ImportWalletArgs,
@@ -280,6 +292,7 @@ pub async fn import_wallet(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn unlock_wallet(state: State<'_, Arc<AppState>>, password: String) -> CmdResult<()> {
     let vault_path = active_hot_vault_path(&state).await?;
     let bytes = std::fs::read(&vault_path)?;
@@ -291,6 +304,7 @@ pub async fn unlock_wallet(state: State<'_, Arc<AppState>>, password: String) ->
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn lock_wallet(state: State<'_, Arc<AppState>>) -> CmdResult<()> {
     *state.mnemonic.write().await = None;
     Ok(())
@@ -301,6 +315,7 @@ pub async fn lock_wallet(state: State<'_, Arc<AppState>>) -> CmdResult<()> {
 // =============================================================================
 
 #[tauri::command]
+#[specta::specta]
 pub async fn get_address(state: State<'_, Arc<AppState>>, chain_id: String) -> CmdResult<String> {
     match active_address_for_chain(&state, &chain_id).await? {
         Some(addr) => Ok(addr),
@@ -311,6 +326,7 @@ pub async fn get_address(state: State<'_, Arc<AppState>>, chain_id: String) -> C
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn get_balance(state: State<'_, Arc<AppState>>, chain_id: String) -> CmdResult<Amount> {
     let address = active_address_for_chain(&state, &chain_id)
         .await?
@@ -328,6 +344,7 @@ pub async fn get_balance(state: State<'_, Arc<AppState>>, chain_id: String) -> C
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn get_fee_options(
     state: State<'_, Arc<AppState>>,
     chain_id: String,
@@ -339,7 +356,7 @@ pub async fn get_fee_options(
     Ok(provider.fee_options().await?)
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, specta::Type)]
 pub struct SendNativeArgs {
     pub chain_id: String,
     pub to: String,
@@ -347,13 +364,14 @@ pub struct SendNativeArgs {
     pub fee_level: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, specta::Type)]
 pub struct SendNativeResult {
     pub txid: String,
     pub fee: Amount,
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn send_native(
     state: State<'_, Arc<AppState>>,
     args: SendNativeArgs,
@@ -385,7 +403,7 @@ pub async fn send_native(
     })
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, specta::Type)]
 pub struct SendTokenArgs {
     /// Token id from the registry (e.g. `usdt-erc20`).
     pub token_id: String,
@@ -395,7 +413,7 @@ pub struct SendTokenArgs {
     pub fee_level: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, specta::Type)]
 pub struct SendTokenResult {
     pub txid: String,
     /// Network fee paid in the chain's native asset.
@@ -404,6 +422,7 @@ pub struct SendTokenResult {
 
 /// Sign and broadcast a token transfer (ERC-20 or TRC-20).
 #[tauri::command]
+#[specta::specta]
 pub async fn send_token(
     state: State<'_, Arc<AppState>>,
     args: SendTokenArgs,
@@ -480,31 +499,35 @@ pub async fn send_token(
 }
 
 #[tauri::command]
+#[specta::specta]
 pub async fn get_prices(
     state: State<'_, Arc<AppState>>,
     ids: Vec<String>,
     currency: Option<String>,
-) -> CmdResult<serde_json::Value> {
+) -> CmdResult<std::collections::HashMap<String, atlas_price_oracle::PricePoint>> {
     let id_refs: Vec<&str> = ids.iter().map(|s| s.as_str()).collect();
     let vs = currency
         .as_deref()
         .and_then(atlas_settings::FiatCurrency::parse)
         .unwrap_or_else(|| state.settings.fiat_currency())
         .as_str();
-    match state.prices.prices_in(&id_refs, vs).await {
-        Ok(map) => Ok(serde_json::to_value(map).unwrap_or_default()),
-        Err(e) => Err(CmdError::Chain(e.to_string())),
-    }
+    state
+        .prices
+        .prices_in(&id_refs, vs)
+        .await
+        .map_err(|e| CmdError::Chain(e.to_string()))
 }
 
 /// Currently persisted display currency (`"usd"` / `"eur"` / `"gbp"`).
 #[tauri::command]
+#[specta::specta]
 pub async fn get_fiat_currency(state: State<'_, Arc<AppState>>) -> CmdResult<String> {
     Ok(state.settings.fiat_currency().as_str().to_string())
 }
 
 /// Persist a new display currency. Accepts `"usd"`, `"eur"`, or `"gbp"`.
 #[tauri::command]
+#[specta::specta]
 pub async fn set_fiat_currency(
     state: State<'_, Arc<AppState>>,
     currency: String,
@@ -521,6 +544,7 @@ pub async fn set_fiat_currency(
 
 /// Currently configured auto-lock timeout (minutes). `0` means disabled.
 #[tauri::command]
+#[specta::specta]
 pub async fn get_auto_lock_minutes(state: State<'_, Arc<AppState>>) -> CmdResult<u32> {
     Ok(state.settings.auto_lock_minutes())
 }
@@ -528,6 +552,7 @@ pub async fn get_auto_lock_minutes(state: State<'_, Arc<AppState>>) -> CmdResult
 /// Persist a new auto-lock timeout. `0` disables auto-lock entirely.
 /// Values above 1440 (24h) are clamped to discourage forever-unlocked sessions.
 #[tauri::command]
+#[specta::specta]
 pub async fn set_auto_lock_minutes(
     state: State<'_, Arc<AppState>>,
     minutes: u32,
@@ -542,6 +567,7 @@ pub async fn set_auto_lock_minutes(
 
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
+#[specta::specta]
 pub async fn network_health(
     state: State<'_, Arc<AppState>>,
     chain_id: String,
@@ -551,6 +577,7 @@ pub async fn network_health(
 
 /// Probe every supported chain in parallel.
 #[tauri::command]
+#[specta::specta]
 pub async fn network_health_all(
     state: State<'_, Arc<AppState>>,
 ) -> CmdResult<Vec<crate::network_health::NetworkHealth>> {
@@ -583,7 +610,7 @@ pub async fn network_health_all(
 // Exchange — 1inch v6 aggregator
 // =============================================================================
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, specta::Type)]
 pub struct ExchangeSettings {
     pub api_key_set: bool,
     pub base_url: String,
@@ -591,6 +618,7 @@ pub struct ExchangeSettings {
 
 /// Inspect (without revealing) the user's 1inch configuration.
 #[tauri::command]
+#[specta::specta]
 pub async fn get_exchange_settings(state: State<'_, Arc<AppState>>) -> CmdResult<ExchangeSettings> {
     Ok(ExchangeSettings {
         api_key_set: state.settings.oneinch_api_key().is_some(),
@@ -598,7 +626,7 @@ pub async fn get_exchange_settings(state: State<'_, Arc<AppState>>) -> CmdResult
     })
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, specta::Type)]
 pub struct ExchangeConfigArgs {
     pub api_key: Option<String>,
     pub base_url: Option<String>,
@@ -606,6 +634,7 @@ pub struct ExchangeConfigArgs {
 
 /// Persist 1inch credentials. Pass `null` (or empty) to clear a field.
 #[tauri::command]
+#[specta::specta]
 pub async fn set_exchange_settings(
     state: State<'_, Arc<AppState>>,
     args: ExchangeConfigArgs,
@@ -630,6 +659,7 @@ pub async fn set_exchange_settings(
 /// Token addresses use 1inch's convention: the native asset is
 /// `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee`.
 #[tauri::command]
+#[specta::specta]
 pub async fn exchange_quote(
     state: State<'_, Arc<AppState>>,
     chain_id: u64,
@@ -650,7 +680,7 @@ pub async fn exchange_quote(
 /// 1inch's sentinel address for the native asset (ETH/MATIC/BNB/…).
 const NATIVE_SENTINEL: &str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, specta::Type)]
 pub struct ExchangeSwapResult {
     /// Final swap transaction hash.
     pub txid: String,
@@ -660,7 +690,7 @@ pub struct ExchangeSwapResult {
     pub to_amount: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, specta::Type)]
 pub struct ExchangeSwapArgs {
     pub chain_id: u64,
     pub src: String,
@@ -681,6 +711,7 @@ pub struct ExchangeSwapArgs {
 /// swap. Both transactions use the wallet's pending nonce — the swap is
 /// expected to land in the block immediately after the approval.
 #[tauri::command]
+#[specta::specta]
 pub async fn exchange_swap(
     state: State<'_, Arc<AppState>>,
     args: ExchangeSwapArgs,
@@ -914,7 +945,7 @@ async fn derive_profile_name(
 // RPC endpoints (sovereignty: never force the user onto a third party).
 // =============================================================================
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, specta::Type)]
 pub struct RpcEndpoint {
     pub chain_id: String,
     /// Built-in default URL Atlas falls back to when no override is set.
@@ -939,6 +970,7 @@ fn endpoint_for(state: &AppState, chain_id: &str) -> RpcEndpoint {
 
 /// List every supported chain id alongside its default and (if any) overridden RPC.
 #[tauri::command]
+#[specta::specta]
 pub async fn list_rpc_endpoints(state: State<'_, Arc<AppState>>) -> CmdResult<Vec<RpcEndpoint>> {
     Ok(crate::state::all_chain_ids()
         .into_iter()
@@ -949,6 +981,7 @@ pub async fn list_rpc_endpoints(state: State<'_, Arc<AppState>>) -> CmdResult<Ve
 /// Override the RPC URL for a given chain. The new endpoint takes effect
 /// immediately for every subsequent IPC call.
 #[tauri::command]
+#[specta::specta]
 pub async fn set_rpc_endpoint(
     state: State<'_, Arc<AppState>>,
     chain_id: String,
@@ -972,6 +1005,7 @@ pub async fn set_rpc_endpoint(
 
 /// Remove the user override for a chain, falling back to the built-in default.
 #[tauri::command]
+#[specta::specta]
 pub async fn clear_rpc_endpoint(
     state: State<'_, Arc<AppState>>,
     chain_id: String,

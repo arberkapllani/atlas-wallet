@@ -15,7 +15,7 @@ use serde::{Deserialize, Serialize};
 pub const DEFAULT_BASE_URL: &str = "https://api.1inch.dev";
 
 /// 1inch v6 quote response, lifted into a stable shape.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
 pub struct Quote {
     /// Source token address (lowercase 0x…).
     pub from_token: String,

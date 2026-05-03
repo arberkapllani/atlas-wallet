@@ -13,6 +13,7 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 uuid = { workspace = true }
 time = { workspace = true }
+specta = { workspace = true }
 
 atlas-wallet-core = { workspace = true }
 

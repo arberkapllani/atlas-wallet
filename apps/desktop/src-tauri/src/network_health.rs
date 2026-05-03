@@ -14,7 +14,7 @@ use std::time::{Duration, Instant};
 use crate::state::{default_endpoint, AppState};
 
 /// Per-chain status bucket surfaced to the UI as a green / amber / red dot.
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, specta::Type)]
 #[serde(rename_all = "lowercase")]
 pub enum NetworkStatus {
     /// Endpoint is reachable and responsive.
@@ -26,7 +26,7 @@ pub enum NetworkStatus {
 }
 
 /// Result of a single `network_health` probe.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, specta::Type)]
 pub struct NetworkHealth {
     /// Chain id this report describes (`"btc"`, `"eth"`, …).
     pub chain_id: String,
