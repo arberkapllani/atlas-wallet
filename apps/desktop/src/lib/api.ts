@@ -132,6 +132,13 @@ export const api = {
     fee_level: string;
   }) => invoke<SendNativeResult>('send_native', { args }),
 
+  sendToken: (args: {
+    token_id: string;
+    to: string;
+    amount: string;
+    fee_level: string;
+  }) => invoke<SendNativeResult>('send_token', { args }),
+
   getPrices: (ids: string[]) => invoke<Record<string, PricePoint>>('get_prices', { ids })
 };
 

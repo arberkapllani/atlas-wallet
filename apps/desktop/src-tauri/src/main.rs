@@ -47,6 +47,7 @@ fn main() {
             commands::get_balance,
             commands::get_fee_options,
             commands::send_native,
+            commands::send_token,
             commands::get_prices,
             commands::list_profiles,
             commands::active_profile,

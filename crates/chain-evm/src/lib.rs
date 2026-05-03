@@ -134,6 +134,76 @@ impl EvmProvider {
             .await?;
         parse_hex_u128(&result_hex)
     }
+
+    /// Build, sign, and broadcast an ERC-20 `transfer(to, value)` call.
+    ///
+    /// `from` is the sender address (used to fetch nonce). `contract` is the
+    /// 0x-prefixed token contract. `value` is in the token's base units.
+    /// `fee_level` is one of `slow|normal|fast` or a raw decimal wei
+    /// gas-price (matching native send semantics).
+    ///
+    /// Gas limit is fixed at 100_000 — adequate for plain ERC-20 transfers
+    /// on every supported network. The fee returned is `gas_price * limit`.
+    pub async fn send_token(
+        &self,
+        from: &str,
+        to: &str,
+        contract: &str,
+        value: u128,
+        fee_level: &str,
+        private_key: &[u8; 32],
+    ) -> ChainResult<SignedTx> {
+        let to_bytes =
+            parse_hex_address(to).ok_or_else(|| ChainError::InvalidAddress(to.into()))?;
+        // Validate the contract too — bad input here would silently send to
+        // the wrong address.
+        if parse_hex_address(contract).is_none() {
+            return Err(ChainError::InvalidAddress(contract.into()));
+        }
+
+        let nonce_hex: String = self
+            .rpc(
+                "eth_getTransactionCount",
+                serde_json::json!([from, "pending"]),
+            )
+            .await?;
+        let nonce = parse_hex_u128(&nonce_hex)? as u64;
+
+        let gas_price = if let Ok(v) = fee_level.parse::<u128>() {
+            v
+        } else {
+            let gas_price_hex: String = self.rpc("eth_gasPrice", serde_json::json!([])).await?;
+            let base = parse_hex_u128(&gas_price_hex)?;
+            match fee_level {
+                "slow" => base * 9 / 10,
+                "fast" => base * 13 / 10,
+                _ => base,
+            }
+        };
+
+        let gas_limit: u64 = 100_000;
+        let calldata = erc20::transfer_calldata(&to_bytes, value);
+
+        let signed = builder::sign_eip1559(
+            self.network.chain_id,
+            nonce,
+            gas_price,
+            gas_price * 2,
+            gas_limit,
+            contract,
+            0, // value: transferring tokens, not native
+            &calldata,
+            private_key,
+        )
+        .map_err(ChainError::Sign)?;
+
+        let total_fee = gas_price.saturating_mul(gas_limit as u128);
+        Ok(SignedTx {
+            raw_hex: signed.raw_hex,
+            txid: signed.tx_hash,
+            fee: Amount::new(total_fee, self.asset.clone()),
+        })
+    }
 }
 
 fn parse_hex_address(s: &str) -> Option<[u8; 20]> {

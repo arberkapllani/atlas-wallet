@@ -42,3 +42,6 @@ apps/desktop/src/lib/bindings.gen.ts
 
 
 .gitcommitmsg.txt
+
+.msg.tmp
+.gitcommitmsg.txt

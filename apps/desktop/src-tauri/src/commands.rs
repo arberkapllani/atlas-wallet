@@ -7,7 +7,7 @@
 use crate::error::{CmdError, CmdResult};
 use crate::state::AppState;
 use atlas_chain_evm::networks as evm_networks;
-use atlas_chain_traits::{Amount, FeeOption, TxRequest};
+use atlas_chain_traits::{Amount, ChainProvider, FeeOption, TxRequest};
 use atlas_profile::{ProfileKind, ProfileSummary, WatchAccount};
 use atlas_wallet_core::{
     derive::{derive_account, ChainKind},
@@ -385,6 +385,79 @@ pub async fn send_native(
     })
 }
 
+#[derive(Debug, Deserialize)]
+pub struct SendTokenArgs {
+    /// Token id from the registry (e.g. `usdt-erc20`).
+    pub token_id: String,
+    pub to: String,
+    /// Token amount in base units (string-encoded u128).
+    pub amount: String,
+    pub fee_level: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct SendTokenResult {
+    pub txid: String,
+    /// Network fee paid in the chain's native asset.
+    pub fee: Amount,
+}
+
+/// Sign and broadcast an ERC-20 `transfer`. Currently only ERC-20 tokens are
+/// implemented; TRC-20 will land alongside Tron sending in a later phase.
+#[tauri::command]
+pub async fn send_token(
+    state: State<'_, Arc<AppState>>,
+    args: SendTokenArgs,
+) -> CmdResult<SendTokenResult> {
+    use atlas_token_registry::{by_id, TokenStandard};
+    require_signing_capable(&state).await?;
+    let token = by_id(&args.token_id)
+        .ok_or_else(|| CmdError::InvalidInput(format!("unknown token '{}'", args.token_id)))?;
+    if !matches!(token.standard, TokenStandard::Erc20) {
+        return Err(CmdError::InvalidInput(format!(
+            "token standard {:?} not yet supported for sending",
+            token.standard
+        )));
+    }
+    let mnemonic = require_mnemonic(&state).await?;
+    let kind = chain_kind_for(token.chain_id);
+    let acct = derive_account(&mnemonic, kind, 0)?;
+
+    // We need the EVM-typed provider for token transfers. ChainRegistry hands
+    // us a trait object, so look up the network metadata directly and build
+    // a transient provider sharing the user's RPC override.
+    let network = evm_networks::NETWORKS
+        .iter()
+        .find(|n| n.id == token.chain_id)
+        .ok_or_else(|| CmdError::InvalidInput(format!("unknown chain '{}'", token.chain_id)))?;
+    let rpc_url = state
+        .settings
+        .rpc_override(token.chain_id)
+        .unwrap_or_else(|| network.rpc_url.to_string());
+    let provider = atlas_chain_evm::EvmProvider::with_rpc(network, rpc_url);
+
+    let value: u128 = args
+        .amount
+        .parse()
+        .map_err(|_| CmdError::InvalidInput("amount must be a base-unit integer".into()))?;
+
+    let signed = provider
+        .send_token(
+            acct.address(),
+            &args.to,
+            token.contract,
+            value,
+            &args.fee_level,
+            acct.private_key(),
+        )
+        .await?;
+    let txid = provider.broadcast(&signed).await?;
+    Ok(SendTokenResult {
+        txid,
+        fee: signed.fee,
+    })
+}
+
 #[tauri::command]
 pub async fn get_prices(
     state: State<'_, Arc<AppState>>,
@@ -458,10 +531,11 @@ async fn active_address_for_chain(state: &AppState, chain_id: &str) -> CmdResult
 }
 
 fn chain_kind_for(chain_id: &str) -> ChainKind {
-    if chain_id == "btc" {
-        ChainKind::Bitcoin
-    } else {
-        ChainKind::Evm
+    match chain_id {
+        "btc" => ChainKind::Bitcoin,
+        "sol" => ChainKind::Solana,
+        "trx" => ChainKind::Tron,
+        _ => ChainKind::Evm,
     }
 }
 
