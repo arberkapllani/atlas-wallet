@@ -1,4 +1,4 @@
-//! `exodus2-wallet-core` — sovereign key management for Exodus 2.
+//! `atlas-wallet-core` — sovereign key management for Atlas.
 //!
 //! Responsibilities:
 //! * Mnemonic generation/import (BIP-39, 12 or 24 words)
@@ -21,3 +21,4 @@ pub use derive::{derive_account, AccountKey, ChainKind};
 pub use error::{Error, Result};
 pub use mnemonic::{Mnemonic, MnemonicLength};
 pub use vault::{EncryptedVault, KdfParams, VaultHeader};
+

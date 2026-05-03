@@ -34,8 +34,9 @@ pnpm-debug.log*
 # Wallet local data (NEVER commit)
 *.vault
 *.wallet
-exodus2.db
-exodus2.db-journal
+Atlas.db
+Atlas.db-journal
 
 # Generated bindings (auto-regenerated)
 apps/desktop/src/lib/bindings.gen.ts
+

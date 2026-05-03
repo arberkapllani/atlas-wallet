@@ -17,7 +17,7 @@ pub mod networks;
 pub use networks::{Network, NETWORKS};
 
 use async_trait::async_trait;
-use exodus2_chain_traits::{
+use atlas_chain_traits::{
     Amount, Asset, ChainError, ChainProvider, ChainResult, FeeOption, SignedTx, TxRequest,
 };
 use serde::{Deserialize, Serialize};
@@ -35,7 +35,7 @@ impl EvmProvider {
         Self {
             network,
             http: reqwest::Client::builder()
-                .user_agent("exodus2/0.1")
+                .user_agent("Atlas/0.1")
                 .build()
                 .unwrap_or_else(|_| reqwest::Client::new()),
             asset: Asset {
@@ -219,3 +219,4 @@ fn parse_hex_u128(s: &str) -> ChainResult<u128> {
     }
     u128::from_str_radix(s, 16).map_err(|e| ChainError::Codec(e.to_string()))
 }
+

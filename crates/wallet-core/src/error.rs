@@ -5,7 +5,7 @@ use thiserror::Error;
 /// Convenience alias used throughout the crate.
 pub type Result<T> = std::result::Result<T, Error>;
 
-/// All failure modes exposed by `exodus2-wallet-core`.
+/// All failure modes exposed by `atlas-wallet-core`.
 #[derive(Debug, Error)]
 pub enum Error {
     /// The mnemonic phrase failed BIP-39 checksum validation.
@@ -48,3 +48,4 @@ pub enum Error {
     #[error("rng: {0}")]
     Rng(#[from] getrandom::Error),
 }
+

@@ -1,4 +1,4 @@
-//! Profile (multi-wallet) registry for Exodus 2.
+//! Profile (multi-wallet) registry for Atlas.
 //!
 //! A *profile* is a single named wallet identity. Two kinds:
 //! - [`ProfileKind::Hot`] — encrypted seed vault on disk (signing capable).
@@ -24,3 +24,4 @@ mod types;
 pub use error::{ProfileError, ProfileResult};
 pub use registry::ProfileRegistry;
 pub use types::{Profile, ProfileKind, ProfileSummary, WatchAccount};
+

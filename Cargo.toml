@@ -14,8 +14,8 @@ members = [
 version = "0.1.0"
 edition = "2021"
 license = "MIT OR Apache-2.0"
-authors = ["Exodus 2 Contributors"]
-repository = "https://github.com/arberkapllani/exodus-2"
+authors = ["Atlas Contributors"]
+repository = "https://github.com/arberkapllani/atlas-wallet"
 rust-version = "1.78"
 
 [workspace.dependencies]
@@ -56,12 +56,12 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Local crates
-exodus2-wallet-core = { path = "crates/wallet-core" }
-exodus2-chain-traits = { path = "crates/chain-traits" }
-exodus2-chain-bitcoin = { path = "crates/chain-bitcoin" }
-exodus2-chain-evm = { path = "crates/chain-evm" }
-exodus2-price-oracle = { path = "crates/price-oracle" }
-exodus2-profile = { path = "crates/profile" }
+atlas-wallet-core = { path = "crates/wallet-core" }
+atlas-chain-traits = { path = "crates/chain-traits" }
+atlas-chain-bitcoin = { path = "crates/chain-bitcoin" }
+atlas-chain-evm = { path = "crates/chain-evm" }
+atlas-price-oracle = { path = "crates/price-oracle" }
+atlas-profile = { path = "crates/profile" }
 
 # Misc
 uuid = { version = "1.10", features = ["v4", "serde"] }
@@ -77,3 +77,4 @@ strip = "symbols"
 [profile.dev]
 opt-level = 1
 debug = true
+

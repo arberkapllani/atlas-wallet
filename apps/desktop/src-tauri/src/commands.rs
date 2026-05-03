@@ -6,10 +6,10 @@
 
 use crate::error::{CmdError, CmdResult};
 use crate::state::AppState;
-use exodus2_chain_evm::networks as evm_networks;
-use exodus2_chain_traits::{Amount, FeeOption, TxRequest};
-use exodus2_profile::{ProfileKind, ProfileSummary, WatchAccount};
-use exodus2_wallet_core::{
+use atlas_chain_evm::networks as evm_networks;
+use atlas_chain_traits::{Amount, FeeOption, TxRequest};
+use atlas_profile::{ProfileKind, ProfileSummary, WatchAccount};
+use atlas_wallet_core::{
     derive::{derive_account, ChainKind},
     EncryptedVault, KdfParams, Mnemonic, MnemonicLength,
 };
@@ -441,3 +441,4 @@ async fn derive_profile_name(
         ))
     }
 }
+

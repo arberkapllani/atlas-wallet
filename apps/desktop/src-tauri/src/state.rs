@@ -3,12 +3,12 @@
 //! Holds the on-disk profile registry, the currently unlocked mnemonic (if
 //! any), the chain-provider registry, and the price oracle.
 
-use exodus2_chain_bitcoin::BitcoinProvider;
-use exodus2_chain_evm::{EvmProvider, NETWORKS};
-use exodus2_chain_traits::ChainProvider;
-use exodus2_price_oracle::PriceOracle;
-use exodus2_profile::ProfileRegistry;
-use exodus2_wallet_core::Mnemonic;
+use atlas_chain_bitcoin::BitcoinProvider;
+use atlas_chain_evm::{EvmProvider, NETWORKS};
+use atlas_chain_traits::ChainProvider;
+use atlas_price_oracle::PriceOracle;
+use atlas_profile::ProfileRegistry;
+use atlas_wallet_core::Mnemonic;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
@@ -22,7 +22,7 @@ pub struct ChainRegistry {
 impl ChainRegistry {
     pub fn new() -> Self {
         let mut providers: HashMap<String, Arc<dyn ChainProvider>> = HashMap::new();
-        let btc = Arc::new(exodus2_chain_bitcoin::default_provider()) as Arc<dyn ChainProvider>;
+        let btc = Arc::new(atlas_chain_bitcoin::default_provider()) as Arc<dyn ChainProvider>;
         providers.insert(btc.id().to_string(), btc);
         for net in NETWORKS {
             let p = Arc::new(EvmProvider::new(net)) as Arc<dyn ChainProvider>;
@@ -78,3 +78,4 @@ impl AppState {
 // Stub helper for legacy bitcoin-providers we don't expose.
 #[allow(dead_code)]
 type _BitcoinProviderUnused = BitcoinProvider;
+

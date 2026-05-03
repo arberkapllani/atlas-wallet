@@ -4,7 +4,7 @@ use crate::error::{Error, Result};
 use bip39::{Language, Mnemonic as Bip39Mnemonic};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-/// Number of words in a mnemonic. Exodus 2 supports the two canonical sizes.
+/// Number of words in a mnemonic. Atlas supports the two canonical sizes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MnemonicLength {
     /// 12 words → 128 bits of entropy. Default for new wallets.
@@ -118,3 +118,4 @@ mod tests {
         assert_eq!(hex::encode(m.seed()), expected);
     }
 }
+

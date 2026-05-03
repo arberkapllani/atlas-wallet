@@ -1,5 +1,5 @@
 {
-  "name": "exodus2-desktop",
+  "name": "atlas-desktop",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -32,3 +32,4 @@
     "qrcode": "^1.5.4"
   }
 }
+

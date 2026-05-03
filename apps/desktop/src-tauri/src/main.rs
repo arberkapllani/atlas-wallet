@@ -1,4 +1,4 @@
-// Exodus 2 desktop entry point.
+// Atlas desktop entry point.
 // Prevents an extra console window on Windows in release.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
@@ -13,7 +13,7 @@ fn main() {
     tracing_subscriber::fmt()
         .with_env_filter(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "exodus2=info,warn".into()),
+                .unwrap_or_else(|_| "Atlas=info,warn".into()),
         )
         .init();
 
@@ -52,5 +52,6 @@ fn main() {
             commands::create_watch_only_profile,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running Exodus 2");
+        .expect("error while running Atlas");
 }
+

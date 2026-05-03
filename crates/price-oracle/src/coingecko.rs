@@ -41,7 +41,7 @@ impl PriceOracle {
         Self {
             inner: Arc::new(Inner {
                 http: reqwest::Client::builder()
-                    .user_agent("exodus2/0.1")
+                    .user_agent("Atlas/0.1")
                     .build()
                     .unwrap_or_else(|_| reqwest::Client::new()),
                 cache: RwLock::new(HashMap::new()),
@@ -141,3 +141,4 @@ fn urlencode(s: &str) -> String {
         })
         .collect()
 }
+

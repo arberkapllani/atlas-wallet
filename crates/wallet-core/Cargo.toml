@@ -1,5 +1,5 @@
 [package]
-name = "exodus2-wallet-core"
+name = "atlas-wallet-core"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -26,3 +26,4 @@ getrandom = { workspace = true }
 
 [dev-dependencies]
 hex-literal = "0.4"
+

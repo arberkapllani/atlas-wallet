@@ -31,7 +31,7 @@
 <div class="grid grid-cols-[240px_1fr] min-h-screen">
   <aside class="border-r border-border-subtle bg-bg-subtle flex flex-col">
     <div class="px-6 py-5 border-b border-border-subtle">
-      <h1 class="font-bold tracking-tight text-lg">Exodus 2</h1>
+      <h1 class="font-bold tracking-tight text-lg">Atlas</h1>
       <p class="text-xs text-fg-subtle">Sovereign wallet</p>
     </div>
     <nav class="flex-1 py-4 space-y-1">
@@ -54,3 +54,4 @@
     <slot />
   </section>
 </div>
+

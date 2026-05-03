@@ -1,11 +1,11 @@
 [package]
-name = "exodus2-profile"
+name = "atlas-profile"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-description = "Profile (multi-wallet) registry for Exodus 2."
+description = "Profile (multi-wallet) registry for Atlas."
 
 [dependencies]
 serde = { workspace = true }
@@ -14,7 +14,8 @@ thiserror = { workspace = true }
 uuid = { workspace = true }
 time = { workspace = true }
 
-exodus2-wallet-core = { workspace = true }
+atlas-wallet-core = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3.10"
+

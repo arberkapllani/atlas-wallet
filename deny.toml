@@ -1,4 +1,4 @@
-# cargo-deny configuration for Exodus 2.
+# cargo-deny configuration for Atlas.
 # See https://embarkstudios.github.io/cargo-deny/
 
 [graph]
@@ -44,3 +44,4 @@ unknown-registry = "deny"
 unknown-git = "deny"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
 allow-git = []
+

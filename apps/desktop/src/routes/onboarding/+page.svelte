@@ -6,7 +6,7 @@
 <div class="min-h-screen grid place-items-center px-6">
   <div class="w-full max-w-xl space-y-6">
     <header class="text-center space-y-2">
-      <h1 class="text-4xl font-bold tracking-tight">Welcome to Exodus 2</h1>
+      <h1 class="text-4xl font-bold tracking-tight">Welcome to Atlas</h1>
       <p class="text-fg-muted">A sovereign multi-chain wallet. Your keys, your coins.</p>
     </header>
 
@@ -37,3 +37,4 @@
     </p>
   </div>
 </div>
+

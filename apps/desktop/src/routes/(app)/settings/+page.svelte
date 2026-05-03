@@ -30,7 +30,7 @@
 
   <Card title="About">
     <div class="space-y-2 text-sm text-fg-muted">
-      <p>Exodus 2 — sovereign multi-chain desktop wallet.</p>
+      <p>Atlas — sovereign multi-chain desktop wallet.</p>
       <p>Open source. Non-custodial. Zero telemetry.</p>
       <p class="font-mono text-xs">v0.1.0 (Phase 1)</p>
     </div>
@@ -48,3 +48,4 @@
     </Button>
   </Card>
 </div>
+

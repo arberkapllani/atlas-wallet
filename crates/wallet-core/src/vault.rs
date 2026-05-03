@@ -3,7 +3,7 @@
 //! On disk: a single binary blob with the following layout:
 //!
 //! ```text
-//!   magic    : 8  bytes  ("EXODUSV1")
+//!   magic    : 8  bytes  ("ATLASV01")
 //!   version  : 1  byte   (0x01)
 //!   kdf      : 1  byte   (0x01 = Argon2id)
 //!   salt     : 16 bytes
@@ -26,7 +26,7 @@ use rand::RngCore;
 use serde::{Deserialize, Serialize};
 use zeroize::Zeroizing;
 
-const MAGIC: &[u8; 8] = b"EXODUSV1";
+const MAGIC: &[u8; 8] = b"ATLASV01";
 const VERSION: u8 = 0x01;
 const KDF_ARGON2ID: u8 = 0x01;
 

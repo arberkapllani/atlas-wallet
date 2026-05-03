@@ -20,11 +20,12 @@ pub fn default_provider() -> BitcoinProvider {
 }
 
 /// Returns the standard BTC asset descriptor.
-pub fn btc_asset() -> exodus2_chain_traits::Asset {
-    exodus2_chain_traits::Asset {
+pub fn btc_asset() -> atlas_chain_traits::Asset {
+    atlas_chain_traits::Asset {
         id: "btc".into(),
         symbol: "BTC".into(),
         decimals: 8,
         logo: None,
     }
 }
+

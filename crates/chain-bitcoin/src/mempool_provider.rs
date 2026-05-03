@@ -2,7 +2,7 @@
 
 use crate::builder::{build_and_sign_p2wpkh, Utxo};
 use async_trait::async_trait;
-use exodus2_chain_traits::{
+use atlas_chain_traits::{
     Amount, Asset, ChainError, ChainProvider, ChainResult, FeeOption, SignedTx, TxRequest,
 };
 use serde::Deserialize;
@@ -20,7 +20,7 @@ impl BitcoinProvider {
         Self {
             base_url: base_url.into(),
             http: reqwest::Client::builder()
-                .user_agent("exodus2/0.1")
+                .user_agent("Atlas/0.1")
                 .build()
                 .unwrap_or_else(|_| reqwest::Client::new()),
             asset: crate::btc_asset(),
@@ -208,3 +208,4 @@ impl ChainProvider for BitcoinProvider {
 }
 
 use std::str::FromStr;
+

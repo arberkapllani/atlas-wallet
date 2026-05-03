@@ -21,20 +21,20 @@ pub enum CmdError {
     Profile(String),
 }
 
-impl From<exodus2_wallet_core::Error> for CmdError {
-    fn from(e: exodus2_wallet_core::Error) -> Self {
+impl From<atlas_wallet_core::Error> for CmdError {
+    fn from(e: atlas_wallet_core::Error) -> Self {
         Self::Wallet(e.to_string())
     }
 }
 
-impl From<exodus2_chain_traits::ChainError> for CmdError {
-    fn from(e: exodus2_chain_traits::ChainError) -> Self {
+impl From<atlas_chain_traits::ChainError> for CmdError {
+    fn from(e: atlas_chain_traits::ChainError) -> Self {
         Self::Chain(e.to_string())
     }
 }
 
-impl From<exodus2_profile::ProfileError> for CmdError {
-    fn from(e: exodus2_profile::ProfileError) -> Self {
+impl From<atlas_profile::ProfileError> for CmdError {
+    fn from(e: atlas_profile::ProfileError) -> Self {
         Self::Profile(e.to_string())
     }
 }
@@ -46,3 +46,4 @@ impl From<std::io::Error> for CmdError {
 }
 
 pub type CmdResult<T> = std::result::Result<T, CmdError>;
+

@@ -1,5 +1,5 @@
 [package]
-name = "exodus2-chain-evm"
+name = "atlas-chain-evm"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -16,4 +16,5 @@ reqwest = { workspace = true }
 secp256k1 = { workspace = true }
 sha3 = { workspace = true }
 hex = { workspace = true }
-exodus2-chain-traits = { workspace = true }
+atlas-chain-traits = { workspace = true }
+

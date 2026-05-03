@@ -1,4 +1,4 @@
-# Exodus 2
+# Atlas
 
 Sovereign, multi-chain desktop wallet — a non-custodial, open-source cryptocurrency wallet for Windows, macOS, and Linux.
 
@@ -13,7 +13,7 @@ Sovereign, multi-chain desktop wallet — a non-custodial, open-source cryptocur
 - **Persistence:** Encrypted vault file (`vault.bin`) using Argon2id → AES-256-GCM. Metadata in SQLite.
 
 ```
-exodus-2/
+atlas/
 ├── Cargo.toml                # Rust workspace
 ├── apps/desktop/
 │   ├── src/                  # SvelteKit UI
@@ -23,6 +23,7 @@ exodus-2/
     ├── chain-traits/         # ChainProvider trait + shared types
     ├── chain-bitcoin/        # BTC (BIP84/P2WPKH, mempool.space)
     ├── chain-evm/            # Eth + L2s (alloy, EIP-1559)
+    ├── profile/              # Multi-wallet + watch-only registry
     └── price-oracle/         # CoinGecko price feeds
 ```
 
@@ -104,3 +105,4 @@ Dual-licensed under either of:
 - MIT License ([LICENSE-MIT](LICENSE-MIT))
 
 at your option.
+

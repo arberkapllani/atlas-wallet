@@ -135,6 +135,116 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-chain-bitcoin"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "atlas-chain-traits",
+ "bitcoin",
+ "hex",
+ "reqwest 0.12.28",
+ "secp256k1",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "atlas-chain-evm"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "atlas-chain-traits",
+ "hex",
+ "reqwest 0.12.28",
+ "secp256k1",
+ "serde",
+ "serde_json",
+ "sha3",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "atlas-chain-traits"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "atlas-desktop"
+version = "0.1.0"
+dependencies = [
+ "atlas-chain-bitcoin",
+ "atlas-chain-evm",
+ "atlas-chain-traits",
+ "atlas-price-oracle",
+ "atlas-profile",
+ "atlas-wallet-core",
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-dialog",
+ "tauri-plugin-fs",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
+name = "atlas-price-oracle"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
+name = "atlas-profile"
+version = "0.1.0"
+dependencies = [
+ "atlas-wallet-core",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
+ "time",
+ "uuid",
+]
+
+[[package]]
+name = "atlas-wallet-core"
+version = "0.1.0"
+dependencies = [
+ "aes-gcm",
+ "argon2",
+ "bip39",
+ "bitcoin",
+ "getrandom 0.2.17",
+ "hex",
+ "hex-literal",
+ "hmac",
+ "rand 0.8.6",
+ "secp256k1",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sha3",
+ "thiserror 1.0.69",
+ "zeroize",
+]
+
+[[package]]
 name = "atomic-waker"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -899,116 +1009,6 @@ checksum = "39cab71617ae0d63f51a36d69f866391735b51691dbda63cf6f96d042b63efeb"
 dependencies = [
  "libc",
  "windows-sys 0.61.2",
-]
-
-[[package]]
-name = "exodus2-chain-bitcoin"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "bitcoin",
- "exodus2-chain-traits",
- "hex",
- "reqwest 0.12.28",
- "secp256k1",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "exodus2-chain-evm"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "exodus2-chain-traits",
- "hex",
- "reqwest 0.12.28",
- "secp256k1",
- "serde",
- "serde_json",
- "sha3",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "exodus2-chain-traits"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "exodus2-desktop"
-version = "0.1.0"
-dependencies = [
- "exodus2-chain-bitcoin",
- "exodus2-chain-evm",
- "exodus2-chain-traits",
- "exodus2-price-oracle",
- "exodus2-profile",
- "exodus2-wallet-core",
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
- "tauri-plugin-dialog",
- "tauri-plugin-fs",
- "thiserror 1.0.69",
- "tokio",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
-name = "exodus2-price-oracle"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "reqwest 0.12.28",
- "serde",
- "serde_json",
- "thiserror 1.0.69",
- "tokio",
-]
-
-[[package]]
-name = "exodus2-profile"
-version = "0.1.0"
-dependencies = [
- "exodus2-wallet-core",
- "serde",
- "serde_json",
- "tempfile",
- "thiserror 1.0.69",
- "time",
- "uuid",
-]
-
-[[package]]
-name = "exodus2-wallet-core"
-version = "0.1.0"
-dependencies = [
- "aes-gcm",
- "argon2",
- "bip39",
- "bitcoin",
- "getrandom 0.2.17",
- "hex",
- "hex-literal",
- "hmac",
- "rand 0.8.6",
- "secp256k1",
- "serde",
- "serde_json",
- "sha2",
- "sha3",
- "thiserror 1.0.69",
- "zeroize",
 ]
 
 [[package]]

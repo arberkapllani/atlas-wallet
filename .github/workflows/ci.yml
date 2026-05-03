@@ -42,7 +42,7 @@ jobs:
           node-version: 20
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter exodus2-desktop check
+      - run: pnpm --filter atlas-desktop check
 
   audit:
     name: cargo-audit
@@ -63,3 +63,4 @@ jobs:
         with:
           command: check
           arguments: --all-features
+
