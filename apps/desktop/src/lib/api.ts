@@ -46,19 +46,53 @@ export interface PricePoint {
   usd_24h_change: number;
 }
 
+export interface WatchAccount {
+  chain_id: string;
+  address: string;
+  label?: string | null;
+}
+
+export interface ProfileSummary {
+  id: string;
+  name: string;
+  kind: 'hot' | 'watch_only';
+  signing: boolean;
+  created_at: string;
+  watch_account_count: number;
+}
+
 export const api = {
   vaultExists: () => invoke<boolean>('vault_exists'),
   isUnlocked: () => invoke<boolean>('is_unlocked'),
 
   /** Returns the freshly generated mnemonic phrase — show ONCE during onboarding. */
-  createWallet: (password: string, wordCount: 12 | 24) =>
-    invoke<string>('create_wallet', { password, wordCount }),
+  createWallet: (password: string, wordCount: 12 | 24, name?: string | null) =>
+    invoke<string>('create_wallet', {
+      args: { password, word_count: wordCount, name: name ?? null }
+    }),
 
-  importWallet: (password: string, phrase: string, passphrase?: string) =>
-    invoke<void>('import_wallet', { password, phrase, passphrase }),
+  importWallet: (
+    password: string,
+    phrase: string,
+    passphrase?: string,
+    name?: string | null
+  ) =>
+    invoke<void>('import_wallet', {
+      args: { password, phrase, passphrase: passphrase ?? null, name: name ?? null }
+    }),
 
   unlockWallet: (password: string) => invoke<void>('unlock_wallet', { password }),
   lockWallet: () => invoke<void>('lock_wallet'),
+
+  // Profile management
+  listProfiles: () => invoke<ProfileSummary[]>('list_profiles'),
+  activeProfile: () => invoke<ProfileSummary | null>('active_profile'),
+  switchProfile: (id: string) => invoke<void>('switch_profile', { id }),
+  renameProfile: (id: string, newName: string) =>
+    invoke<void>('rename_profile', { id, newName }),
+  deleteProfile: (id: string) => invoke<void>('delete_profile', { id }),
+  createWatchOnlyProfile: (name: string, accounts: WatchAccount[]) =>
+    invoke<ProfileSummary>('create_watch_only_profile', { args: { name, accounts } }),
 
   listChains: () => invoke<ChainSummary[]>('list_chains'),
   getAddress: (chainId: string) => invoke<string>('get_address', { chainId }),

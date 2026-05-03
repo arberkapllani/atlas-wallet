@@ -1,12 +1,13 @@
 //! Application state held in Tauri's managed map.
 //!
-//! Holds the encrypted vault path, an in-memory unlocked mnemonic (when the
-//! user is signed in), and the cached price oracle. Locks via `tokio::Mutex`.
+//! Holds the on-disk profile registry, the currently unlocked mnemonic (if
+//! any), the chain-provider registry, and the price oracle.
 
 use exodus2_chain_bitcoin::BitcoinProvider;
 use exodus2_chain_evm::{EvmProvider, NETWORKS};
 use exodus2_chain_traits::ChainProvider;
 use exodus2_price_oracle::PriceOracle;
+use exodus2_profile::ProfileRegistry;
 use exodus2_wallet_core::Mnemonic;
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -40,32 +41,37 @@ impl ChainRegistry {
     }
 }
 
+impl Default for ChainRegistry {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Top-level shared state.
 pub struct AppState {
     #[allow(dead_code)]
     pub data_dir: PathBuf,
-    pub vault_path: PathBuf,
+    /// On-disk profile registry. Wrapped in a write-lock so the IPC layer can
+    /// add/remove/rename profiles while readers (UI listings) hold a snapshot.
+    pub profiles: RwLock<ProfileRegistry>,
+    /// Unlocked seed for the active hot profile. `None` when locked or when
+    /// the active profile is watch-only.
     pub mnemonic: RwLock<Option<Arc<Mnemonic>>>,
     pub chains: ChainRegistry,
     pub prices: PriceOracle,
 }
 
 impl AppState {
-    pub fn new(data_dir: PathBuf) -> Self {
-        let vault_path = data_dir.join("vault.bin");
-        Self {
+    pub fn new(data_dir: PathBuf) -> std::io::Result<Self> {
+        let registry = ProfileRegistry::load_or_init(&data_dir)
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
+        Ok(Self {
             data_dir,
-            vault_path,
+            profiles: RwLock::new(registry),
             mnemonic: RwLock::new(None),
             chains: ChainRegistry::new(),
             prices: PriceOracle::new(),
-        }
-    }
-}
-
-impl Default for ChainRegistry {
-    fn default() -> Self {
-        Self::new()
+        })
     }
 }
 

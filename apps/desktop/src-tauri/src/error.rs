@@ -17,6 +17,8 @@ pub enum CmdError {
     Chain(String),
     #[error("io: {0}")]
     Io(String),
+    #[error("profile: {0}")]
+    Profile(String),
 }
 
 impl From<exodus2_wallet_core::Error> for CmdError {
@@ -28,6 +30,12 @@ impl From<exodus2_wallet_core::Error> for CmdError {
 impl From<exodus2_chain_traits::ChainError> for CmdError {
     fn from(e: exodus2_chain_traits::ChainError) -> Self {
         Self::Chain(e.to_string())
+    }
+}
+
+impl From<exodus2_profile::ProfileError> for CmdError {
+    fn from(e: exodus2_profile::ProfileError) -> Self {
+        Self::Profile(e.to_string())
     }
 }
 

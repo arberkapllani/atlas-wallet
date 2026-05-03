@@ -31,6 +31,8 @@ exodus2-chain-traits = { workspace = true }
 exodus2-chain-bitcoin = { workspace = true }
 exodus2-chain-evm = { workspace = true }
 exodus2-price-oracle = { workspace = true }
+exodus2-profile = { workspace = true }
+uuid = { workspace = true }
 
 [features]
 default = []

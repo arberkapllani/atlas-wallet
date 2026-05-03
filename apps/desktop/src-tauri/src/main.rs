@@ -26,7 +26,8 @@ fn main() {
                 .app_data_dir()
                 .expect("app_data_dir resolves on every supported OS");
             std::fs::create_dir_all(&data_dir).ok();
-            let app_state = Arc::new(state::AppState::new(data_dir));
+            let app_state =
+                Arc::new(state::AppState::new(data_dir).expect("failed to load profile registry"));
             app.manage(app_state);
             Ok(())
         })
@@ -43,6 +44,12 @@ fn main() {
             commands::get_fee_options,
             commands::send_native,
             commands::get_prices,
+            commands::list_profiles,
+            commands::active_profile,
+            commands::switch_profile,
+            commands::rename_profile,
+            commands::delete_profile,
+            commands::create_watch_only_profile,
         ])
         .run(tauri::generate_context!())
         .expect("error while running Exodus 2");

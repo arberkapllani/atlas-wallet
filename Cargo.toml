@@ -6,6 +6,7 @@ members = [
     "crates/chain-bitcoin",
     "crates/chain-evm",
     "crates/price-oracle",
+    "crates/profile",
     "apps/desktop/src-tauri",
 ]
 
@@ -60,6 +61,11 @@ exodus2-chain-traits = { path = "crates/chain-traits" }
 exodus2-chain-bitcoin = { path = "crates/chain-bitcoin" }
 exodus2-chain-evm = { path = "crates/chain-evm" }
 exodus2-price-oracle = { path = "crates/price-oracle" }
+exodus2-profile = { path = "crates/profile" }
+
+# Misc
+uuid = { version = "1.10", features = ["v4", "serde"] }
+time = { version = "0.3", features = ["serde", "formatting", "parsing"] }
 
 [profile.release]
 opt-level = 3
