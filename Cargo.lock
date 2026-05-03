@@ -211,6 +211,7 @@ dependencies = [
  "atlas-chain-tron",
  "atlas-price-oracle",
  "atlas-profile",
+ "atlas-settings",
  "atlas-token-registry",
  "atlas-wallet-core",
  "serde",
@@ -249,6 +250,16 @@ dependencies = [
  "thiserror 1.0.69",
  "time",
  "uuid",
+]
+
+[[package]]
+name = "atlas-settings"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tempfile",
+ "thiserror 1.0.69",
 ]
 
 [[package]]

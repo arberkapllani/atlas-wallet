@@ -493,3 +493,79 @@ async fn derive_profile_name(
         ))
     }
 }
+
+// =============================================================================
+// RPC endpoints (sovereignty: never force the user onto a third party).
+// =============================================================================
+
+#[derive(Debug, Serialize)]
+pub struct RpcEndpoint {
+    pub chain_id: String,
+    /// Built-in default URL Atlas falls back to when no override is set.
+    pub default_url: Option<String>,
+    /// User-configured override, if any.
+    pub override_url: Option<String>,
+    /// The URL providers are actually dialing right now.
+    pub effective_url: Option<String>,
+}
+
+fn endpoint_for(state: &AppState, chain_id: &str) -> RpcEndpoint {
+    let default_url = crate::state::default_endpoint(chain_id).map(|s| s.to_string());
+    let override_url = state.settings.rpc_override(chain_id);
+    let effective_url = override_url.clone().or_else(|| default_url.clone());
+    RpcEndpoint {
+        chain_id: chain_id.to_string(),
+        default_url,
+        override_url,
+        effective_url,
+    }
+}
+
+/// List every supported chain id alongside its default and (if any) overridden RPC.
+#[tauri::command]
+pub async fn list_rpc_endpoints(state: State<'_, Arc<AppState>>) -> CmdResult<Vec<RpcEndpoint>> {
+    Ok(crate::state::all_chain_ids()
+        .into_iter()
+        .map(|id| endpoint_for(&state, id))
+        .collect())
+}
+
+/// Override the RPC URL for a given chain. The new endpoint takes effect
+/// immediately for every subsequent IPC call.
+#[tauri::command]
+pub async fn set_rpc_endpoint(
+    state: State<'_, Arc<AppState>>,
+    chain_id: String,
+    url: String,
+) -> CmdResult<RpcEndpoint> {
+    if crate::state::default_endpoint(&chain_id).is_none() {
+        return Err(CmdError::InvalidInput(format!("unknown chain: {chain_id}")));
+    }
+    state
+        .settings
+        .set_rpc_override(&chain_id, &url)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))?;
+    let trimmed = url.trim();
+    if !state.chains.replace(&chain_id, trimmed) {
+        return Err(CmdError::InvalidInput(format!(
+            "chain provider for {chain_id} could not be rebuilt"
+        )));
+    }
+    Ok(endpoint_for(&state, &chain_id))
+}
+
+/// Remove the user override for a chain, falling back to the built-in default.
+#[tauri::command]
+pub async fn clear_rpc_endpoint(
+    state: State<'_, Arc<AppState>>,
+    chain_id: String,
+) -> CmdResult<RpcEndpoint> {
+    let default = crate::state::default_endpoint(&chain_id)
+        .ok_or_else(|| CmdError::InvalidInput(format!("unknown chain: {chain_id}")))?;
+    state
+        .settings
+        .clear_rpc_override(&chain_id)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))?;
+    state.chains.replace(&chain_id, default);
+    Ok(endpoint_for(&state, &chain_id))
+}

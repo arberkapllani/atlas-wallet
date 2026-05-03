@@ -9,6 +9,7 @@ members = [
     "crates/chain-tron",
     "crates/price-oracle",
     "crates/profile",
+    "crates/settings",
     "crates/token-registry",
     "apps/desktop/src-tauri",
 ]
@@ -69,6 +70,7 @@ atlas-chain-solana = { path = "crates/chain-solana" }
 atlas-chain-tron = { path = "crates/chain-tron" }
 atlas-price-oracle = { path = "crates/price-oracle" }
 atlas-profile = { path = "crates/profile" }
+atlas-settings = { path = "crates/settings" }
 atlas-token-registry = { path = "crates/token-registry" }
 
 # Misc

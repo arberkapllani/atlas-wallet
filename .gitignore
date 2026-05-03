@@ -40,3 +40,5 @@ Atlas.db-journal
 # Generated bindings (auto-regenerated)
 apps/desktop/src/lib/bindings.gen.ts
 
+
+.gitcommitmsg.txt

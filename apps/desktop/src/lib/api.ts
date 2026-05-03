@@ -28,6 +28,13 @@ export interface TokenSummary {
   enabled_by_default: boolean;
 }
 
+export interface RpcEndpoint {
+  chain_id: string;
+  default_url: string | null;
+  override_url: string | null;
+  effective_url: string | null;
+}
+
 export interface Asset {
   id: string;
   symbol: string;
@@ -107,6 +114,13 @@ export const api = {
 
   listChains: () => invoke<ChainSummary[]>('list_chains'),
   listTokens: () => invoke<TokenSummary[]>('list_tokens'),
+
+  // Sovereignty: every chain endpoint is user-overridable.
+  listRpcEndpoints: () => invoke<RpcEndpoint[]>('list_rpc_endpoints'),
+  setRpcEndpoint: (chainId: string, url: string) =>
+    invoke<RpcEndpoint>('set_rpc_endpoint', { chainId, url }),
+  clearRpcEndpoint: (chainId: string) =>
+    invoke<RpcEndpoint>('clear_rpc_endpoint', { chainId }),
   getAddress: (chainId: string) => invoke<string>('get_address', { chainId }),
   getBalance: (chainId: string) => invoke<Amount>('get_balance', { chainId }),
   getFeeOptions: (chainId: string) => invoke<FeeOption[]>('get_fee_options', { chainId }),

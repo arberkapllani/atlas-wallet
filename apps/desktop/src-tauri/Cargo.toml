@@ -34,6 +34,7 @@ atlas-chain-solana = { workspace = true }
 atlas-chain-tron = { workspace = true }
 atlas-price-oracle = { workspace = true }
 atlas-profile = { workspace = true }
+atlas-settings = { workspace = true }
 atlas-token-registry = { workspace = true }
 uuid = { workspace = true }
 

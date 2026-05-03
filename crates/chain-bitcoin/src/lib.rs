@@ -19,6 +19,12 @@ pub fn default_provider() -> BitcoinProvider {
     BitcoinProvider::new(DEFAULT_BASE_URL)
 }
 
+/// Build a Bitcoin provider against a user-supplied REST base URL — typically
+/// the user's own mempool/Esplora-compatible node.
+pub fn provider_with_base_url(base_url: &str) -> BitcoinProvider {
+    BitcoinProvider::new(base_url)
+}
+
 /// Returns the standard BTC asset descriptor.
 pub fn btc_asset() -> atlas_chain_traits::Asset {
     atlas_chain_traits::Asset {

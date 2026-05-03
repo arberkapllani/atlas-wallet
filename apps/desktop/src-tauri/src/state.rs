@@ -10,46 +10,117 @@ use atlas_chain_traits::ChainProvider;
 use atlas_chain_tron::TronProvider;
 use atlas_price_oracle::PriceOracle;
 use atlas_profile::ProfileRegistry;
+use atlas_settings::Settings;
 use atlas_wallet_core::Mnemonic;
 use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::Arc;
+use std::sync::{Arc, RwLock as StdRwLock};
 use tokio::sync::RwLock;
 
-/// Shared, read-only registry of every supported chain provider.
+/// Built-in default endpoint for a chain id. Used both as a fallback when no
+/// override is set and to surface "this is the default" in the UI.
+pub fn default_endpoint(chain_id: &str) -> Option<&'static str> {
+    if chain_id == "btc" {
+        return Some(atlas_chain_bitcoin::DEFAULT_BASE_URL);
+    }
+    if chain_id == "sol" {
+        return Some(atlas_chain_solana::DEFAULT_RPC);
+    }
+    if chain_id == "trx" {
+        return Some(atlas_chain_tron::DEFAULT_RPC);
+    }
+    NETWORKS
+        .iter()
+        .find(|n| n.id == chain_id)
+        .map(|n| n.rpc_url)
+}
+
+/// Every chain id Atlas knows about, ordered for stable UI listings.
+pub fn all_chain_ids() -> Vec<&'static str> {
+    let mut ids = vec!["btc"];
+    for n in NETWORKS {
+        ids.push(n.id);
+    }
+    ids.push("sol");
+    ids.push("trx");
+    ids
+}
+
+fn build_provider(chain_id: &str, rpc_url: &str) -> Option<Arc<dyn ChainProvider>> {
+    if chain_id == "btc" {
+        return Some(Arc::new(atlas_chain_bitcoin::provider_with_base_url(
+            rpc_url,
+        )));
+    }
+    if chain_id == "sol" {
+        return Some(Arc::new(SolanaProvider::with_rpc(rpc_url.to_string())));
+    }
+    if chain_id == "trx" {
+        return Some(Arc::new(TronProvider::with_rpc(rpc_url.to_string())));
+    }
+    NETWORKS
+        .iter()
+        .find(|n| n.id == chain_id)
+        .map(|n| Arc::new(EvmProvider::with_rpc(n, rpc_url.to_string())) as Arc<dyn ChainProvider>)
+}
+
+/// Shared registry of every supported chain provider.
+///
+/// The inner map is wrapped in an `RwLock` so individual providers can be
+/// rebuilt at runtime when the user changes their RPC override.
 pub struct ChainRegistry {
-    providers: HashMap<String, Arc<dyn ChainProvider>>,
+    providers: StdRwLock<HashMap<String, Arc<dyn ChainProvider>>>,
 }
 
 impl ChainRegistry {
-    pub fn new() -> Self {
-        let mut providers: HashMap<String, Arc<dyn ChainProvider>> = HashMap::new();
-        let btc = Arc::new(atlas_chain_bitcoin::default_provider()) as Arc<dyn ChainProvider>;
-        providers.insert(btc.id().to_string(), btc);
-        for net in NETWORKS {
-            let p = Arc::new(EvmProvider::new(net)) as Arc<dyn ChainProvider>;
-            providers.insert(p.id().to_string(), p);
+    /// Build the registry from `settings`. Each chain uses the user's
+    /// override if one is set, otherwise the built-in default.
+    pub fn from_settings(settings: &Settings) -> Self {
+        let mut map: HashMap<String, Arc<dyn ChainProvider>> = HashMap::new();
+        for id in all_chain_ids() {
+            let url = settings
+                .rpc_override(id)
+                .or_else(|| default_endpoint(id).map(|s| s.to_string()));
+            if let Some(url) = url {
+                if let Some(p) = build_provider(id, &url) {
+                    map.insert(id.to_string(), p);
+                }
+            }
         }
-        let sol = Arc::new(SolanaProvider::new()) as Arc<dyn ChainProvider>;
-        providers.insert(sol.id().to_string(), sol);
-        let trx = Arc::new(TronProvider::new()) as Arc<dyn ChainProvider>;
-        providers.insert(trx.id().to_string(), trx);
-        Self { providers }
+        Self {
+            providers: StdRwLock::new(map),
+        }
     }
 
     pub fn get(&self, id: &str) -> Option<Arc<dyn ChainProvider>> {
-        self.providers.get(id).cloned()
+        self.providers
+            .read()
+            .expect("chain registry poisoned")
+            .get(id)
+            .cloned()
+    }
+
+    /// Replace the provider for `chain_id` (e.g. after the user changes
+    /// the RPC override). Returns `false` if the id is unknown.
+    pub fn replace(&self, chain_id: &str, rpc_url: &str) -> bool {
+        let Some(p) = build_provider(chain_id, rpc_url) else {
+            return false;
+        };
+        self.providers
+            .write()
+            .expect("chain registry poisoned")
+            .insert(chain_id.to_string(), p);
+        true
     }
 
     #[allow(dead_code)]
     pub fn ids(&self) -> Vec<String> {
-        self.providers.keys().cloned().collect()
-    }
-}
-
-impl Default for ChainRegistry {
-    fn default() -> Self {
-        Self::new()
+        self.providers
+            .read()
+            .expect("chain registry poisoned")
+            .keys()
+            .cloned()
+            .collect()
     }
 }
 
@@ -65,18 +136,23 @@ pub struct AppState {
     pub mnemonic: RwLock<Option<Arc<Mnemonic>>>,
     pub chains: ChainRegistry,
     pub prices: PriceOracle,
+    pub settings: Settings,
 }
 
 impl AppState {
     pub fn new(data_dir: PathBuf) -> std::io::Result<Self> {
         let registry = ProfileRegistry::load_or_init(&data_dir)
             .map_err(|e| std::io::Error::other(e.to_string()))?;
+        let settings =
+            Settings::load_or_init(&data_dir).map_err(|e| std::io::Error::other(e.to_string()))?;
+        let chains = ChainRegistry::from_settings(&settings);
         Ok(Self {
             data_dir,
             profiles: RwLock::new(registry),
             mnemonic: RwLock::new(None),
-            chains: ChainRegistry::new(),
+            chains,
             prices: PriceOracle::new(),
+            settings,
         })
     }
 }

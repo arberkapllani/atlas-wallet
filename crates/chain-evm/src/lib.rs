@@ -25,15 +25,24 @@ use serde::{Deserialize, Serialize};
 /// Generic EVM provider, parameterised by a [`Network`].
 pub struct EvmProvider {
     network: &'static Network,
+    rpc_url: String,
     http: reqwest::Client,
     asset: Asset,
 }
 
 impl EvmProvider {
-    /// Construct a provider for the given EVM network.
+    /// Construct a provider for the given EVM network using the network's
+    /// built-in default RPC URL.
     pub fn new(network: &'static Network) -> Self {
+        Self::with_rpc(network, network.rpc_url.to_string())
+    }
+
+    /// Construct a provider pointed at a user-supplied RPC URL (e.g. their
+    /// own node). Atlas treats this override as authoritative.
+    pub fn with_rpc(network: &'static Network, rpc_url: String) -> Self {
         Self {
             network,
+            rpc_url,
             http: reqwest::Client::builder()
                 .user_agent("Atlas/0.1")
                 .build()
@@ -50,6 +59,11 @@ impl EvmProvider {
     /// Underlying [`Network`] descriptor.
     pub fn network(&self) -> &'static Network {
         self.network
+    }
+
+    /// The effective RPC URL this provider will dial.
+    pub fn rpc_url(&self) -> &str {
+        &self.rpc_url
     }
 
     /// Issue a JSON-RPC call against this network's default RPC URL.
@@ -82,7 +96,7 @@ impl EvmProvider {
         };
         let resp = self
             .http
-            .post(self.network.rpc_url)
+            .post(&self.rpc_url)
             .json(&body)
             .send()
             .await
