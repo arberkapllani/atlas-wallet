@@ -39,7 +39,7 @@ anyhow = "1.0"
 # Crypto / wallet primitives
 bip39 = "2.0"
 bitcoin = { version = "0.32", features = ["std", "rand-std", "secp-recovery"] }
-secp256k1 = { version = "0.29", features = ["rand-std", "global-context"] }
+secp256k1 = { version = "0.29", features = ["rand-std", "global-context", "recovery"] }
 hex = "0.4"
 sha2 = "0.10"
 sha3 = "0.10"        # keccak for Ethereum addresses

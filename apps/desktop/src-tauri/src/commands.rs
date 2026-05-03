@@ -402,8 +402,7 @@ pub struct SendTokenResult {
     pub fee: Amount,
 }
 
-/// Sign and broadcast an ERC-20 `transfer`. Currently only ERC-20 tokens are
-/// implemented; TRC-20 will land alongside Tron sending in a later phase.
+/// Sign and broadcast a token transfer (ERC-20 or TRC-20).
 #[tauri::command]
 pub async fn send_token(
     state: State<'_, Arc<AppState>>,
@@ -413,49 +412,71 @@ pub async fn send_token(
     require_signing_capable(&state).await?;
     let token = by_id(&args.token_id)
         .ok_or_else(|| CmdError::InvalidInput(format!("unknown token '{}'", args.token_id)))?;
-    if !matches!(token.standard, TokenStandard::Erc20) {
-        return Err(CmdError::InvalidInput(format!(
-            "token standard {:?} not yet supported for sending",
-            token.standard
-        )));
-    }
     let mnemonic = require_mnemonic(&state).await?;
     let kind = chain_kind_for(token.chain_id);
     let acct = derive_account(&mnemonic, kind, 0)?;
-
-    // We need the EVM-typed provider for token transfers. ChainRegistry hands
-    // us a trait object, so look up the network metadata directly and build
-    // a transient provider sharing the user's RPC override.
-    let network = evm_networks::NETWORKS
-        .iter()
-        .find(|n| n.id == token.chain_id)
-        .ok_or_else(|| CmdError::InvalidInput(format!("unknown chain '{}'", token.chain_id)))?;
-    let rpc_url = state
-        .settings
-        .rpc_override(token.chain_id)
-        .unwrap_or_else(|| network.rpc_url.to_string());
-    let provider = atlas_chain_evm::EvmProvider::with_rpc(network, rpc_url);
-
     let value: u128 = args
         .amount
         .parse()
         .map_err(|_| CmdError::InvalidInput("amount must be a base-unit integer".into()))?;
 
-    let signed = provider
-        .send_token(
-            acct.address(),
-            &args.to,
-            token.contract,
-            value,
-            &args.fee_level,
-            acct.private_key(),
-        )
-        .await?;
-    let txid = provider.broadcast(&signed).await?;
-    Ok(SendTokenResult {
-        txid,
-        fee: signed.fee,
-    })
+    match token.standard {
+        TokenStandard::Erc20 => {
+            // We need the EVM-typed provider for token transfers. ChainRegistry
+            // hands us a trait object, so look up the network metadata directly
+            // and build a transient provider sharing the user's RPC override.
+            let network = evm_networks::NETWORKS
+                .iter()
+                .find(|n| n.id == token.chain_id)
+                .ok_or_else(|| {
+                    CmdError::InvalidInput(format!("unknown chain '{}'", token.chain_id))
+                })?;
+            let rpc_url = state
+                .settings
+                .rpc_override(token.chain_id)
+                .unwrap_or_else(|| network.rpc_url.to_string());
+            let provider = atlas_chain_evm::EvmProvider::with_rpc(network, rpc_url);
+
+            let signed = provider
+                .send_token(
+                    acct.address(),
+                    &args.to,
+                    token.contract,
+                    value,
+                    &args.fee_level,
+                    acct.private_key(),
+                )
+                .await?;
+            let txid = provider.broadcast(&signed).await?;
+            Ok(SendTokenResult {
+                txid,
+                fee: signed.fee,
+            })
+        }
+        TokenStandard::Trc20 => {
+            let rpc_url = state
+                .settings
+                .rpc_override(token.chain_id)
+                .unwrap_or_else(|| atlas_chain_tron::DEFAULT_RPC.to_string());
+            let provider = atlas_chain_tron::TronProvider::with_rpc(rpc_url);
+            let signed = provider
+                .build_and_sign_trc20(
+                    acct.address(),
+                    &args.to,
+                    token.contract,
+                    value,
+                    acct.private_key(),
+                )
+                .await?;
+            // Broadcast goes through the trait-level method.
+            use atlas_chain_traits::ChainProvider;
+            let txid = provider.broadcast(&signed).await?;
+            Ok(SendTokenResult {
+                txid,
+                fee: signed.fee,
+            })
+        }
+    }
 }
 
 #[tauri::command]

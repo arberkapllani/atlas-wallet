@@ -196,6 +196,7 @@ dependencies = [
  "bs58",
  "hex",
  "reqwest 0.12.28",
+ "secp256k1",
  "serde",
  "serde_json",
  "sha2",

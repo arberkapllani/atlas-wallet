@@ -5,7 +5,7 @@ edition.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
-description = "Tron chain provider (TRX + TRC-20 read; native sending arrives in a later phase)"
+description = "Tron chain provider (TRX + TRC-20 read/write via hand-rolled protobuf encoder)"
 
 [dependencies]
 serde = { workspace = true }
@@ -15,4 +15,5 @@ reqwest = { workspace = true }
 bs58 = { workspace = true }
 sha2 = { workspace = true }
 hex = { workspace = true }
+secp256k1 = { workspace = true }
 atlas-chain-traits = { workspace = true }
