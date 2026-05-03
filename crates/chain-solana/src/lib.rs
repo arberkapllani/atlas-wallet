@@ -1,14 +1,15 @@
 //! Solana chain provider.
 //!
-//! v1 surface: address validation, native SOL balance, fee preview.
-//! Transaction sending requires recent-blockhash lookup and ed25519
-//! transaction encoding — those land alongside the swap aggregator
-//! (Phase 4 / Jupiter integration). Until then [`build_and_sign`]
-//! returns a clear `ChainError::Other` so the UI can surface a
-//! "send not yet available" hint.
+//! Implements native SOL transfers end-to-end: address validation,
+//! balance lookup, fee preview, blockhash fetch, transaction
+//! signing (ed25519), and broadcast. SPL token transfers and the
+//! Jupiter swap aggregator land in Phase 4.
 
 #![forbid(unsafe_code)]
 #![warn(missing_docs, rust_2018_idioms)]
+
+pub mod compact;
+pub mod transaction;
 
 use async_trait::async_trait;
 use atlas_chain_traits::{
@@ -152,18 +153,80 @@ impl ChainProvider for SolanaProvider {
 
     async fn build_and_sign(
         &self,
-        _request: TxRequest,
-        _private_key: &[u8; 32],
+        request: TxRequest,
+        private_key: &[u8; 32],
     ) -> ChainResult<SignedTx> {
-        Err(ChainError::Other(
-            "solana sending will land with the swap aggregator (Phase 4)".into(),
-        ))
+        // Decode + validate the recipient.
+        if !self.validate_address(&request.to) {
+            return Err(ChainError::InvalidAddress(request.to.clone()));
+        }
+        let to_bytes = bs58::decode(&request.to)
+            .into_vec()
+            .map_err(|e| ChainError::InvalidAddress(e.to_string()))?;
+        if to_bytes.len() != 32 {
+            return Err(ChainError::InvalidAddress(request.to.clone()));
+        }
+        let mut to_arr = [0u8; 32];
+        to_arr.copy_from_slice(&to_bytes);
+
+        // Solana's max amount fits in u64 (lamports).
+        if request.amount.value > u64::MAX as u128 {
+            return Err(ChainError::Codec(
+                "amount exceeds Solana's u64 lamport range".into(),
+            ));
+        }
+        let lamports = request.amount.value as u64;
+
+        // Fetch a fresh blockhash.
+        let blockhash_b58 = self.fetch_blockhash().await?;
+        let blockhash_bytes = bs58::decode(&blockhash_b58)
+            .into_vec()
+            .map_err(|e| ChainError::Codec(format!("blockhash: {e}")))?;
+        if blockhash_bytes.len() != 32 {
+            return Err(ChainError::Codec("blockhash not 32 bytes".into()));
+        }
+        let mut bh = [0u8; 32];
+        bh.copy_from_slice(&blockhash_bytes);
+
+        let signed = transaction::sign_transfer(private_key, &to_arr, lamports, &bh);
+        Ok(SignedTx {
+            raw_hex: bs58::encode(&signed.raw).into_string(),
+            txid: signed.signature_b58,
+            // Solana fees: 5000 lamports per signature; one signature here.
+            fee: Amount::new(5_000, self.asset.clone()),
+        })
     }
 
-    async fn broadcast(&self, _signed: &SignedTx) -> ChainResult<String> {
-        Err(ChainError::Other(
-            "solana sending will land with the swap aggregator (Phase 4)".into(),
-        ))
+    async fn broadcast(&self, signed: &SignedTx) -> ChainResult<String> {
+        // We stored the wire bytes as base58 in `raw_hex`.
+        let raw = bs58::decode(&signed.raw_hex)
+            .into_vec()
+            .map_err(|e| ChainError::Codec(format!("raw tx: {e}")))?;
+        let encoded = bs58::encode(&raw).into_string();
+        let txid: String = self
+            .rpc(
+                "sendTransaction",
+                serde_json::json!([encoded, { "encoding": "base58" }]),
+            )
+            .await?;
+        Ok(txid)
+    }
+}
+
+impl SolanaProvider {
+    async fn fetch_blockhash(&self) -> ChainResult<String> {
+        #[derive(Deserialize)]
+        struct Inner {
+            blockhash: String,
+        }
+        #[derive(Deserialize)]
+        struct Outer {
+            value: Inner,
+        }
+        let r: Outer = self
+            .rpc("getLatestBlockhash", serde_json::json!([]))
+            .await?;
+        Ok(r.value.blockhash)
     }
 }
 

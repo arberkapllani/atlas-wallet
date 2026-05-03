@@ -171,6 +171,7 @@ dependencies = [
  "async-trait",
  "atlas-chain-traits",
  "bs58",
+ "ed25519-dalek",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
