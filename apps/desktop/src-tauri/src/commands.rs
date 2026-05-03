@@ -562,8 +562,17 @@ async fn derive_profile_name(
     if reg.profiles().is_empty() {
         Ok("Default".into())
     } else {
+        // Auto-pick "Wallet N" where N is the lowest unused index >= 2.
+        let existing: std::collections::HashSet<&str> =
+            reg.profiles().iter().map(|p| p.name.as_str()).collect();
+        for n in 2u32..=u32::MAX {
+            let candidate = format!("Wallet {n}");
+            if !existing.contains(candidate.as_str()) {
+                return Ok(candidate);
+            }
+        }
         Err(CmdError::InvalidInput(
-            "profile name is required when adding additional wallets".into(),
+            "could not allocate a profile name".into(),
         ))
     }
 }

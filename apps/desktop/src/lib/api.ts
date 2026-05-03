@@ -166,3 +166,32 @@ export function parseAmountToBase(input: string, decimals: number): string {
   const combined = (whole + padded).replace(/^0+(\d)/, '$1');
   return combined;
 }
+
+/**
+ * Render a thrown value as a user-friendly string.
+ *
+ * Tauri commands that fail with our `CmdError` produce a JSON-serialised
+ * `{ kind, message }` object on the JS side; plain `String(e)` on that
+ * object yields the useless "[object Object]". This helper extracts the
+ * message regardless of whether the error is a string, an `Error`, or
+ * a serialised tagged enum.
+ */
+export function errorMessage(e: unknown): string {
+  if (e == null) return 'unknown error';
+  if (typeof e === 'string') return e;
+  if (e instanceof Error) return e.message;
+  if (typeof e === 'object') {
+    const obj = e as { message?: unknown; kind?: unknown };
+    if (typeof obj.message === 'string' && obj.message.length > 0) {
+      return typeof obj.kind === 'string' ? `${obj.kind}: ${obj.message}` : obj.message;
+    }
+    if (typeof obj.kind === 'string') return obj.kind;
+    try {
+      return JSON.stringify(e);
+    } catch {
+      return String(e);
+    }
+  }
+  return String(e);
+}
+

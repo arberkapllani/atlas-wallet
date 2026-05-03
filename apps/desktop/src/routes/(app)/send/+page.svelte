@@ -1,6 +1,6 @@
 <script lang="ts">
   import { wallet } from '$lib/stores/wallet';
-  import { api, parseAmountToBase, formatAmount, type FeeOption } from '$lib/api';
+  import { api, parseAmountToBase, formatAmount, errorMessage, type FeeOption } from '$lib/api';
   import Button from '$lib/ui/Button.svelte';
   import Card from '$lib/ui/Card.svelte';
   import Input from '$lib/ui/Input.svelte';
@@ -36,7 +36,7 @@
     try {
       baseAmount = parseAmountToBase(amount, chain.decimals);
     } catch (e) {
-      error = String(e);
+      error = errorMessage(e);
       return;
     }
     busy = true;
@@ -50,7 +50,7 @@
       result = { txid: r.txid };
       void wallet.refreshBalances();
     } catch (e) {
-      error = String(e);
+      error = errorMessage(e);
     } finally {
       busy = false;
     }

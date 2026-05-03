@@ -4,6 +4,7 @@
   import Card from '$lib/ui/Card.svelte';
   import Input from '$lib/ui/Input.svelte';
   import { wallet } from '$lib/stores/wallet';
+  import { errorMessage } from '$lib/api';
 
   let phrase = '';
   let passphrase = '';
@@ -23,7 +24,7 @@
       await wallet.importExisting(password, phrase, passphrase || undefined);
       void goto('/portfolio');
     } catch (e) {
-      error = String(e);
+      error = errorMessage(e);
     } finally {
       busy = false;
     }

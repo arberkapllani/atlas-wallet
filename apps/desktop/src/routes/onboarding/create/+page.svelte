@@ -4,6 +4,7 @@
   import Card from '$lib/ui/Card.svelte';
   import Input from '$lib/ui/Input.svelte';
   import { wallet } from '$lib/stores/wallet';
+  import { errorMessage } from '$lib/api';
 
   let step: 'password' | 'reveal' | 'confirm' = 'password';
   let password = '';
@@ -23,7 +24,7 @@
       phrase = await wallet.createNew(password, wordCount);
       step = 'reveal';
     } catch (e) {
-      error = String(e);
+      error = errorMessage(e);
     } finally {
       busy = false;
     }

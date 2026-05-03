@@ -2,7 +2,7 @@
   import Card from '$lib/ui/Card.svelte';
   import Button from '$lib/ui/Button.svelte';
   import Input from '$lib/ui/Input.svelte';
-  import { api, type RpcEndpoint } from '$lib/api';
+  import { api, errorMessage, type RpcEndpoint } from '$lib/api';
   import { onMount } from 'svelte';
 
   let endpoints: RpcEndpoint[] = [];
@@ -21,7 +21,7 @@
       rowError = {};
       error = null;
     } catch (e) {
-      error = e instanceof Error ? e.message : String(e);
+      error = errorMessage(e);
     } finally {
       loading = false;
     }
@@ -46,7 +46,7 @@
       delete rowError[ep.chain_id];
       await refresh();
     } catch (e) {
-      rowError[ep.chain_id] = e instanceof Error ? e.message : String(e);
+      rowError[ep.chain_id] = errorMessage(e);
       rowError = rowError;
     } finally {
       savingId = null;
@@ -60,7 +60,7 @@
       delete rowError[ep.chain_id];
       await refresh();
     } catch (e) {
-      rowError[ep.chain_id] = e instanceof Error ? e.message : String(e);
+      rowError[ep.chain_id] = errorMessage(e);
       rowError = rowError;
     } finally {
       savingId = null;
