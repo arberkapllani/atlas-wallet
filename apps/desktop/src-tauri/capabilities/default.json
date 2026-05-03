@@ -1,0 +1,14 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "identifier": "exodus2-default-capability",
+  "description": "Default capability for the Exodus 2 desktop app",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:default",
+    "core:event:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "fs:default"
+  ]
+}

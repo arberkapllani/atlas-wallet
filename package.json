@@ -1,0 +1,17 @@
+{
+  "name": "exodus-2",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Sovereign multi-chain desktop wallet",
+  "scripts": {
+    "dev": "pnpm --filter exodus2-desktop tauri dev",
+    "build": "pnpm --filter exodus2-desktop tauri build",
+    "check": "pnpm --filter exodus2-desktop check",
+    "lint": "pnpm --filter exodus2-desktop lint"
+  },
+  "engines": {
+    "node": ">=18",
+    "pnpm": ">=9"
+  },
+  "packageManager": "pnpm@9.12.0"
+}

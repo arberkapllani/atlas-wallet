@@ -1,0 +1,73 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/wallet-core",
+    "crates/chain-traits",
+    "crates/chain-bitcoin",
+    "crates/chain-evm",
+    "crates/price-oracle",
+    "apps/desktop/src-tauri",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+authors = ["Exodus 2 Contributors"]
+repository = "https://github.com/arberkapllani/exodus-2"
+rust-version = "1.78"
+
+[workspace.dependencies]
+# Async runtime
+tokio = { version = "1.40", features = ["full"] }
+async-trait = "0.1"
+futures = "0.3"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Error handling
+thiserror = "1.0"
+anyhow = "1.0"
+
+# Crypto / wallet primitives
+bip39 = "2.0"
+bitcoin = { version = "0.32", features = ["std", "rand-std", "secp-recovery"] }
+secp256k1 = { version = "0.29", features = ["rand-std", "global-context"] }
+hex = "0.4"
+sha2 = "0.10"
+sha3 = "0.10"        # keccak for Ethereum addresses
+hmac = "0.12"
+pbkdf2 = "0.12"
+aes-gcm = "0.10"
+argon2 = "0.5"
+zeroize = { version = "1.8", features = ["derive"] }
+rand = "0.8"
+getrandom = "0.2"
+
+# HTTP
+reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+url = "2.5"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Local crates
+exodus2-wallet-core = { path = "crates/wallet-core" }
+exodus2-chain-traits = { path = "crates/chain-traits" }
+exodus2-chain-bitcoin = { path = "crates/chain-bitcoin" }
+exodus2-chain-evm = { path = "crates/chain-evm" }
+exodus2-price-oracle = { path = "crates/price-oracle" }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"
+strip = "symbols"
+
+[profile.dev]
+opt-level = 1
+debug = true

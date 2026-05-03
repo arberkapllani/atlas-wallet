@@ -1,0 +1,37 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: theme('fontFamily.sans');
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle scrollbars that match the dark theme. */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: theme('colors.border.DEFAULT');
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: theme('colors.fg.subtle');
+}
+
+/* Focus ring matches the accent. */
+:focus-visible {
+  outline: 2px solid theme('colors.accent.DEFAULT');
+  outline-offset: 2px;
+}

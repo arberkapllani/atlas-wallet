@@ -1,0 +1,41 @@
+# Rust
+target/
+**/*.rs.bk
+Cargo.lock.bak
+
+# Node
+node_modules/
+.pnpm-store/
+dist/
+.svelte-kit/
+build/
+
+# Tauri
+apps/desktop/src-tauri/gen/
+apps/desktop/src-tauri/target/
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Env / secrets
+.env
+.env.*
+!.env.example
+
+# Wallet local data (NEVER commit)
+*.vault
+*.wallet
+exodus2.db
+exodus2.db-journal
+
+# Generated bindings (auto-regenerated)
+apps/desktop/src/lib/bindings.gen.ts
