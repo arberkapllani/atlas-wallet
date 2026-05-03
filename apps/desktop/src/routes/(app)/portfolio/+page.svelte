@@ -1,28 +1,29 @@
 <script lang="ts">
   import { wallet } from '$lib/stores/wallet';
   import { prices, COINGECKO_IDS } from '$lib/stores/prices';
+  import { formatFiat } from '$lib/stores/currency';
   import { formatAmount, type Amount } from '$lib/api';
   import Button from '$lib/ui/Button.svelte';
   import Card from '$lib/ui/Card.svelte';
 
   $: total = (() => {
-    let usd = 0;
+    let v = 0;
     for (const c of $wallet.chains) {
       const bal = $wallet.balances[c.id];
       const cgId = COINGECKO_IDS[c.id];
-      const price = cgId ? $prices[cgId]?.usd : undefined;
+      const price = cgId ? $prices[cgId]?.price : undefined;
       if (bal && price) {
         const decimal = Number(bal.value) / 10 ** bal.asset.decimals;
-        usd += decimal * price;
+        v += decimal * price;
       }
     }
-    return usd;
+    return v;
   })();
 
-  function balanceUsd(b: Amount | null | undefined, chainId: string): number | null {
+  function balanceFiat(b: Amount | null | undefined, chainId: string): number | null {
     if (!b) return null;
     const cg = COINGECKO_IDS[chainId];
-    const p = cg ? $prices[cg]?.usd : undefined;
+    const p = cg ? $prices[cg]?.price : undefined;
     if (!p) return null;
     return (Number(b.value) / 10 ** b.asset.decimals) * p;
   }
@@ -42,7 +43,7 @@
   <Card>
     <div class="text-fg-subtle text-xs uppercase tracking-wider">Total balance</div>
     <div class="mt-2 text-4xl font-bold tracking-tight">
-      ${total.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+      {formatFiat(total)}
     </div>
   </Card>
 
@@ -50,9 +51,9 @@
     <div class="-mx-6 -mb-6">
       {#each $wallet.chains as chain}
         {@const bal = $wallet.balances[chain.id]}
-        {@const usd = balanceUsd(bal, chain.id)}
+        {@const fiat = balanceFiat(bal, chain.id)}
         {@const cg = COINGECKO_IDS[chain.id]}
-        {@const change = cg ? $prices[cg]?.usd_24h_change : undefined}
+        {@const change = cg ? $prices[cg]?.change_24h : undefined}
         <div class="flex items-center justify-between px-6 py-4 border-t border-border-subtle">
           <div>
             <div class="font-semibold">{chain.display_name}</div>
@@ -63,8 +64,8 @@
               {bal ? formatAmount(bal) : '—'}
             </div>
             <div class="text-xs text-fg-muted flex items-center gap-2 justify-end">
-              {#if usd != null}
-                ${usd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+              {#if fiat != null}
+                {formatFiat(fiat)}
               {:else}
                 <span>—</span>
               {/if}

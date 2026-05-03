@@ -1,4 +1,7 @@
 //! CoinGecko price oracle with simple in-memory TTL cache.
+//!
+//! Cache is keyed by `(coingecko_id, vs_currency)` so switching display
+//! currency does not poison earlier results.
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
@@ -12,10 +15,10 @@ const BASE_URL: &str = "https://api.coingecko.com/api/v3/simple/price";
 /// A single cached price observation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PricePoint {
-    /// USD price.
-    pub usd: f64,
+    /// Price in the requested fiat currency.
+    pub price: f64,
     /// 24h change as a percentage.
-    pub usd_24h_change: f64,
+    pub change_24h: f64,
 }
 
 #[derive(Debug, Clone)]
@@ -32,7 +35,7 @@ pub struct PriceOracle {
 
 struct Inner {
     http: reqwest::Client,
-    cache: RwLock<HashMap<String, CacheEntry>>,
+    cache: RwLock<HashMap<(String, String), CacheEntry>>,
 }
 
 impl PriceOracle {
@@ -49,37 +52,43 @@ impl PriceOracle {
         }
     }
 
-    /// Fetch (or return cached) prices for the given CoinGecko ids,
-    /// e.g. `["bitcoin", "ethereum", "matic-network"]`.
-    pub async fn prices(&self, ids: &[&str]) -> Result<HashMap<String, PricePoint>, PriceError> {
-        // Cache hit?
+    /// Fetch (or return cached) prices for the given CoinGecko ids in the
+    /// requested fiat ticker (`"usd"`, `"eur"`, `"gbp"`, …).
+    pub async fn prices_in(
+        &self,
+        ids: &[&str],
+        vs_currency: &str,
+    ) -> Result<HashMap<String, PricePoint>, PriceError> {
+        let vs = vs_currency.to_ascii_lowercase();
         let now = Instant::now();
+        // Cache hit?
         {
             let cache = self.inner.cache.read().await;
             if ids.iter().all(|id| {
                 cache
-                    .get(*id)
+                    .get(&(id.to_string(), vs.clone()))
                     .map(|e| now.duration_since(e.fetched_at) < TTL)
                     .unwrap_or(false)
             }) {
                 return Ok(ids
                     .iter()
-                    .map(|id| (id.to_string(), cache[*id].point.clone()))
+                    .map(|id| {
+                        let key = (id.to_string(), vs.clone());
+                        (id.to_string(), cache[&key].point.clone())
+                    })
                     .collect());
             }
         }
 
         let ids_csv = ids.join(",");
         let url = format!(
-            "{BASE_URL}?ids={}&vs_currencies=usd&include_24hr_change=true",
-            urlencode(&ids_csv)
+            "{BASE_URL}?ids={}&vs_currencies={}&include_24hr_change=true",
+            urlencode(&ids_csv),
+            urlencode(&vs),
         );
-        #[derive(Deserialize)]
-        struct Raw {
-            usd: f64,
-            #[serde(default, rename = "usd_24h_change")]
-            usd_24h_change: f64,
-        }
+
+        // CoinGecko returns
+        // `{ "<id>": { "<vs>": <price>, "<vs>_24h_change": <pct> } }`.
         let resp = self
             .inner
             .http
@@ -90,20 +99,23 @@ impl PriceOracle {
         if !resp.status().is_success() {
             return Err(PriceError::Network(format!("status {}", resp.status())));
         }
-        let body: HashMap<String, Raw> = resp
+        let body: HashMap<String, HashMap<String, f64>> = resp
             .json()
             .await
             .map_err(|e| PriceError::Codec(e.to_string()))?;
 
+        let change_key = format!("{vs}_24h_change");
         let mut result = HashMap::new();
         let mut cache = self.inner.cache.write().await;
-        for (id, raw) in body {
-            let p = PricePoint {
-                usd: raw.usd,
-                usd_24h_change: raw.usd_24h_change,
+        for (id, fields) in body {
+            let price = match fields.get(vs.as_str()) {
+                Some(p) => *p,
+                None => continue,
             };
+            let change_24h = fields.get(&change_key).copied().unwrap_or(0.0);
+            let p = PricePoint { price, change_24h };
             cache.insert(
-                id.clone(),
+                (id.clone(), vs.clone()),
                 CacheEntry {
                     point: p.clone(),
                     fetched_at: now,
@@ -112,6 +124,11 @@ impl PriceOracle {
             result.insert(id, p);
         }
         Ok(result)
+    }
+
+    /// Backwards-compatible USD-only helper.
+    pub async fn prices(&self, ids: &[&str]) -> Result<HashMap<String, PricePoint>, PriceError> {
+        self.prices_in(ids, "usd").await
     }
 }
 

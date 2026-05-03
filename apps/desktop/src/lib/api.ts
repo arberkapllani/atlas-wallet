@@ -60,9 +60,11 @@ export interface SendNativeResult {
 }
 
 export interface PricePoint {
-  usd: number;
-  usd_24h_change: number;
+  price: number;
+  change_24h: number;
 }
+
+export type FiatCurrency = 'usd' | 'eur' | 'gbp';
 
 export interface WatchAccount {
   chain_id: string;
@@ -139,7 +141,11 @@ export const api = {
     fee_level: string;
   }) => invoke<SendNativeResult>('send_token', { args }),
 
-  getPrices: (ids: string[]) => invoke<Record<string, PricePoint>>('get_prices', { ids })
+  getPrices: (ids: string[], currency?: FiatCurrency) =>
+    invoke<Record<string, PricePoint>>('get_prices', { ids, currency }),
+  getFiatCurrency: () => invoke<FiatCurrency>('get_fiat_currency'),
+  setFiatCurrency: (currency: FiatCurrency) =>
+    invoke<FiatCurrency>('set_fiat_currency', { currency })
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */

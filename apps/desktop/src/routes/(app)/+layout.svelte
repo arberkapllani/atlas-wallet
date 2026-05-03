@@ -9,8 +9,16 @@
     stopPriceFeed,
     COINGECKO_IDS
   } from '$lib/stores/prices';
+  import {
+    fiatCurrency,
+    loadFiatCurrency,
+    setFiatCurrency,
+    formatFiat
+  } from '$lib/stores/currency';
+  import type { FiatCurrency } from '$lib/api';
 
   onMount(() => {
+    void loadFiatCurrency();
     return wallet.subscribe(async ($w) => {
       if ($w.initialized && !$w.unlocked) await goto('/unlock');
       if (!$w.initialized) await goto('/onboarding');
@@ -21,18 +29,27 @@
   });
 
   /** Computed total fiat balance across every chain. */
-  $: totalUsd = (() => {
-    let usd = 0;
+  $: totalFiat = (() => {
+    let v = 0;
     for (const c of $wallet.chains) {
       const bal = $wallet.balances[c.id];
       const cgId = COINGECKO_IDS[c.id];
-      const price = cgId ? $prices[cgId]?.usd : undefined;
+      const price = cgId ? $prices[cgId]?.price : undefined;
       if (bal && price) {
-        usd += (Number(bal.value) / 10 ** bal.asset.decimals) * price;
+        v += (Number(bal.value) / 10 ** bal.asset.decimals) * price;
       }
     }
-    return usd;
+    return v;
   })();
+
+  async function pickCurrency(e: Event) {
+    const next = (e.target as HTMLSelectElement).value as FiatCurrency;
+    try {
+      await setFiatCurrency(next);
+    } catch (err) {
+      console.warn('failed to set currency', err);
+    }
+  }
 
   function isActive(path: string): boolean {
     return $page.url.pathname.startsWith(path);
@@ -163,10 +180,22 @@
       <div class="flex items-baseline gap-3">
         <span class="text-xs uppercase tracking-wider text-fg-subtle">Total balance</span>
         <span class="text-base font-bold tracking-tight">
-          ${totalUsd.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+          {formatFiat(totalFiat)}
         </span>
       </div>
       <div class="flex items-center gap-2">
+        <label class="sr-only" for="currency-picker">Display currency</label>
+        <select
+          id="currency-picker"
+          value={$fiatCurrency}
+          on:change={pickCurrency}
+          class="h-9 px-2 rounded-lg text-xs bg-bg-elevated border border-border-subtle text-fg-muted hover:text-fg focus:outline-none focus:ring-2 focus:ring-accent/40"
+          title="Display currency"
+        >
+          <option value="usd">USD $</option>
+          <option value="eur">EUR €</option>
+          <option value="gbp">GBP £</option>
+        </select>
         <button
           on:click={syncNow}
           class="h-9 px-3 rounded-lg text-sm text-fg-muted hover:text-fg hover:bg-bg-elevated transition flex items-center gap-2 disabled:opacity-50"

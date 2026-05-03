@@ -49,6 +49,8 @@ fn main() {
             commands::send_native,
             commands::send_token,
             commands::get_prices,
+            commands::get_fiat_currency,
+            commands::set_fiat_currency,
             commands::list_profiles,
             commands::active_profile,
             commands::switch_profile,

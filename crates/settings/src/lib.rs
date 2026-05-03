@@ -16,6 +16,40 @@ use std::sync::RwLock;
 /// File name (within the app data dir) used to persist settings.
 pub const FILE_NAME: &str = "settings.json";
 
+/// User-selectable display currency for fiat values across the UI.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum FiatCurrency {
+    /// US dollar (default).
+    #[default]
+    Usd,
+    /// Euro.
+    Eur,
+    /// British pound.
+    Gbp,
+}
+
+impl FiatCurrency {
+    /// Lowercase ticker matching CoinGecko's `vs_currencies` parameter.
+    pub fn as_str(self) -> &'static str {
+        match self {
+            FiatCurrency::Usd => "usd",
+            FiatCurrency::Eur => "eur",
+            FiatCurrency::Gbp => "gbp",
+        }
+    }
+
+    /// Parse a case-insensitive ticker (`"usd"` / `"eur"` / `"gbp"`).
+    pub fn parse(s: &str) -> Option<Self> {
+        match s.to_ascii_lowercase().as_str() {
+            "usd" => Some(FiatCurrency::Usd),
+            "eur" => Some(FiatCurrency::Eur),
+            "gbp" => Some(FiatCurrency::Gbp),
+            _ => None,
+        }
+    }
+}
+
 /// Errors emitted by the settings layer.
 #[derive(Debug, thiserror::Error)]
 pub enum SettingsError {
@@ -34,6 +68,8 @@ pub enum SettingsError {
 pub struct SettingsData {
     /// `chain_id -> user-provided RPC/REST URL`. Absence means "use default".
     pub rpc_overrides: BTreeMap<String, String>,
+    /// Display currency for fiat values across the UI.
+    pub fiat_currency: FiatCurrency,
 }
 
 /// Thread-safe handle to the persisted settings.
@@ -106,6 +142,20 @@ impl Settings {
         self.persist()
     }
 
+    /// Currently selected fiat display currency.
+    pub fn fiat_currency(&self) -> FiatCurrency {
+        self.inner.read().expect("settings poisoned").fiat_currency
+    }
+
+    /// Persist a new fiat display currency.
+    pub fn set_fiat_currency(&self, currency: FiatCurrency) -> Result<(), SettingsError> {
+        {
+            let mut g = self.inner.write().expect("settings poisoned");
+            g.fiat_currency = currency;
+        }
+        self.persist()
+    }
+
     fn persist(&self) -> Result<(), SettingsError> {
         let snapshot = self.snapshot();
         let json = serde_json::to_vec_pretty(&snapshot)?;
@@ -164,5 +214,25 @@ mod tests {
         std::fs::write(dir.path().join(FILE_NAME), b"{not json").unwrap();
         let s = Settings::load_or_init(dir.path()).unwrap();
         assert!(s.snapshot().rpc_overrides.is_empty());
+    }
+
+    #[test]
+    fn fiat_currency_round_trips() {
+        let dir = tempfile::tempdir().unwrap();
+        {
+            let s = Settings::load_or_init(dir.path()).unwrap();
+            assert_eq!(s.fiat_currency(), FiatCurrency::Usd);
+            s.set_fiat_currency(FiatCurrency::Eur).unwrap();
+        }
+        let s = Settings::load_or_init(dir.path()).unwrap();
+        assert_eq!(s.fiat_currency(), FiatCurrency::Eur);
+    }
+
+    #[test]
+    fn fiat_currency_parses_case_insensitive() {
+        assert_eq!(FiatCurrency::parse("USD"), Some(FiatCurrency::Usd));
+        assert_eq!(FiatCurrency::parse("eur"), Some(FiatCurrency::Eur));
+        assert_eq!(FiatCurrency::parse("Gbp"), Some(FiatCurrency::Gbp));
+        assert_eq!(FiatCurrency::parse("jpy"), None);
     }
 }

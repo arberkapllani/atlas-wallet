@@ -483,12 +483,40 @@ pub async fn send_token(
 pub async fn get_prices(
     state: State<'_, Arc<AppState>>,
     ids: Vec<String>,
+    currency: Option<String>,
 ) -> CmdResult<serde_json::Value> {
     let id_refs: Vec<&str> = ids.iter().map(|s| s.as_str()).collect();
-    match state.prices.prices(&id_refs).await {
+    let vs = currency
+        .as_deref()
+        .and_then(atlas_settings::FiatCurrency::parse)
+        .unwrap_or_else(|| state.settings.fiat_currency())
+        .as_str();
+    match state.prices.prices_in(&id_refs, vs).await {
         Ok(map) => Ok(serde_json::to_value(map).unwrap_or_default()),
         Err(e) => Err(CmdError::Chain(e.to_string())),
     }
+}
+
+/// Currently persisted display currency (`"usd"` / `"eur"` / `"gbp"`).
+#[tauri::command]
+pub async fn get_fiat_currency(state: State<'_, Arc<AppState>>) -> CmdResult<String> {
+    Ok(state.settings.fiat_currency().as_str().to_string())
+}
+
+/// Persist a new display currency. Accepts `"usd"`, `"eur"`, or `"gbp"`.
+#[tauri::command]
+pub async fn set_fiat_currency(
+    state: State<'_, Arc<AppState>>,
+    currency: String,
+) -> CmdResult<String> {
+    let parsed = atlas_settings::FiatCurrency::parse(&currency).ok_or_else(|| {
+        CmdError::InvalidInput(format!("unknown currency '{currency}' (use usd/eur/gbp)"))
+    })?;
+    state
+        .settings
+        .set_fiat_currency(parsed)
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    Ok(parsed.as_str().to_string())
 }
 
 // =============================================================================
