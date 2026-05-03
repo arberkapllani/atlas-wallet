@@ -63,7 +63,7 @@ pub enum SettingsError {
 
 /// On-disk shape. Stable: every field is `#[serde(default)]` so older files
 /// keep loading after we add new keys.
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SettingsData {
     /// `chain_id -> user-provided RPC/REST URL`. Absence means "use default".
@@ -74,6 +74,26 @@ pub struct SettingsData {
     pub oneinch_api_key: Option<String>,
     /// User-overridable 1inch base URL. Absent = built-in default.
     pub oneinch_base_url: Option<String>,
+    /// Auto-lock the wallet after this many minutes of UI inactivity.
+    /// `0` disables auto-lock. Absent (legacy file) → default 5 minutes.
+    #[serde(default = "default_auto_lock_minutes")]
+    pub auto_lock_minutes: u32,
+}
+
+fn default_auto_lock_minutes() -> u32 {
+    5
+}
+
+impl Default for SettingsData {
+    fn default() -> Self {
+        Self {
+            rpc_overrides: BTreeMap::new(),
+            fiat_currency: FiatCurrency::default(),
+            oneinch_api_key: None,
+            oneinch_base_url: None,
+            auto_lock_minutes: default_auto_lock_minutes(),
+        }
+    }
 }
 
 /// Thread-safe handle to the persisted settings.
@@ -187,6 +207,23 @@ impl Settings {
                 Some(k) if !k.trim().is_empty() => Some(k.trim().to_string()),
                 _ => None,
             };
+        }
+        self.persist()
+    }
+
+    /// Auto-lock timeout in minutes. `0` means disabled.
+    pub fn auto_lock_minutes(&self) -> u32 {
+        self.inner
+            .read()
+            .expect("settings poisoned")
+            .auto_lock_minutes
+    }
+
+    /// Persist a new auto-lock timeout (minutes). `0` disables.
+    pub fn set_auto_lock_minutes(&self, minutes: u32) -> Result<(), SettingsError> {
+        {
+            let mut g = self.inner.write().expect("settings poisoned");
+            g.auto_lock_minutes = minutes;
         }
         self.persist()
     }

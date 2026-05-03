@@ -52,6 +52,8 @@ fn main() {
             commands::get_prices,
             commands::get_fiat_currency,
             commands::set_fiat_currency,
+            commands::get_auto_lock_minutes,
+            commands::set_auto_lock_minutes,
             commands::network_health,
             commands::network_health_all,
             commands::get_exchange_settings,

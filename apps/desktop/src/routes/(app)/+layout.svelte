@@ -16,16 +16,69 @@
     formatFiat
   } from '$lib/stores/currency';
   import type { FiatCurrency } from '$lib/api';
+  import { api } from '$lib/api';
+
+  let autoLockMinutes = 5;
+  let idleTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function clearIdle() {
+    if (idleTimer) {
+      clearTimeout(idleTimer);
+      idleTimer = null;
+    }
+  }
+
+  function armIdle() {
+    clearIdle();
+    if (autoLockMinutes <= 0) return;
+    const ms = autoLockMinutes * 60 * 1000;
+    idleTimer = setTimeout(async () => {
+      stopPriceFeed();
+      await wallet.lock();
+      await goto('/unlock');
+    }, ms);
+  }
+
+  function onActivity() {
+    armIdle();
+  }
 
   onMount(() => {
     void loadFiatCurrency();
-    return wallet.subscribe(async ($w) => {
+    void api
+      .getAutoLockMinutes()
+      .then((m) => {
+        autoLockMinutes = m;
+        armIdle();
+      })
+      .catch(() => {
+        /* keep default */
+      });
+
+    const events: (keyof WindowEventMap)[] = [
+      'mousemove',
+      'mousedown',
+      'keydown',
+      'wheel',
+      'touchstart'
+    ];
+    for (const e of events) {
+      window.addEventListener(e, onActivity, { passive: true });
+    }
+
+    const sub = wallet.subscribe(async ($w) => {
       if ($w.initialized && !$w.unlocked) await goto('/unlock');
       if (!$w.initialized) await goto('/onboarding');
       if ($w.chains.length > 0) {
         void startPriceFeed($w.chains.map((c) => c.id));
       }
     });
+
+    return () => {
+      clearIdle();
+      for (const e of events) window.removeEventListener(e, onActivity);
+      sub();
+    };
   });
 
   /** Computed total fiat balance across every chain. */

@@ -285,4 +285,22 @@ mod tests {
         let decoded = bs58::decode(acct.address()).into_vec().unwrap();
         assert_eq!(decoded.len(), 32);
     }
+
+    /// Second-account vectors for the canonical "abandon×11 about" mnemonic.
+    /// Verifies that the BIP-44/84 child-index loop is correct, not just the
+    /// path prefix. Computed independently from iancoleman's BIP39 tool.
+    #[test]
+    fn second_account_vectors_match() {
+        let phrase =
+            "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+        let m = Mnemonic::from_phrase(phrase, "").unwrap();
+
+        // m/44'/60'/0'/0/1
+        let evm1 = derive_account(&m, ChainKind::Evm, 1).unwrap();
+        assert_eq!(evm1.address(), "0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0");
+
+        // m/84'/0'/0'/0/1
+        let btc1 = derive_account(&m, ChainKind::Bitcoin, 1).unwrap();
+        assert_eq!(btc1.address(), "bc1qnjg0jd8228aq7egyzacy8cys3knf9xvrerkf9g");
+    }
 }

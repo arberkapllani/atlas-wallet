@@ -181,6 +181,12 @@ export const api = {
   setFiatCurrency: (currency: FiatCurrency) =>
     invoke<FiatCurrency>('set_fiat_currency', { currency }),
 
+  /** Auto-lock timeout in minutes. `0` means disabled. */
+  getAutoLockMinutes: () => invoke<number>('get_auto_lock_minutes'),
+  /** Persist a new auto-lock timeout. `0` disables. Backend clamps to ≤1440. */
+  setAutoLockMinutes: (minutes: number) =>
+    invoke<number>('set_auto_lock_minutes', { minutes }),
+
   networkHealth: (chainId: string) =>
     invoke<NetworkHealth>('network_health', { chainId }),
   networkHealthAll: () => invoke<NetworkHealth[]>('network_health_all'),

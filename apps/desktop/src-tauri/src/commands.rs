@@ -519,6 +519,27 @@ pub async fn set_fiat_currency(
     Ok(parsed.as_str().to_string())
 }
 
+/// Currently configured auto-lock timeout (minutes). `0` means disabled.
+#[tauri::command]
+pub async fn get_auto_lock_minutes(state: State<'_, Arc<AppState>>) -> CmdResult<u32> {
+    Ok(state.settings.auto_lock_minutes())
+}
+
+/// Persist a new auto-lock timeout. `0` disables auto-lock entirely.
+/// Values above 1440 (24h) are clamped to discourage forever-unlocked sessions.
+#[tauri::command]
+pub async fn set_auto_lock_minutes(
+    state: State<'_, Arc<AppState>>,
+    minutes: u32,
+) -> CmdResult<u32> {
+    let clamped = minutes.min(1440);
+    state
+        .settings
+        .set_auto_lock_minutes(clamped)
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    Ok(clamped)
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 pub async fn network_health(

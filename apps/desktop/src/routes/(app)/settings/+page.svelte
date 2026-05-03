@@ -4,6 +4,7 @@
   import RpcEndpointsCard from '$lib/settings/RpcEndpointsCard.svelte';
   import NetworkHealthCard from '$lib/settings/NetworkHealthCard.svelte';
   import ExchangeSettingsCard from '$lib/settings/ExchangeSettingsCard.svelte';
+  import AutoLockCard from '$lib/settings/AutoLockCard.svelte';
   import { goto } from '$app/navigation';
   import { wallet } from '$lib/stores/wallet';
 </script>
@@ -20,6 +21,8 @@
 
   <ExchangeSettingsCard />
 
+  <AutoLockCard />
+
   <Card title="Security">
     <div class="space-y-3 text-sm">
       <div class="flex justify-between">
@@ -32,7 +35,7 @@
       </div>
       <div class="flex justify-between">
         <span class="text-fg-muted">Auto-lock</span>
-        <span>5 minutes idle</span>
+        <span>configurable above</span>
       </div>
     </div>
   </Card>
