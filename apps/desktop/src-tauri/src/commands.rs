@@ -53,7 +53,59 @@ pub async fn list_chains(_state: State<'_, Arc<AppState>>) -> CmdResult<Vec<Chai
             enabled_by_default: n.enabled_by_default,
         });
     }
+    out.push(ChainSummary {
+        id: "sol".into(),
+        display_name: "Solana".into(),
+        symbol: "SOL".into(),
+        decimals: 9,
+        family: "solana".into(),
+        enabled_by_default: true,
+    });
+    out.push(ChainSummary {
+        id: "trx".into(),
+        display_name: "Tron".into(),
+        symbol: "TRX".into(),
+        decimals: 6,
+        family: "tron".into(),
+        enabled_by_default: true,
+    });
     Ok(out)
+}
+
+// =============================================================================
+// Token registry
+// =============================================================================
+
+#[derive(Debug, Serialize)]
+pub struct TokenSummary {
+    pub id: String,
+    pub symbol: String,
+    pub display_name: String,
+    pub chain_id: String,
+    pub contract: String,
+    pub decimals: u8,
+    pub standard: String,
+    pub enabled_by_default: bool,
+}
+
+#[tauri::command]
+pub async fn list_tokens(_state: State<'_, Arc<AppState>>) -> CmdResult<Vec<TokenSummary>> {
+    Ok(atlas_token_registry::TOKENS
+        .iter()
+        .map(|t| TokenSummary {
+            id: t.id.into(),
+            symbol: t.symbol.into(),
+            display_name: t.display_name.into(),
+            chain_id: t.chain_id.into(),
+            contract: t.contract.into(),
+            decimals: t.decimals,
+            standard: match t.standard {
+                atlas_token_registry::TokenStandard::Erc20 => "erc20".into(),
+                atlas_token_registry::TokenStandard::Trc20 => "trc20".into(),
+            },
+            enabled_by_default: t.enabled_by_default,
+        })
+        .collect())
 }
 
 // =============================================================================
@@ -441,4 +493,3 @@ async fn derive_profile_name(
         ))
     }
 }
-

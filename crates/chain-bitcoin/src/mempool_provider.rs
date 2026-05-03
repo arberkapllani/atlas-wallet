@@ -208,4 +208,3 @@ impl ChainProvider for BitcoinProvider {
 }
 
 use std::str::FromStr;
-

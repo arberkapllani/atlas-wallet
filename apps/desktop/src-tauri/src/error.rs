@@ -46,4 +46,3 @@ impl From<std::io::Error> for CmdError {
 }
 
 pub type CmdResult<T> = std::result::Result<T, CmdError>;
-

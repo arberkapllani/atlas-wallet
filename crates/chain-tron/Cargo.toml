@@ -1,0 +1,18 @@
+[package]
+name = "atlas-chain-tron"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Tron chain provider (TRX + TRC-20 read; native sending arrives in a later phase)"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+reqwest = { workspace = true }
+bs58 = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }
+atlas-chain-traits = { workspace = true }

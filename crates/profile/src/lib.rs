@@ -24,4 +24,3 @@ mod types;
 pub use error::{ProfileError, ProfileResult};
 pub use registry::ProfileRegistry;
 pub use types::{Profile, ProfileKind, ProfileSummary, WatchAccount};
-

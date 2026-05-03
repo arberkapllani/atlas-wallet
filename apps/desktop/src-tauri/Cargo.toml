@@ -30,8 +30,11 @@ atlas-wallet-core = { workspace = true }
 atlas-chain-traits = { workspace = true }
 atlas-chain-bitcoin = { workspace = true }
 atlas-chain-evm = { workspace = true }
+atlas-chain-solana = { workspace = true }
+atlas-chain-tron = { workspace = true }
 atlas-price-oracle = { workspace = true }
 atlas-profile = { workspace = true }
+atlas-token-registry = { workspace = true }
 uuid = { workspace = true }
 
 [features]

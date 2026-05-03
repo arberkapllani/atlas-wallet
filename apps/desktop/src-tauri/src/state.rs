@@ -5,7 +5,9 @@
 
 use atlas_chain_bitcoin::BitcoinProvider;
 use atlas_chain_evm::{EvmProvider, NETWORKS};
+use atlas_chain_solana::SolanaProvider;
 use atlas_chain_traits::ChainProvider;
+use atlas_chain_tron::TronProvider;
 use atlas_price_oracle::PriceOracle;
 use atlas_profile::ProfileRegistry;
 use atlas_wallet_core::Mnemonic;
@@ -28,6 +30,10 @@ impl ChainRegistry {
             let p = Arc::new(EvmProvider::new(net)) as Arc<dyn ChainProvider>;
             providers.insert(p.id().to_string(), p);
         }
+        let sol = Arc::new(SolanaProvider::new()) as Arc<dyn ChainProvider>;
+        providers.insert(sol.id().to_string(), sol);
+        let trx = Arc::new(TronProvider::new()) as Arc<dyn ChainProvider>;
+        providers.insert(trx.id().to_string(), trx);
         Self { providers }
     }
 
@@ -78,4 +84,3 @@ impl AppState {
 // Stub helper for legacy bitcoin-providers we don't expose.
 #[allow(dead_code)]
 type _BitcoinProviderUnused = BitcoinProvider;
-

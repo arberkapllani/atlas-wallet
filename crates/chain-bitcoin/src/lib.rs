@@ -28,4 +28,3 @@ pub fn btc_asset() -> atlas_chain_traits::Asset {
         logo: None,
     }
 }
-

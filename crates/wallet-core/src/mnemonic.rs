@@ -118,4 +118,3 @@ mod tests {
         assert_eq!(hex::encode(m.seed()), expected);
     }
 }
-

@@ -5,8 +5,11 @@ members = [
     "crates/chain-traits",
     "crates/chain-bitcoin",
     "crates/chain-evm",
+    "crates/chain-solana",
+    "crates/chain-tron",
     "crates/price-oracle",
     "crates/profile",
+    "crates/token-registry",
     "apps/desktop/src-tauri",
 ]
 
@@ -46,6 +49,8 @@ argon2 = "0.5"
 zeroize = { version = "1.8", features = ["derive"] }
 rand = "0.8"
 getrandom = "0.2"
+ed25519-dalek = { version = "2.1", features = ["rand_core"] }
+bs58 = "0.5"
 
 # HTTP
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
@@ -60,8 +65,11 @@ atlas-wallet-core = { path = "crates/wallet-core" }
 atlas-chain-traits = { path = "crates/chain-traits" }
 atlas-chain-bitcoin = { path = "crates/chain-bitcoin" }
 atlas-chain-evm = { path = "crates/chain-evm" }
+atlas-chain-solana = { path = "crates/chain-solana" }
+atlas-chain-tron = { path = "crates/chain-tron" }
 atlas-price-oracle = { path = "crates/price-oracle" }
 atlas-profile = { path = "crates/profile" }
+atlas-token-registry = { path = "crates/token-registry" }
 
 # Misc
 uuid = { version = "1.10", features = ["v4", "serde"] }

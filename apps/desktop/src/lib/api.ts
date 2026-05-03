@@ -13,7 +13,18 @@ export interface ChainSummary {
   display_name: string;
   symbol: string;
   decimals: number;
-  family: 'bitcoin' | 'evm';
+  family: 'bitcoin' | 'evm' | 'solana' | 'tron';
+  enabled_by_default: boolean;
+}
+
+export interface TokenSummary {
+  id: string;
+  symbol: string;
+  display_name: string;
+  chain_id: string;
+  contract: string;
+  decimals: number;
+  standard: 'erc20' | 'trc20';
   enabled_by_default: boolean;
 }
 
@@ -95,6 +106,7 @@ export const api = {
     invoke<ProfileSummary>('create_watch_only_profile', { args: { name, accounts } }),
 
   listChains: () => invoke<ChainSummary[]>('list_chains'),
+  listTokens: () => invoke<TokenSummary[]>('list_tokens'),
   getAddress: (chainId: string) => invoke<string>('get_address', { chainId }),
   getBalance: (chainId: string) => invoke<Amount>('get_balance', { chainId }),
   getFeeOptions: (chainId: string) => invoke<FeeOption[]>('get_fee_options', { chainId }),

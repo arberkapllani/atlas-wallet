@@ -98,6 +98,38 @@ impl EvmProvider {
             .result
             .ok_or_else(|| ChainError::Rpc("empty result".into()))
     }
+
+    /// Read an ERC-20 `balanceOf(holder)` from the given contract address.
+    ///
+    /// `holder` and `contract` are 0x-prefixed hex addresses. Returns the
+    /// raw token balance in base units; the caller is responsible for
+    /// applying the token's decimals.
+    pub async fn token_balance(&self, holder: &str, contract: &str) -> ChainResult<u128> {
+        let holder_bytes =
+            parse_hex_address(holder).ok_or_else(|| ChainError::InvalidAddress(holder.into()))?;
+        let calldata = erc20::balance_of_calldata(&holder_bytes);
+        let data_hex = format!("0x{}", hex::encode(calldata));
+        let result_hex: String = self
+            .rpc(
+                "eth_call",
+                serde_json::json!([
+                    { "to": contract, "data": data_hex },
+                    "latest"
+                ]),
+            )
+            .await?;
+        parse_hex_u128(&result_hex)
+    }
+}
+
+fn parse_hex_address(s: &str) -> Option<[u8; 20]> {
+    let s = s.strip_prefix("0x").unwrap_or(s);
+    if s.len() != 40 {
+        return None;
+    }
+    let mut out = [0u8; 20];
+    hex::decode_to_slice(s, &mut out).ok()?;
+    Some(out)
 }
 
 #[async_trait]
@@ -219,4 +251,3 @@ fn parse_hex_u128(s: &str) -> ChainResult<u128> {
     }
     u128::from_str_radix(s, 16).map_err(|e| ChainError::Codec(e.to_string()))
 }
-

@@ -39,6 +39,7 @@ fn main() {
             commands::lock_wallet,
             commands::is_unlocked,
             commands::list_chains,
+            commands::list_tokens,
             commands::get_address,
             commands::get_balance,
             commands::get_fee_options,
@@ -54,4 +55,3 @@ fn main() {
         .run(tauri::generate_context!())
         .expect("error while running Atlas");
 }
-

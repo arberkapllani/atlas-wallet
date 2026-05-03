@@ -141,4 +141,3 @@ fn urlencode(s: &str) -> String {
         })
         .collect()
 }
-

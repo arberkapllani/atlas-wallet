@@ -48,4 +48,3 @@ pub enum Error {
     #[error("rng: {0}")]
     Rng(#[from] getrandom::Error),
 }
-

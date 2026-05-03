@@ -21,4 +21,3 @@ pub use derive::{derive_account, AccountKey, ChainKind};
 pub use error::{Error, Result};
 pub use mnemonic::{Mnemonic, MnemonicLength};
 pub use vault::{EncryptedVault, KdfParams, VaultHeader};
-

@@ -1,0 +1,11 @@
+[package]
+name = "atlas-token-registry"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Static metadata for ERC-20 / TRC-20 tokens enabled by default"
+
+[dependencies]
+serde = { workspace = true }
