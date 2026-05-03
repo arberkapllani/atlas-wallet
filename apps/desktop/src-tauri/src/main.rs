@@ -4,6 +4,7 @@
 
 mod commands;
 mod error;
+mod network_health;
 mod state;
 
 use std::sync::Arc;
@@ -51,6 +52,8 @@ fn main() {
             commands::get_prices,
             commands::get_fiat_currency,
             commands::set_fiat_currency,
+            commands::network_health,
+            commands::network_health_all,
             commands::list_profiles,
             commands::active_profile,
             commands::switch_profile,

@@ -519,6 +519,45 @@ pub async fn set_fiat_currency(
     Ok(parsed.as_str().to_string())
 }
 
+/// Probe a single chain's effective endpoint and return latency / status.
+#[tauri::command]
+pub async fn network_health(
+    state: State<'_, Arc<AppState>>,
+    chain_id: String,
+) -> CmdResult<crate::network_health::NetworkHealth> {
+    Ok(crate::network_health::measure(&state, &chain_id).await)
+}
+
+/// Probe every supported chain in parallel.
+#[tauri::command]
+pub async fn network_health_all(
+    state: State<'_, Arc<AppState>>,
+) -> CmdResult<Vec<crate::network_health::NetworkHealth>> {
+    use tokio::task::JoinSet;
+    let ids = crate::state::all_chain_ids();
+    let mut set = JoinSet::new();
+    for id in ids {
+        let st = state.inner().clone();
+        let chain_id = id.to_string();
+        set.spawn(async move { crate::network_health::measure(&st, &chain_id).await });
+    }
+    let mut out = Vec::new();
+    while let Some(res) = set.join_next().await {
+        if let Ok(h) = res {
+            out.push(h);
+        }
+    }
+    // Stable order matching all_chain_ids() for predictable UI rendering.
+    let order = crate::state::all_chain_ids();
+    out.sort_by_key(|h| {
+        order
+            .iter()
+            .position(|id| *id == h.chain_id)
+            .unwrap_or(usize::MAX)
+    });
+    Ok(out)
+}
+
 // =============================================================================
 // Internal helpers
 // =============================================================================

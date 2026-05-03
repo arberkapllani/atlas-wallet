@@ -2,6 +2,7 @@
   import Card from '$lib/ui/Card.svelte';
   import Button from '$lib/ui/Button.svelte';
   import RpcEndpointsCard from '$lib/settings/RpcEndpointsCard.svelte';
+  import NetworkHealthCard from '$lib/settings/NetworkHealthCard.svelte';
   import { goto } from '$app/navigation';
   import { wallet } from '$lib/stores/wallet';
 </script>
@@ -11,6 +12,8 @@
     <h1 class="text-2xl font-bold">Settings</h1>
     <p class="text-fg-muted text-sm mt-1">Manage your wallet and security preferences.</p>
   </header>
+
+  <NetworkHealthCard />
 
   <RpcEndpointsCard />
 

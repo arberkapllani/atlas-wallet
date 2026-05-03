@@ -66,6 +66,20 @@ export interface PricePoint {
 
 export type FiatCurrency = 'usd' | 'eur' | 'gbp';
 
+export type NetworkStatus = 'synced' | 'lagging' | 'offline';
+
+export interface NetworkHealth {
+  chain_id: string;
+  endpoint: string;
+  is_user_override: boolean;
+  samples: number;
+  successes: number;
+  latency_p50_ms: number | null;
+  latency_p95_ms: number | null;
+  head_height: number | null;
+  status: NetworkStatus;
+}
+
 export interface WatchAccount {
   chain_id: string;
   address: string;
@@ -145,7 +159,11 @@ export const api = {
     invoke<Record<string, PricePoint>>('get_prices', { ids, currency }),
   getFiatCurrency: () => invoke<FiatCurrency>('get_fiat_currency'),
   setFiatCurrency: (currency: FiatCurrency) =>
-    invoke<FiatCurrency>('set_fiat_currency', { currency })
+    invoke<FiatCurrency>('set_fiat_currency', { currency }),
+
+  networkHealth: (chainId: string) =>
+    invoke<NetworkHealth>('network_health', { chainId }),
+  networkHealthAll: () => invoke<NetworkHealth[]>('network_health_all')
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */

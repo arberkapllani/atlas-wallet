@@ -216,6 +216,7 @@ dependencies = [
  "atlas-settings",
  "atlas-token-registry",
  "atlas-wallet-core",
+ "reqwest 0.12.28",
  "serde",
  "serde_json",
  "tauri",
