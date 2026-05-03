@@ -6,6 +6,7 @@
 
 use crate::db::TxRecord;
 use crate::error::{CmdError, CmdResult};
+use crate::events::{TxRecordedEvent, TxStatusChangedEvent, WalletLockedEvent};
 use crate::state::AppState;
 use atlas_chain_evm::networks as evm_networks;
 use atlas_chain_traits::{Amount, ChainProvider, FeeOption, TxRequest};
@@ -16,7 +17,8 @@ use atlas_wallet_core::{
 };
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tauri::State;
+use tauri::{AppHandle, State};
+use tauri_specta::Event as _;
 use uuid::Uuid;
 
 // =============================================================================
@@ -306,8 +308,12 @@ pub async fn unlock_wallet(state: State<'_, Arc<AppState>>, password: String) ->
 
 #[tauri::command]
 #[specta::specta]
-pub async fn lock_wallet(state: State<'_, Arc<AppState>>) -> CmdResult<()> {
+pub async fn lock_wallet(app: AppHandle, state: State<'_, Arc<AppState>>) -> CmdResult<()> {
     *state.mnemonic.write().await = None;
+    let _ = WalletLockedEvent {
+        reason: "manual".into(),
+    }
+    .emit(&app);
     Ok(())
 }
 
@@ -374,6 +380,7 @@ pub struct SendNativeResult {
 #[tauri::command]
 #[specta::specta]
 pub async fn send_native(
+    app: AppHandle,
     state: State<'_, Arc<AppState>>,
     args: SendNativeArgs,
 ) -> CmdResult<SendNativeResult> {
@@ -399,6 +406,7 @@ pub async fn send_native(
     let signed = provider.build_and_sign(request, acct.private_key()).await?;
     let txid = provider.broadcast(&signed).await?;
     record_outgoing_tx(
+        &app,
         &state,
         &args.chain_id,
         &txid,
@@ -435,6 +443,7 @@ pub struct SendTokenResult {
 #[tauri::command]
 #[specta::specta]
 pub async fn send_token(
+    app: AppHandle,
     state: State<'_, Arc<AppState>>,
     args: SendTokenArgs,
 ) -> CmdResult<SendTokenResult> {
@@ -479,6 +488,7 @@ pub async fn send_token(
                 .await?;
             let txid = provider.broadcast(&signed).await?;
             record_outgoing_tx(
+                &app,
                 &state,
                 token.chain_id,
                 &txid,
@@ -512,6 +522,7 @@ pub async fn send_token(
             use atlas_chain_traits::ChainProvider;
             let txid = provider.broadcast(&signed).await?;
             record_outgoing_tx(
+                &app,
                 &state,
                 token.chain_id,
                 &txid,
@@ -1055,10 +1066,14 @@ pub async fn clear_rpc_endpoint(
 // Local transaction history (sqlite cache)
 // =============================================================================
 
-/// Best-effort: insert an outgoing transaction into the local cache.
-/// Errors are logged and swallowed — the broadcast already succeeded so we
-/// must never fail the user-visible flow over a cache hiccup.
+/// Best-effort: insert an outgoing transaction into the local cache and
+/// emit a `TxRecordedEvent` so the UI's history list can update without
+/// repolling. Errors are logged and swallowed — the broadcast already
+/// succeeded so we must never fail the user-visible flow over a cache
+/// hiccup.
+#[allow(clippy::too_many_arguments)]
 async fn record_outgoing_tx(
+    app: &AppHandle,
     state: &AppState,
     chain_id: &str,
     txid: &str,
@@ -1085,7 +1100,9 @@ async fn record_outgoing_tx(
     };
     if let Err(e) = state.db.record_tx(&rec).await {
         tracing::warn!(target: "Atlas", "tx_history insert failed: {}", e);
+        return;
     }
+    let _ = TxRecordedEvent { record: rec }.emit(app);
 }
 
 /// Return the most-recent cached transactions. Pass chain_id = "" to query
@@ -1110,6 +1127,7 @@ pub async fn tx_history_list(
 #[tauri::command]
 #[specta::specta]
 pub async fn tx_history_set_status(
+    app: AppHandle,
     state: State<'_, Arc<AppState>>,
     chain_id: String,
     txid: String,
@@ -1119,7 +1137,14 @@ pub async fn tx_history_set_status(
         .db
         .update_status(&chain_id, &txid, &status)
         .await
-        .map_err(|e| CmdError::Io(e.to_string()))
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    let _ = TxStatusChangedEvent {
+        chain_id,
+        txid,
+        status,
+    }
+    .emit(&app);
+    Ok(())
 }
 
 /// Allow the UI to record a tx that didn't go through Atlas's send flow

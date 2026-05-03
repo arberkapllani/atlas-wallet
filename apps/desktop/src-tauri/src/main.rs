@@ -5,6 +5,7 @@
 mod commands;
 mod db;
 mod error;
+mod events;
 mod network_health;
 mod state;
 
@@ -14,44 +15,51 @@ use tauri::Manager;
 /// Build the typed command surface. Extracted so both `main()` and the
 /// `export_bindings` test can construct an identical builder.
 fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
-    tauri_specta::Builder::<tauri::Wry>::new().commands(tauri_specta::collect_commands![
-        commands::vault_exists,
-        commands::create_wallet,
-        commands::import_wallet,
-        commands::unlock_wallet,
-        commands::lock_wallet,
-        commands::is_unlocked,
-        commands::list_chains,
-        commands::list_tokens,
-        commands::list_rpc_endpoints,
-        commands::set_rpc_endpoint,
-        commands::clear_rpc_endpoint,
-        commands::get_address,
-        commands::get_balance,
-        commands::get_fee_options,
-        commands::send_native,
-        commands::send_token,
-        commands::get_prices,
-        commands::get_fiat_currency,
-        commands::set_fiat_currency,
-        commands::get_auto_lock_minutes,
-        commands::set_auto_lock_minutes,
-        commands::network_health,
-        commands::network_health_all,
-        commands::get_exchange_settings,
-        commands::set_exchange_settings,
-        commands::exchange_quote,
-        commands::exchange_swap,
-        commands::list_profiles,
-        commands::active_profile,
-        commands::switch_profile,
-        commands::rename_profile,
-        commands::delete_profile,
-        commands::create_watch_only_profile,
-        commands::tx_history_list,
-        commands::tx_history_set_status,
-        commands::tx_history_record,
-    ])
+    tauri_specta::Builder::<tauri::Wry>::new()
+        .commands(tauri_specta::collect_commands![
+            commands::vault_exists,
+            commands::create_wallet,
+            commands::import_wallet,
+            commands::unlock_wallet,
+            commands::lock_wallet,
+            commands::is_unlocked,
+            commands::list_chains,
+            commands::list_tokens,
+            commands::list_rpc_endpoints,
+            commands::set_rpc_endpoint,
+            commands::clear_rpc_endpoint,
+            commands::get_address,
+            commands::get_balance,
+            commands::get_fee_options,
+            commands::send_native,
+            commands::send_token,
+            commands::get_prices,
+            commands::get_fiat_currency,
+            commands::set_fiat_currency,
+            commands::get_auto_lock_minutes,
+            commands::set_auto_lock_minutes,
+            commands::network_health,
+            commands::network_health_all,
+            commands::get_exchange_settings,
+            commands::set_exchange_settings,
+            commands::exchange_quote,
+            commands::exchange_swap,
+            commands::list_profiles,
+            commands::active_profile,
+            commands::switch_profile,
+            commands::rename_profile,
+            commands::delete_profile,
+            commands::create_watch_only_profile,
+            commands::tx_history_list,
+            commands::tx_history_set_status,
+            commands::tx_history_record,
+        ])
+        .events(tauri_specta::collect_events![
+            events::WalletLockedEvent,
+            events::TxRecordedEvent,
+            events::TxStatusChangedEvent,
+            events::BalanceUpdatedEvent,
+        ])
 }
 
 fn main() {
