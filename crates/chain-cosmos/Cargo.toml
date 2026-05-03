@@ -1,0 +1,16 @@
+[package]
+name = "atlas-chain-cosmos"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Cosmos SDK chain provider: ATOM/OSMO/JUNO balance + send (signing in P3.1 Ledger HID)"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+reqwest = { workspace = true }
+bech32 = { workspace = true }
+atlas-chain-traits = { workspace = true }

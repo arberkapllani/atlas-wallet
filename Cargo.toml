@@ -7,6 +7,7 @@ members = [
     "crates/chain-evm",
     "crates/chain-solana",
     "crates/chain-tron",
+    "crates/chain-cosmos",
     "crates/price-oracle",
     "crates/profile",
     "crates/settings",
@@ -53,6 +54,8 @@ rand = "0.8"
 getrandom = "0.2"
 ed25519-dalek = { version = "2.1", features = ["rand_core"] }
 bs58 = "0.5"
+bech32 = "0.11"
+ripemd = "0.1"
 
 # HTTP
 reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
@@ -69,6 +72,7 @@ atlas-chain-bitcoin = { path = "crates/chain-bitcoin" }
 atlas-chain-evm = { path = "crates/chain-evm" }
 atlas-chain-solana = { path = "crates/chain-solana" }
 atlas-chain-tron = { path = "crates/chain-tron" }
+atlas-chain-cosmos = { path = "crates/chain-cosmos" }
 atlas-price-oracle = { path = "crates/price-oracle" }
 atlas-profile = { path = "crates/profile" }
 atlas-settings = { path = "crates/settings" }

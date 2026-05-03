@@ -162,6 +162,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-chain-cosmos"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "atlas-chain-traits",
+ "bech32",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "atlas-chain-evm"
 version = "0.1.0"
 dependencies = [
@@ -220,6 +232,7 @@ name = "atlas-desktop"
 version = "0.1.0"
 dependencies = [
  "atlas-chain-bitcoin",
+ "atlas-chain-cosmos",
  "atlas-chain-evm",
  "atlas-chain-solana",
  "atlas-chain-traits",
@@ -312,6 +325,7 @@ version = "0.1.0"
 dependencies = [
  "aes-gcm",
  "argon2",
+ "bech32",
  "bip39",
  "bitcoin",
  "bs58",
@@ -321,6 +335,7 @@ dependencies = [
  "hex-literal",
  "hmac",
  "rand 0.8.6",
+ "ripemd",
  "secp256k1",
  "serde",
  "serde_json",
@@ -3551,6 +3566,15 @@ dependencies = [
  "libc",
  "untrusted",
  "windows-sys 0.52.0",
+]
+
+[[package]]
+name = "ripemd"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bd124222d17ad93a644ed9d011a40f4fb64aa54275c08cc216524a9ea82fb09f"
+dependencies = [
+ "digest",
 ]
 
 [[package]]

@@ -25,6 +25,8 @@ rand = { workspace = true }
 getrandom = { workspace = true }
 ed25519-dalek = { workspace = true }
 bs58 = { workspace = true }
+bech32 = { workspace = true }
+ripemd = { workspace = true }
 
 [dev-dependencies]
 hex-literal = "0.4"

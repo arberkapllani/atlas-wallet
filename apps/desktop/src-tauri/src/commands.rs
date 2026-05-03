@@ -73,6 +73,17 @@ pub async fn list_chains(_state: State<'_, Arc<AppState>>) -> CmdResult<Vec<Chai
         family: "tron".into(),
         enabled_by_default: true,
     });
+    for n in atlas_chain_cosmos::NETWORKS {
+        out.push(ChainSummary {
+            id: n.id.into(),
+            display_name: n.display_name.into(),
+            symbol: n.symbol.into(),
+            decimals: n.decimals,
+            family: "cosmos".into(),
+            // Only ATOM ships enabled-by-default; OSMO/JUNO are opt-in.
+            enabled_by_default: n.id == "atom",
+        });
+    }
     Ok(out)
 }
 
@@ -941,6 +952,7 @@ fn chain_kind_for(chain_id: &str) -> ChainKind {
         "btc" => ChainKind::Bitcoin,
         "sol" => ChainKind::Solana,
         "trx" => ChainKind::Tron,
+        id if atlas_chain_cosmos::network_by_id(id).is_some() => ChainKind::Cosmos,
         _ => ChainKind::Evm,
     }
 }

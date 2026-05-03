@@ -11,6 +11,7 @@ use crate::mnemonic::Mnemonic;
 use bitcoin::bip32::{DerivationPath, Xpriv};
 use bitcoin::Network;
 use hmac::{Hmac, Mac};
+use ripemd::Ripemd160;
 use sha2::{Sha256, Sha512};
 use sha3::{Digest, Keccak256};
 use std::str::FromStr;
@@ -27,6 +28,8 @@ pub enum ChainKind {
     Tron,
     /// Solana mainnet (ed25519, base58 pubkey addresses).
     Solana,
+    /// Cosmos Hub & SDK chains (secp256k1, bech32 `cosmos1…` addresses).
+    Cosmos,
 }
 
 /// A derived single-account key. Holds raw bytes; zeroized on drop.
@@ -94,6 +97,7 @@ fn derive_secp256k1(mnemonic: &Mnemonic, kind: ChainKind, index: u32) -> Result<
         ChainKind::Bitcoin => format!("m/84'/0'/0'/0/{index}"),
         ChainKind::Evm => format!("m/44'/60'/0'/0/{index}"),
         ChainKind::Tron => format!("m/44'/195'/0'/0/{index}"),
+        ChainKind::Cosmos => format!("m/44'/118'/0'/0/{index}"),
         ChainKind::Solana => unreachable!("solana uses ed25519 derivation"),
     };
     let path = DerivationPath::from_str(&path_str).map_err(|e| Error::Derivation(e.to_string()))?;
@@ -110,6 +114,7 @@ fn derive_secp256k1(mnemonic: &Mnemonic, kind: ChainKind, index: u32) -> Result<
         ChainKind::Bitcoin => bitcoin_address(&public_key)?,
         ChainKind::Evm => evm_address(&child.private_key.public_key(&secp))?,
         ChainKind::Tron => tron_address(&child.private_key.public_key(&secp))?,
+        ChainKind::Cosmos => cosmos_address(&public_key, "cosmos")?,
         ChainKind::Solana => unreachable!(),
     };
 
@@ -192,6 +197,15 @@ fn evm_address(pk: &secp256k1::PublicKey) -> Result<String> {
     let hash = Keccak256::digest(&uncompressed[1..]);
     let raw_addr = &hash[12..]; // last 20 bytes
     Ok(to_eip55(raw_addr))
+}
+
+/// Cosmos SDK address: bech32(`hrp`, ripemd160(sha256(compressed_pubkey)))
+/// where `hrp` is the chain prefix ("cosmos", "osmo", "juno", …).
+pub fn cosmos_address(pubkey_bytes: &[u8; 33], hrp: &str) -> Result<String> {
+    let sha = Sha256::digest(pubkey_bytes);
+    let rip = Ripemd160::digest(sha);
+    let hrp_parsed = bech32::Hrp::parse(hrp).map_err(|e| Error::Derivation(e.to_string()))?;
+    bech32::encode::<bech32::Bech32>(hrp_parsed, &rip).map_err(|e| Error::Derivation(e.to_string()))
 }
 
 /// Tron uses the same 20-byte keccak hash as Ethereum, but prefixes it with
