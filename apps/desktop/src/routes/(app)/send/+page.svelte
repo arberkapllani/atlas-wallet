@@ -13,6 +13,8 @@
   import Button from '$lib/ui/Button.svelte';
   import Card from '$lib/ui/Card.svelte';
   import Input from '$lib/ui/Input.svelte';
+  import QrScanner from '$lib/ui/QrScanner.svelte';
+  import { parsePaymentUri } from '$lib/paymentUri';
 
   /** A unified entry the user can choose to send: a chain's native asset
    * or one of its tokens. */
@@ -37,6 +39,32 @@
   let busy = false;
   let error = '';
   let result: { txid: string } | null = null;
+  let scanOpen = false;
+
+  /** Map URI scheme to a chain id we know about. */
+  const SCHEME_TO_CHAIN: Record<string, string> = {
+    bitcoin: 'btc',
+    ethereum: 'eth',
+    tron: 'trx',
+    solana: 'sol'
+  };
+
+  function onScan(e: CustomEvent<string>) {
+    scanOpen = false;
+    const parsed = parsePaymentUri(e.detail);
+    to = parsed.address;
+    if (parsed.amount) amount = parsed.amount;
+    // Auto-pick a matching native asset if the URI scheme tells us which chain.
+    if (parsed.scheme) {
+      const chainId = SCHEME_TO_CHAIN[parsed.scheme];
+      if (chainId) {
+        const match = assets.find(
+          (a) => a.kind === 'native' && a.chainId === chainId
+        );
+        if (match) selectedKey = match.key;
+      }
+    }
+  }
 
   onMount(async () => {
     try {
@@ -160,7 +188,33 @@
         {/if}
       </div>
 
-      <Input label="Recipient address" bind:value={to} placeholder="bc1q… / 0x… / T…" />
+      <div>
+        <div class="flex items-end justify-between mb-1">
+          <span class="text-sm text-fg-muted">Recipient address</span>
+          <button
+            type="button"
+            on:click={() => (scanOpen = true)}
+            class="text-xs text-accent hover:text-accent-hover flex items-center gap-1"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="h-3.5 w-3.5"
+              aria-hidden="true"
+            >
+              <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" />
+              <path d="M7 7h4v4H7zM13 7h4v4h-4zM7 13h4v4H7zM13 13h2M17 13v4M13 17h4" />
+            </svg>
+            Scan QR
+          </button>
+        </div>
+        <Input bind:value={to} placeholder="bc1q… / 0x… / T…" />
+      </div>
 
       <Input
         label="Amount"
@@ -214,3 +268,7 @@
     </div>
   </Card>
 </div>
+
+{#if scanOpen}
+  <QrScanner on:scan={onScan} on:close={() => (scanOpen = false)} />
+{/if}
