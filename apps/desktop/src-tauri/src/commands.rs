@@ -626,6 +626,162 @@ pub async fn exchange_quote(
         .map_err(|e| CmdError::Chain(e.to_string()))
 }
 
+/// 1inch's sentinel address for the native asset (ETH/MATIC/BNB/…).
+const NATIVE_SENTINEL: &str = "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee";
+
+#[derive(Debug, Serialize)]
+pub struct ExchangeSwapResult {
+    /// Final swap transaction hash.
+    pub txid: String,
+    /// If a pre-approve was needed (ERC-20 source), this is its tx hash.
+    pub approve_txid: Option<String>,
+    /// Estimated destination amount, base units, decimal string.
+    pub to_amount: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ExchangeSwapArgs {
+    pub chain_id: u64,
+    pub src: String,
+    pub dst: String,
+    /// Source amount, base units, decimal string.
+    pub amount: String,
+    /// Maximum slippage in basis points (100 = 1%).
+    pub slippage_bps: u16,
+    /// `slow|normal|fast` or a raw decimal wei gas-price.
+    pub fee_level: String,
+}
+
+/// Execute an EVM swap via 1inch v6.
+///
+/// For ERC-20 source tokens this command also handles the on-chain
+/// allowance: if the router's allowance is below the requested amount,
+/// Atlas signs and broadcasts an `approve` transaction first, then the
+/// swap. Both transactions use the wallet's pending nonce — the swap is
+/// expected to land in the block immediately after the approval.
+#[tauri::command]
+pub async fn exchange_swap(
+    state: State<'_, Arc<AppState>>,
+    args: ExchangeSwapArgs,
+) -> CmdResult<ExchangeSwapResult> {
+    require_signing_capable(&state).await?;
+
+    // Resolve the EVM network from the EIP-155 chain id.
+    let network = evm_networks::NETWORKS
+        .iter()
+        .find(|n| n.chain_id == args.chain_id)
+        .ok_or_else(|| {
+            CmdError::InvalidInput(format!("unsupported EVM chain id {}", args.chain_id))
+        })?;
+
+    let mnemonic = require_mnemonic(&state).await?;
+    let acct = derive_account(&mnemonic, ChainKind::Evm, 0)?;
+    let from_addr = acct.address().to_string();
+
+    let amount_u128: u128 = args
+        .amount
+        .parse()
+        .map_err(|_| CmdError::InvalidInput("amount must be a base-unit integer".into()))?;
+
+    let rpc_url = state
+        .settings
+        .rpc_override(network.id)
+        .unwrap_or_else(|| network.rpc_url.to_string());
+    let provider = atlas_chain_evm::EvmProvider::with_rpc(network, rpc_url);
+
+    // Fetch the swap transaction from 1inch.
+    let client = atlas_exchange_1inch::OneInchClient::new(
+        state.settings.oneinch_base_url(),
+        state.settings.oneinch_api_key(),
+    );
+    let swap_tx = client
+        .swap(
+            args.chain_id,
+            &args.src,
+            &args.dst,
+            &args.amount,
+            &from_addr,
+            args.slippage_bps,
+        )
+        .await
+        .map_err(|e| CmdError::Chain(e.to_string()))?;
+
+    // For ERC-20 sources, ensure the router has enough allowance.
+    let mut approve_txid: Option<String> = None;
+    let is_native_src = args.src.eq_ignore_ascii_case(NATIVE_SENTINEL);
+    if !is_native_src {
+        let current = provider
+            .token_allowance(&from_addr, &swap_tx.to, &args.src)
+            .await?;
+        if current < amount_u128 {
+            // Approve the exact amount being swapped — keeps the user's
+            // attack surface small (no infinite approvals).
+            let spender = parse_hex_addr_or_err(&swap_tx.to)?;
+            let calldata = atlas_chain_evm::erc20::approve_calldata(&spender, amount_u128);
+            let signed = provider
+                .send_call(
+                    &from_addr,
+                    &args.src,
+                    0,
+                    calldata,
+                    60_000,
+                    &args.fee_level,
+                    acct.private_key(),
+                )
+                .await?;
+            let txid = provider.broadcast(&signed).await?;
+            approve_txid = Some(txid);
+        }
+    }
+
+    // Submit the swap itself.
+    let value_u128: u128 = swap_tx
+        .value
+        .parse()
+        .map_err(|_| CmdError::Chain("1inch returned a non-integer tx.value".into()))?;
+    let data_bytes = decode_hex_payload(&swap_tx.data)?;
+    let gas_limit = if swap_tx.gas == 0 {
+        500_000
+    } else {
+        swap_tx.gas + swap_tx.gas / 5 // 20 % headroom over 1inch's estimate
+    };
+
+    let signed = provider
+        .send_call(
+            &from_addr,
+            &swap_tx.to,
+            value_u128,
+            data_bytes,
+            gas_limit,
+            &args.fee_level,
+            acct.private_key(),
+        )
+        .await?;
+    let txid = provider.broadcast(&signed).await?;
+
+    Ok(ExchangeSwapResult {
+        txid,
+        approve_txid,
+        to_amount: swap_tx.to_amount,
+    })
+}
+
+fn parse_hex_addr_or_err(addr: &str) -> CmdResult<[u8; 20]> {
+    let s = addr.strip_prefix("0x").unwrap_or(addr);
+    if s.len() != 40 {
+        return Err(CmdError::InvalidInput(format!("bad address: {addr}")));
+    }
+    let mut out = [0u8; 20];
+    hex::decode_to_slice(s, &mut out)
+        .map_err(|_| CmdError::InvalidInput(format!("bad address: {addr}")))?;
+    Ok(out)
+}
+
+fn decode_hex_payload(s: &str) -> CmdResult<Vec<u8>> {
+    let stripped = s.strip_prefix("0x").unwrap_or(s);
+    hex::decode(stripped).map_err(|e| CmdError::Chain(format!("bad calldata hex: {e}")))
+}
+
 // =============================================================================
 // Internal helpers
 // =============================================================================

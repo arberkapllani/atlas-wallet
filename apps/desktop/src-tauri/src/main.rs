@@ -57,6 +57,7 @@ fn main() {
             commands::get_exchange_settings,
             commands::set_exchange_settings,
             commands::exchange_quote,
+            commands::exchange_swap,
             commands::list_profiles,
             commands::active_profile,
             commands::switch_profile,

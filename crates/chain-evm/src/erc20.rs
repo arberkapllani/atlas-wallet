@@ -26,6 +26,29 @@ pub fn transfer_calldata(to: &[u8; 20], value: u128) -> Vec<u8> {
     out
 }
 
+/// Build the call-data for `approve(spender, value)`.
+pub fn approve_calldata(spender: &[u8; 20], value: u128) -> Vec<u8> {
+    let mut out = Vec::with_capacity(4 + 64);
+    out.extend_from_slice(&selector("approve(address,uint256)"));
+    out.extend_from_slice(&[0u8; 12]);
+    out.extend_from_slice(spender);
+    let mut value_be = [0u8; 32];
+    value_be[16..].copy_from_slice(&value.to_be_bytes());
+    out.extend_from_slice(&value_be);
+    out
+}
+
+/// Build the call-data for `allowance(owner, spender)`.
+pub fn allowance_calldata(owner: &[u8; 20], spender: &[u8; 20]) -> Vec<u8> {
+    let mut out = Vec::with_capacity(4 + 64);
+    out.extend_from_slice(&selector("allowance(address,address)"));
+    out.extend_from_slice(&[0u8; 12]);
+    out.extend_from_slice(owner);
+    out.extend_from_slice(&[0u8; 12]);
+    out.extend_from_slice(spender);
+    out
+}
+
 fn selector(signature: &str) -> [u8; 4] {
     let h = Keccak256::digest(signature.as_bytes());
     let mut out = [0u8; 4];

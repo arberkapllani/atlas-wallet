@@ -135,6 +135,93 @@ impl EvmProvider {
         parse_hex_u128(&result_hex)
     }
 
+    /// Read an ERC-20 `allowance(owner, spender)`.
+    pub async fn token_allowance(
+        &self,
+        owner: &str,
+        spender: &str,
+        contract: &str,
+    ) -> ChainResult<u128> {
+        let owner_bytes =
+            parse_hex_address(owner).ok_or_else(|| ChainError::InvalidAddress(owner.into()))?;
+        let spender_bytes =
+            parse_hex_address(spender).ok_or_else(|| ChainError::InvalidAddress(spender.into()))?;
+        let calldata = erc20::allowance_calldata(&owner_bytes, &spender_bytes);
+        let data_hex = format!("0x{}", hex::encode(calldata));
+        let result_hex: String = self
+            .rpc(
+                "eth_call",
+                serde_json::json!([
+                    { "to": contract, "data": data_hex },
+                    "latest"
+                ]),
+            )
+            .await?;
+        parse_hex_u128(&result_hex)
+    }
+
+    /// Build, sign, and broadcast a generic contract call.
+    ///
+    /// Used by the swap aggregator for both ERC-20 `approve` and the
+    /// router-supplied calldata. `gas_limit` must come from upstream
+    /// (e.g. 1inch's response) — the chain provides no safe default for
+    /// arbitrary calls.
+    #[allow(clippy::too_many_arguments)]
+    pub async fn send_call(
+        &self,
+        from: &str,
+        to: &str,
+        value: u128,
+        data: Vec<u8>,
+        gas_limit: u64,
+        fee_level: &str,
+        private_key: &[u8; 32],
+    ) -> ChainResult<SignedTx> {
+        if parse_hex_address(to).is_none() {
+            return Err(ChainError::InvalidAddress(to.into()));
+        }
+
+        let nonce_hex: String = self
+            .rpc(
+                "eth_getTransactionCount",
+                serde_json::json!([from, "pending"]),
+            )
+            .await?;
+        let nonce = parse_hex_u128(&nonce_hex)? as u64;
+
+        let gas_price = if let Ok(v) = fee_level.parse::<u128>() {
+            v
+        } else {
+            let gas_price_hex: String = self.rpc("eth_gasPrice", serde_json::json!([])).await?;
+            let base = parse_hex_u128(&gas_price_hex)?;
+            match fee_level {
+                "slow" => base * 9 / 10,
+                "fast" => base * 13 / 10,
+                _ => base,
+            }
+        };
+
+        let signed = builder::sign_eip1559(
+            self.network.chain_id,
+            nonce,
+            gas_price,
+            gas_price * 2,
+            gas_limit,
+            to,
+            value,
+            &data,
+            private_key,
+        )
+        .map_err(ChainError::Sign)?;
+
+        let total_fee = gas_price.saturating_mul(gas_limit as u128);
+        Ok(SignedTx {
+            raw_hex: signed.raw_hex,
+            txid: signed.tx_hash,
+            fee: Amount::new(total_fee, self.asset.clone()),
+        })
+    }
+
     /// Build, sign, and broadcast an ERC-20 `transfer(to, value)` call.
     ///
     /// `from` is the sender address (used to fetch nonce). `contract` is the

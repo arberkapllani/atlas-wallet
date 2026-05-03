@@ -3,13 +3,13 @@
   import Card from '$lib/ui/Card.svelte';
   import Input from '$lib/ui/Input.svelte';
   import Button from '$lib/ui/Button.svelte';
-  import { api, errorMessage, type ExchangeQuote } from '$lib/api';
+  import { api, errorMessage, type ExchangeQuote, type ExchangeSwapResult } from '$lib/api';
 
   /**
-   * Phase 5.0 — quote-only via 1inch v6 (Ethereum mainnet).
-   * Execution (sign + broadcast of the swap calldata, ERC-20 approvals)
-   * lands in Phase 5.1 once the EVM signer exposes arbitrary contract
-   * calls.
+   * Phase 5.1 — live swaps via 1inch v6 on Ethereum mainnet.
+   * For ERC-20 sources Atlas auto-broadcasts the approve transaction
+   * before the swap. Multi-chain expansion (Polygon/Arbitrum/Base/…) and
+   * Thorchain cross-chain ship in subsequent phases.
    */
 
   type Token = {
@@ -53,6 +53,11 @@
   let loading = false;
   let error: string | null = null;
   let debounceHandle: ReturnType<typeof setTimeout> | null = null;
+
+  let slippageBps = 100; // 1 % default
+  let confirmOpen = false;
+  let executing = false;
+  let result: ExchangeSwapResult | null = null;
 
   $: fromTok = TOKENS.find((t) => t.symbol === fromSymbol)!;
   $: toTok = TOKENS.find((t) => t.symbol === toSymbol)!;
@@ -127,6 +132,55 @@
     const outAmt = parseFloat(fromBaseUnits(quote.to_amount, toTok.decimals));
     if (!inAmt || !outAmt) return null;
     return outAmt / inAmt;
+  })();
+
+  function openConfirm() {
+    if (!quote) return;
+    result = null;
+    error = null;
+    confirmOpen = true;
+  }
+
+  async function executeSwap() {
+    if (!quote) return;
+    const base = toBaseUnits(amount, fromTok.decimals);
+    if (!base) return;
+    executing = true;
+    error = null;
+    try {
+      result = await api.exchangeSwap({
+        chain_id: CHAIN_ID,
+        src: fromTok.address,
+        dst: toTok.address,
+        amount: base,
+        slippage_bps: slippageBps,
+        fee_level: 'normal'
+      });
+      // Keep modal open to show the txid; user closes manually.
+    } catch (e) {
+      error = errorMessage(e);
+    } finally {
+      executing = false;
+    }
+  }
+
+  function closeConfirm() {
+    if (executing) return;
+    confirmOpen = false;
+    if (result) {
+      // Successful swap — clear amount so user starts fresh.
+      amount = '';
+      quote = null;
+      result = null;
+    }
+  }
+
+  /** Minimum out amount given current slippage tolerance, formatted. */
+  $: minReceived = (() => {
+    if (!quote) return null;
+    const out = BigInt(quote.to_amount);
+    const slipped = (out * BigInt(10_000 - slippageBps)) / 10_000n;
+    return fromBaseUnits(slipped.toString(), toTok.decimals);
   })();
 </script>
 
@@ -232,11 +286,29 @@
         </div>
       {/if}
 
-      <Button disabled fullWidth>
-        Execute swap (Phase 5.1)
+      <div class="flex items-center justify-between text-xs">
+        <span class="text-fg-muted">Max slippage</span>
+        <div class="flex gap-1">
+          {#each [50, 100, 300] as bps}
+            <button
+              type="button"
+              on:click={() => (slippageBps = bps)}
+              class="px-2.5 py-1 rounded-lg border text-xs transition
+                     {slippageBps === bps
+                       ? 'bg-accent/15 border-accent text-fg'
+                       : 'bg-bg-elevated border-border text-fg-muted hover:border-accent'}"
+            >
+              {(bps / 100).toFixed(bps % 100 === 0 ? 0 : 1)}%
+            </button>
+          {/each}
+        </div>
+      </div>
+
+      <Button disabled={!quote || loading} on:click={openConfirm} fullWidth>
+        {loading ? 'Quoting…' : 'Review swap'}
       </Button>
       <p class="text-[11px] text-fg-subtle text-center">
-        Quote-only in 5.0. Sign + broadcast of the aggregator transaction lands in 5.1.
+        Atlas signs and broadcasts on-device. ERC-20 sources auto-approve before the swap.
       </p>
     </div>
   </Card>
@@ -246,3 +318,88 @@
     for higher rate limits.
   </p>
 </div>
+
+{#if confirmOpen}
+  <div
+    class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4"
+    on:click={closeConfirm}
+    on:keydown={(e) => e.key === 'Escape' && closeConfirm()}
+    role="presentation"
+  >
+    <div
+      class="bg-bg-subtle border border-border-subtle rounded-2xl shadow-card w-full max-w-md p-6 space-y-4"
+      on:click|stopPropagation
+      on:keydown|stopPropagation
+      role="dialog"
+      aria-modal="true"
+      tabindex="-1"
+    >
+      {#if !result}
+        <h2 class="text-lg font-semibold">Confirm swap</h2>
+        <div class="space-y-2 text-sm">
+          <div class="flex justify-between">
+            <span class="text-fg-muted">You pay</span>
+            <span class="font-mono">{amount} {fromSymbol}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-fg-muted">You receive (est.)</span>
+            <span class="font-mono">
+              {quote ? fromBaseUnits(quote.to_amount, toTok.decimals) : ''} {toSymbol}
+            </span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-fg-muted">Min received</span>
+            <span class="font-mono text-fg">{minReceived} {toSymbol}</span>
+          </div>
+          <div class="flex justify-between">
+            <span class="text-fg-muted">Slippage</span>
+            <span>{(slippageBps / 100).toFixed(slippageBps % 100 === 0 ? 0 : 1)}%</span>
+          </div>
+          {#if fromSymbol !== 'ETH'}
+            <p class="text-xs text-warning bg-warning/10 border border-warning/30 rounded-lg p-2.5 mt-3">
+              Atlas will broadcast a one-time
+              <span class="font-mono">approve</span> for {amount} {fromSymbol} to the
+              1inch router before the swap.
+            </p>
+          {/if}
+        </div>
+
+        {#if error}
+          <p class="text-danger text-xs break-all">{error}</p>
+        {/if}
+
+        <div class="flex gap-2 pt-2">
+          <Button variant="secondary" on:click={closeConfirm} disabled={executing} fullWidth>
+            Cancel
+          </Button>
+          <Button on:click={executeSwap} disabled={executing} fullWidth>
+            {executing ? 'Broadcasting…' : 'Confirm swap'}
+          </Button>
+        </div>
+      {:else}
+        <h2 class="text-lg font-semibold">Swap broadcasted</h2>
+        <div class="space-y-3 text-sm">
+          {#if result.approve_txid}
+            <div>
+              <div class="text-fg-muted text-xs mb-1">Approve tx</div>
+              <div class="font-mono text-xs break-all bg-bg-elevated border border-border rounded-lg p-2">
+                {result.approve_txid}
+              </div>
+            </div>
+          {/if}
+          <div>
+            <div class="text-fg-muted text-xs mb-1">Swap tx</div>
+            <div class="font-mono text-xs break-all bg-bg-elevated border border-border rounded-lg p-2">
+              {result.txid}
+            </div>
+          </div>
+          <p class="text-xs text-fg-muted">
+            Track confirmation in your block explorer of choice. Funds arrive once the swap
+            transaction is mined.
+          </p>
+        </div>
+        <Button on:click={closeConfirm} fullWidth>Done</Button>
+      {/if}
+    </div>
+  </div>
+{/if}

@@ -109,6 +109,12 @@ export interface ExchangeQuote {
   protocols: string[];
 }
 
+export interface ExchangeSwapResult {
+  txid: string;
+  approve_txid: string | null;
+  to_amount: string;
+}
+
 export const api = {
   vaultExists: () => invoke<boolean>('vault_exists'),
   isUnlocked: () => invoke<boolean>('is_unlocked'),
@@ -184,7 +190,15 @@ export const api = {
   setExchangeSettings: (args: { api_key: string | null; base_url: string | null }) =>
     invoke<ExchangeSettings>('set_exchange_settings', { args }),
   exchangeQuote: (args: { chain_id: number; src: string; dst: string; amount: string }) =>
-    invoke<ExchangeQuote>('exchange_quote', args)
+    invoke<ExchangeQuote>('exchange_quote', args),
+  exchangeSwap: (args: {
+    chain_id: number;
+    src: string;
+    dst: string;
+    amount: string;
+    slippage_bps: number;
+    fee_level: string;
+  }) => invoke<ExchangeSwapResult>('exchange_swap', { args })
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */
