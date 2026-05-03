@@ -26,11 +26,20 @@ export default {
         accent: {
           DEFAULT: '#7c5cff',
           hover: '#8b6dff',
-          ring: 'rgba(124, 92, 255, 0.4)'
+          ring: 'rgba(124, 92, 255, 0.4)',
+          cyan: '#22d3ee',
+          gradientFrom: '#22d3ee',
+          gradientTo: '#7c5cff'
         },
         success: '#22c55e',
         danger: '#ef4444',
         warning: '#f59e0b'
+      },
+      backgroundImage: {
+        'brand-gradient':
+          'linear-gradient(135deg, #22d3ee 0%, #7c5cff 60%, #c084fc 100%)',
+        'brand-glow':
+          'radial-gradient(ellipse at top, rgba(124,92,255,0.18), transparent 60%)'
       },
       boxShadow: {
         'card': '0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 32px rgba(0,0,0,0.45)',
