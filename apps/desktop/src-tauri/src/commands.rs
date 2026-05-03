@@ -559,6 +559,74 @@ pub async fn network_health_all(
 }
 
 // =============================================================================
+// Exchange — 1inch v6 aggregator
+// =============================================================================
+
+#[derive(Debug, Serialize)]
+pub struct ExchangeSettings {
+    pub api_key_set: bool,
+    pub base_url: String,
+}
+
+/// Inspect (without revealing) the user's 1inch configuration.
+#[tauri::command]
+pub async fn get_exchange_settings(state: State<'_, Arc<AppState>>) -> CmdResult<ExchangeSettings> {
+    Ok(ExchangeSettings {
+        api_key_set: state.settings.oneinch_api_key().is_some(),
+        base_url: state.settings.oneinch_base_url(),
+    })
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ExchangeConfigArgs {
+    pub api_key: Option<String>,
+    pub base_url: Option<String>,
+}
+
+/// Persist 1inch credentials. Pass `null` (or empty) to clear a field.
+#[tauri::command]
+pub async fn set_exchange_settings(
+    state: State<'_, Arc<AppState>>,
+    args: ExchangeConfigArgs,
+) -> CmdResult<ExchangeSettings> {
+    state
+        .settings
+        .set_oneinch_api_key(args.api_key.as_deref())
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    state
+        .settings
+        .set_oneinch_base_url(args.base_url.as_deref())
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    Ok(ExchangeSettings {
+        api_key_set: state.settings.oneinch_api_key().is_some(),
+        base_url: state.settings.oneinch_base_url(),
+    })
+}
+
+/// Quote an EVM swap via 1inch v6.
+///
+/// `chain_id` is the EIP-155 chain id (1 = mainnet, 137 = polygon, …).
+/// Token addresses use 1inch's convention: the native asset is
+/// `0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee`.
+#[tauri::command]
+pub async fn exchange_quote(
+    state: State<'_, Arc<AppState>>,
+    chain_id: u64,
+    src: String,
+    dst: String,
+    amount: String,
+) -> CmdResult<atlas_exchange_1inch::Quote> {
+    let client = atlas_exchange_1inch::OneInchClient::new(
+        state.settings.oneinch_base_url(),
+        state.settings.oneinch_api_key(),
+    );
+    client
+        .quote(chain_id, &src, &dst, &amount)
+        .await
+        .map_err(|e| CmdError::Chain(e.to_string()))
+}
+
+// =============================================================================
 // Internal helpers
 // =============================================================================
 

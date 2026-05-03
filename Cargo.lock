@@ -211,6 +211,7 @@ dependencies = [
  "atlas-chain-solana",
  "atlas-chain-traits",
  "atlas-chain-tron",
+ "atlas-exchange-1inch",
  "atlas-price-oracle",
  "atlas-profile",
  "atlas-settings",
@@ -228,6 +229,17 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
+]
+
+[[package]]
+name = "atlas-exchange-1inch"
+version = "0.1.0"
+dependencies = [
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
 ]
 
 [[package]]

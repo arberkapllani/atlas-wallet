@@ -1,0 +1,15 @@
+[package]
+name = "atlas-exchange-1inch"
+description = "1inch v6 aggregator client for Atlas (quote + swap)"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true }

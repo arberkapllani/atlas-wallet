@@ -95,6 +95,20 @@ export interface ProfileSummary {
   watch_account_count: number;
 }
 
+export interface ExchangeSettings {
+  api_key_set: boolean;
+  base_url: string;
+}
+
+export interface ExchangeQuote {
+  from_token: string;
+  to_token: string;
+  from_amount: string;
+  to_amount: string;
+  estimated_gas: number;
+  protocols: string[];
+}
+
 export const api = {
   vaultExists: () => invoke<boolean>('vault_exists'),
   isUnlocked: () => invoke<boolean>('is_unlocked'),
@@ -163,7 +177,14 @@ export const api = {
 
   networkHealth: (chainId: string) =>
     invoke<NetworkHealth>('network_health', { chainId }),
-  networkHealthAll: () => invoke<NetworkHealth[]>('network_health_all')
+  networkHealthAll: () => invoke<NetworkHealth[]>('network_health_all'),
+
+  getExchangeSettings: () =>
+    invoke<ExchangeSettings>('get_exchange_settings'),
+  setExchangeSettings: (args: { api_key: string | null; base_url: string | null }) =>
+    invoke<ExchangeSettings>('set_exchange_settings', { args }),
+  exchangeQuote: (args: { chain_id: number; src: string; dst: string; amount: string }) =>
+    invoke<ExchangeQuote>('exchange_quote', args)
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */

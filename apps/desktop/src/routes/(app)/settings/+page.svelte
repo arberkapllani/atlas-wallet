@@ -3,6 +3,7 @@
   import Button from '$lib/ui/Button.svelte';
   import RpcEndpointsCard from '$lib/settings/RpcEndpointsCard.svelte';
   import NetworkHealthCard from '$lib/settings/NetworkHealthCard.svelte';
+  import ExchangeSettingsCard from '$lib/settings/ExchangeSettingsCard.svelte';
   import { goto } from '$app/navigation';
   import { wallet } from '$lib/stores/wallet';
 </script>
@@ -16,6 +17,8 @@
   <NetworkHealthCard />
 
   <RpcEndpointsCard />
+
+  <ExchangeSettingsCard />
 
   <Card title="Security">
     <div class="space-y-3 text-sm">

@@ -70,6 +70,10 @@ pub struct SettingsData {
     pub rpc_overrides: BTreeMap<String, String>,
     /// Display currency for fiat values across the UI.
     pub fiat_currency: FiatCurrency,
+    /// Optional 1inch developer API key (Bearer token). Absent = unauthenticated.
+    pub oneinch_api_key: Option<String>,
+    /// User-overridable 1inch base URL. Absent = built-in default.
+    pub oneinch_base_url: Option<String>,
 }
 
 /// Thread-safe handle to the persisted settings.
@@ -152,6 +156,49 @@ impl Settings {
         {
             let mut g = self.inner.write().expect("settings poisoned");
             g.fiat_currency = currency;
+        }
+        self.persist()
+    }
+
+    /// Currently configured 1inch API key, if any.
+    pub fn oneinch_api_key(&self) -> Option<String> {
+        self.inner
+            .read()
+            .expect("settings poisoned")
+            .oneinch_api_key
+            .clone()
+    }
+
+    /// Currently configured 1inch base URL (or the built-in default).
+    pub fn oneinch_base_url(&self) -> String {
+        self.inner
+            .read()
+            .expect("settings poisoned")
+            .oneinch_base_url
+            .clone()
+            .unwrap_or_else(|| "https://api.1inch.dev".to_string())
+    }
+
+    /// Persist (or clear) the 1inch API key. Empty/whitespace clears it.
+    pub fn set_oneinch_api_key(&self, key: Option<&str>) -> Result<(), SettingsError> {
+        {
+            let mut g = self.inner.write().expect("settings poisoned");
+            g.oneinch_api_key = match key {
+                Some(k) if !k.trim().is_empty() => Some(k.trim().to_string()),
+                _ => None,
+            };
+        }
+        self.persist()
+    }
+
+    /// Persist (or clear) the 1inch base URL. Empty/whitespace clears it.
+    pub fn set_oneinch_base_url(&self, url: Option<&str>) -> Result<(), SettingsError> {
+        {
+            let mut g = self.inner.write().expect("settings poisoned");
+            g.oneinch_base_url = match url {
+                Some(u) if !u.trim().is_empty() => Some(u.trim().to_string()),
+                _ => None,
+            };
         }
         self.persist()
     }
