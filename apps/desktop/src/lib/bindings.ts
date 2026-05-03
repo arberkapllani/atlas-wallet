@@ -87,6 +87,21 @@ export const commands = {
 	renameProfile: (id: string, newName: string) => typedError<null, CmdError>(__TAURI_INVOKE("rename_profile", { id, newName })),
 	deleteProfile: (id: string) => typedError<null, CmdError>(__TAURI_INVOKE("delete_profile", { id })),
 	createWatchOnlyProfile: (args: CreateWatchOnlyArgs) => typedError<ProfileSummary, CmdError>(__TAURI_INVOKE("create_watch_only_profile", { args })),
+	/**
+	 *  Return the most-recent cached transactions. Pass chain_id = "" to query
+	 *  across every chain.
+	 */
+	txHistoryList: (chainId: string, limit: number) => typedError<TxRecord[], CmdError>(__TAURI_INVOKE("tx_history_list", { chainId, limit })),
+	/**
+	 *  Update the on-disk status of a single tx (pending ? confirmed/failed).
+	 *  The frontend can call this once a confirmation watcher resolves.
+	 */
+	txHistorySetStatus: (chainId: string, txid: string, status: string) => typedError<null, CmdError>(__TAURI_INVOKE("tx_history_set_status", { chainId, txid, status })),
+	/**
+	 *  Allow the UI to record a tx that didn't go through Atlas's send flow
+	 *  (e.g. an external broadcast the user wants to track).
+	 */
+	txHistoryRecord: (record: TxRecord) => typedError<null, CmdError>(__TAURI_INVOKE("tx_history_record", { record })),
 };
 
 /* Types */
@@ -309,6 +324,33 @@ export type TokenSummary = {
 	decimals: number,
 	standard: string,
 	enabled_by_default: boolean,
+};
+
+// One on-chain transaction the user (or Atlas itself) initiated.
+export type TxRecord = {
+	// Transaction id / hash, lower-case hex (no `0x` for BTC; with `0x` for EVM).
+	txid: string,
+	// Chain id (`"btc"`, `"eth"`, `"sol"`, …).
+	chain_id: string,
+	/**
+	 *  `"send"` or `"receive"`. Atlas only writes `"send"` itself today;
+	 *  `"receive"` rows are reserved for future explorer-driven enrichment.
+	 */
+	direction: string,
+	// Other party's address.
+	counterparty: string,
+	// Amount in base units, decimal-string (u128-friendly).
+	amount: string,
+	// Asset ticker (`"BTC"`, `"ETH"`, `"USDT"`, …).
+	asset: string,
+	// Network fee paid, decimal string in the chain's native asset base units.
+	fee: string,
+	// Unix timestamp (seconds) when the tx was broadcast.
+	timestamp: number,
+	// `"pending"`, `"confirmed"`, or `"failed"`.
+	status: string,
+	// Optional user-supplied note.
+	memo: string | null,
 };
 
 // A `(chain_id, address)` pair tracked by a watch-only profile.

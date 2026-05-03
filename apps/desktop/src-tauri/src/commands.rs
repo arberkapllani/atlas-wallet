@@ -4,6 +4,7 @@
 //! The frontend only sees public addresses, balances, fee quotes, and
 //! signed transaction hashes.
 
+use crate::db::TxRecord;
 use crate::error::{CmdError, CmdResult};
 use crate::state::AppState;
 use atlas_chain_evm::networks as evm_networks;
@@ -390,13 +391,23 @@ pub async fn send_native(
         .map_err(|_| CmdError::InvalidInput("amount must be a base-unit integer".into()))?;
     let request = TxRequest {
         from: acct.address().to_string(),
-        to: args.to,
+        to: args.to.clone(),
         amount: Amount::new(value, provider.native_asset().clone()),
         fee_level: args.fee_level,
         memo: None,
     };
     let signed = provider.build_and_sign(request, acct.private_key()).await?;
     let txid = provider.broadcast(&signed).await?;
+    record_outgoing_tx(
+        &state,
+        &args.chain_id,
+        &txid,
+        &args.to,
+        value.to_string(),
+        provider.native_asset().symbol.clone(),
+        signed.fee.value.to_string(),
+    )
+    .await;
     Ok(SendNativeResult {
         txid,
         fee: signed.fee,
@@ -467,6 +478,16 @@ pub async fn send_token(
                 )
                 .await?;
             let txid = provider.broadcast(&signed).await?;
+            record_outgoing_tx(
+                &state,
+                token.chain_id,
+                &txid,
+                &args.to,
+                value.to_string(),
+                token.symbol.into(),
+                signed.fee.value.to_string(),
+            )
+            .await;
             Ok(SendTokenResult {
                 txid,
                 fee: signed.fee,
@@ -490,6 +511,16 @@ pub async fn send_token(
             // Broadcast goes through the trait-level method.
             use atlas_chain_traits::ChainProvider;
             let txid = provider.broadcast(&signed).await?;
+            record_outgoing_tx(
+                &state,
+                token.chain_id,
+                &txid,
+                &args.to,
+                value.to_string(),
+                token.symbol.into(),
+                signed.fee.value.to_string(),
+            )
+            .await;
             Ok(SendTokenResult {
                 txid,
                 fee: signed.fee,
@@ -1018,4 +1049,87 @@ pub async fn clear_rpc_endpoint(
         .map_err(|e| CmdError::InvalidInput(e.to_string()))?;
     state.chains.replace(&chain_id, default);
     Ok(endpoint_for(&state, &chain_id))
+}
+
+// =============================================================================
+// Local transaction history (sqlite cache)
+// =============================================================================
+
+/// Best-effort: insert an outgoing transaction into the local cache.
+/// Errors are logged and swallowed — the broadcast already succeeded so we
+/// must never fail the user-visible flow over a cache hiccup.
+async fn record_outgoing_tx(
+    state: &AppState,
+    chain_id: &str,
+    txid: &str,
+    to: &str,
+    amount: String,
+    asset: String,
+    fee: String,
+) {
+    let timestamp = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+    let rec = TxRecord {
+        txid: txid.to_string(),
+        chain_id: chain_id.to_string(),
+        direction: "send".into(),
+        counterparty: to.to_string(),
+        amount,
+        asset,
+        fee,
+        timestamp,
+        status: "pending".into(),
+        memo: None,
+    };
+    if let Err(e) = state.db.record_tx(&rec).await {
+        tracing::warn!(target: "Atlas", "tx_history insert failed: {}", e);
+    }
+}
+
+/// Return the most-recent cached transactions. Pass chain_id = "" to query
+/// across every chain.
+#[tauri::command]
+#[specta::specta]
+pub async fn tx_history_list(
+    state: State<'_, Arc<AppState>>,
+    chain_id: String,
+    limit: u32,
+) -> CmdResult<Vec<TxRecord>> {
+    let limit = limit.clamp(1, 500) as i64;
+    state
+        .db
+        .list_history(&chain_id, limit)
+        .await
+        .map_err(|e| CmdError::Io(e.to_string()))
+}
+
+/// Update the on-disk status of a single tx (pending ? confirmed/failed).
+/// The frontend can call this once a confirmation watcher resolves.
+#[tauri::command]
+#[specta::specta]
+pub async fn tx_history_set_status(
+    state: State<'_, Arc<AppState>>,
+    chain_id: String,
+    txid: String,
+    status: String,
+) -> CmdResult<()> {
+    state
+        .db
+        .update_status(&chain_id, &txid, &status)
+        .await
+        .map_err(|e| CmdError::Io(e.to_string()))
+}
+
+/// Allow the UI to record a tx that didn't go through Atlas's send flow
+/// (e.g. an external broadcast the user wants to track).
+#[tauri::command]
+#[specta::specta]
+pub async fn tx_history_record(state: State<'_, Arc<AppState>>, record: TxRecord) -> CmdResult<()> {
+    state
+        .db
+        .record_tx(&record)
+        .await
+        .map_err(|e| CmdError::Io(e.to_string()))
 }

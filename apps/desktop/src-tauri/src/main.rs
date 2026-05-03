@@ -3,6 +3,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod commands;
+mod db;
 mod error;
 mod network_health;
 mod state;
@@ -47,6 +48,9 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
         commands::rename_profile,
         commands::delete_profile,
         commands::create_watch_only_profile,
+        commands::tx_history_list,
+        commands::tx_history_set_status,
+        commands::tx_history_record,
     ])
 }
 
@@ -83,8 +87,9 @@ fn main() {
                 .app_data_dir()
                 .expect("app_data_dir resolves on every supported OS");
             std::fs::create_dir_all(&data_dir).ok();
-            let app_state =
-                Arc::new(state::AppState::new(data_dir).expect("failed to load profile registry"));
+            let app_state = tauri::async_runtime::block_on(state::AppState::new(data_dir))
+                .expect("failed to load profile registry / open database");
+            let app_state = Arc::new(app_state);
             app.manage(app_state);
             Ok(())
         })

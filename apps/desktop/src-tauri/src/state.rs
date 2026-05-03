@@ -17,6 +17,8 @@ use std::path::PathBuf;
 use std::sync::{Arc, RwLock as StdRwLock};
 use tokio::sync::RwLock;
 
+use crate::db::Db;
+
 /// Built-in default endpoint for a chain id. Used both as a fallback when no
 /// override is set and to surface "this is the default" in the UI.
 pub fn default_endpoint(chain_id: &str) -> Option<&'static str> {
@@ -137,15 +139,19 @@ pub struct AppState {
     pub chains: ChainRegistry,
     pub prices: PriceOracle,
     pub settings: Settings,
+    pub db: Db,
 }
 
 impl AppState {
-    pub fn new(data_dir: PathBuf) -> std::io::Result<Self> {
+    pub async fn new(data_dir: PathBuf) -> std::io::Result<Self> {
         let registry = ProfileRegistry::load_or_init(&data_dir)
             .map_err(|e| std::io::Error::other(e.to_string()))?;
         let settings =
             Settings::load_or_init(&data_dir).map_err(|e| std::io::Error::other(e.to_string()))?;
         let chains = ChainRegistry::from_settings(&settings);
+        let db = Db::open(&data_dir.join("atlas.db"))
+            .await
+            .map_err(|e| std::io::Error::other(e.to_string()))?;
         Ok(Self {
             data_dir,
             profiles: RwLock::new(registry),
@@ -153,6 +159,7 @@ impl AppState {
             chains,
             prices: PriceOracle::new(),
             settings,
+            db,
         })
     }
 }

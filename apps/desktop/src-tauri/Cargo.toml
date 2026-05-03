@@ -44,8 +44,12 @@ uuid = { workspace = true }
 specta = { workspace = true }
 specta-typescript = { workspace = true }
 tauri-specta = { workspace = true }
+sqlx = { workspace = true }
 
 [features]
 default = []
 custom-protocol = ["tauri/custom-protocol"]
+
+[dev-dependencies]
+tempfile = "3.10"
 
