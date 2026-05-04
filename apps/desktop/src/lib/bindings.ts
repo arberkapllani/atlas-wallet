@@ -307,6 +307,12 @@ export const commands = {
 	feesBumpForReplacement: (suggestion: Eip1559Suggestion) => typedError<Eip1559Suggestion, CmdError>(__TAURI_INVOKE("fees_bump_for_replacement", { suggestion })),
 	// Total UTXO fee in sats given a sat/vB rate and a vsize estimate.
 	feesUtxoSats: (satPerVbyte: number, vsize: number) => typedError<number, CmdError>(__TAURI_INVOKE("fees_utxo_sats", { satPerVbyte, vsize })),
+	// Cheap heuristic: does this string look like an ENS name?
+	ensLooksLikeEns: (name: string) => typedError<boolean, CmdError>(__TAURI_INVOKE("ens_looks_like_ens", { name })),
+	// UTS-46 normalise an ENS name (lowercase + label validation).
+	ensNormalise: (name: string) => typedError<string, CmdError>(__TAURI_INVOKE("ens_normalise", { name })),
+	// Compute the EIP-137 namehash of an ENS name as a 0x-prefixed hex string.
+	ensNamehash: (name: string) => typedError<string, CmdError>(__TAURI_INVOKE("ens_namehash", { name })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.

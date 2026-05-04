@@ -1659,6 +1659,29 @@ pub async fn fees_utxo_sats(sat_per_vbyte: u64, vsize: u64) -> CmdResult<u64> {
         .map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+// ---- ENS namehash --------------------------------------------------
+
+/// Cheap heuristic: does this string look like an ENS name?
+#[tauri::command]
+#[specta::specta]
+pub async fn ens_looks_like_ens(name: String) -> CmdResult<bool> {
+    Ok(atlas_ens::looks_like_ens(&name))
+}
+
+/// UTS-46 normalise an ENS name (lowercase + label validation).
+#[tauri::command]
+#[specta::specta]
+pub async fn ens_normalise(name: String) -> CmdResult<String> {
+    atlas_ens::normalise(&name).map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Compute the EIP-137 namehash of an ENS name as a 0x-prefixed hex string.
+#[tauri::command]
+#[specta::specta]
+pub async fn ens_namehash(name: String) -> CmdResult<String> {
+    atlas_ens::namehash_hex(&name).map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

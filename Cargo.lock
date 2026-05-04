@@ -351,6 +351,7 @@ dependencies = [
  "atlas-chain-utxo",
  "atlas-dapp-registry",
  "atlas-eip712",
+ "atlas-ens",
  "atlas-exchange-1inch",
  "atlas-exchange-changenow",
  "atlas-exchange-jupiter",

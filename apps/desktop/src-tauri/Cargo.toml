@@ -67,6 +67,7 @@ atlas-blocklist = { workspace = true }
 atlas-pnl = { workspace = true }
 atlas-payuri = { workspace = true }
 atlas-fees = { workspace = true }
+atlas-ens = { workspace = true }
 uuid = { workspace = true }
 
 specta = { workspace = true }
