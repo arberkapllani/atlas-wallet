@@ -185,6 +185,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-blocklist"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "specta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "atlas-calldata"
 version = "0.1.0"
 dependencies = [
@@ -318,6 +328,7 @@ dependencies = [
  "atlas-address-poisoning",
  "atlas-approvals",
  "atlas-biometric",
+ "atlas-blocklist",
  "atlas-calldata",
  "atlas-chain-bitcoin",
  "atlas-chain-cardano",

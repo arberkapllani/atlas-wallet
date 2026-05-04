@@ -63,6 +63,7 @@ atlas-calldata = { workspace = true }
 atlas-phishing = { workspace = true }
 atlas-address-poisoning = { workspace = true }
 atlas-eip712 = { workspace = true }
+atlas-blocklist = { workspace = true }
 uuid = { workspace = true }
 
 specta = { workspace = true }

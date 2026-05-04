@@ -292,6 +292,8 @@ export const commands = {
 	poisoningDetect: (transfers: IncomingTransfer[], trusted: TrustedCounterparty[], config: PoisonConfig) => typedError<PoisonAlert[], CmdError>(__TAURI_INVOKE("poisoning_detect", { transfers, trusted, config })),
 	// Classify an EIP-712 typed-data signing request before the user signs.
 	eip712Classify: (json: string) => typedError<Eip712Report, CmdError>(__TAURI_INVOKE("eip712_classify", { json })),
+	// Look up an address against an in-memory blocklist.
+	blocklistAssess: (address: string, list: Blocklist) => typedError<BlocklistVerdict, CmdError>(__TAURI_INVOKE("blocklist_assess", { address, list })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -601,6 +603,40 @@ export type BiometricStatus = {
 	// `true` if the user has opted in to biometric unlock.
 	enabled: boolean,
 };
+
+// In-memory, hash-keyed blocklist.
+export type Blocklist = {
+	entries: { [key in string]: BlocklistEntry },
+};
+
+// What kind of bad-actor an entry is.
+export type BlocklistCategory = 
+// Wallet drainer (auto-sweeps approved tokens).
+"Drainer" | 
+// Phishing / impersonation wallet.
+"Phishing" | 
+// Generic scam / pig-butchering / fake support.
+"Scam" | 
+// OFAC or other government sanctions list.
+"Sanctioned" | 
+// Reported by the user themselves.
+"UserReported";
+
+// One row in the blocklist.
+export type BlocklistEntry = {
+	// Normalised address (lower-case, stripped `0x`).
+	address: string,
+	category: BlocklistCategory,
+	// Free-text source attribution (e.g. "scamsniffer", "user").
+	source: string,
+	// Optional reason / context.
+	note: string | null,
+	// Unix seconds when added.
+	added_at: number,
+};
+
+// Result of looking up an address.
+export type BlocklistVerdict = { kind: "Clean" } | { kind: "Listed"; data: BlocklistEntry };
 
 // Aggregated staking position for one chain.
 export type ChainPosition = {

@@ -1587,6 +1587,18 @@ pub async fn eip712_classify(json: String) -> CmdResult<atlas_eip712::Eip712Repo
     atlas_eip712::classify(&json).map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+// ---- Malicious-address blocklist -----------------------------------
+
+/// Look up an address against an in-memory blocklist.
+#[tauri::command]
+#[specta::specta]
+pub async fn blocklist_assess(
+    address: String,
+    list: atlas_blocklist::Blocklist,
+) -> CmdResult<atlas_blocklist::BlocklistVerdict> {
+    Ok(atlas_blocklist::assess(&address, &list))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]
