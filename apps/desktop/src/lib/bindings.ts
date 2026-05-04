@@ -16,6 +16,27 @@ export const commands = {
 	isUnlocked: () => typedError<boolean, CmdError>(__TAURI_INVOKE("is_unlocked")),
 	listChains: () => typedError<ChainSummary[], CmdError>(__TAURI_INVOKE("list_chains")),
 	listTokens: () => typedError<TokenSummary[], CmdError>(__TAURI_INVOKE("list_tokens")),
+	/**
+	 *  Curated token-list URLs Atlas ships with by default. The frontend
+	 *  uses this to populate the "Refresh from tokenlists.org" picker.
+	 */
+	tokenListDefaultUrls: () => typedError<string[], CmdError>(__TAURI_INVOKE("token_list_default_urls")),
+	/**
+	 *  Fetch a Uniswap-format token list from `url` and return the parsed
+	 *  tokens for any chain Atlas supports. Network errors and invalid JSON
+	 *  surface as [`CmdError::InvalidInput`].
+	 */
+	tokenListFetch: (url: string) => typedError<OwnedTokenMeta[], CmdError>(__TAURI_INVOKE("token_list_fetch", { url })),
+	/**
+	 *  Add a custom user-imported token. Validates contract format (`0x` +
+	 *  40 hex chars for EVM, base58 for Tron) before persisting so the UI
+	 *  can't poison the local DB with garbage.
+	 */
+	tokenAddCustom: (chainId: string, contract: string, symbol: string, displayName: string, decimals: number, logoUri: string | null) => typedError<null, CmdError>(__TAURI_INVOKE("token_add_custom", { chainId, contract, symbol, displayName, decimals, logoUri })),
+	// List custom tokens for `chain_id` (or all chains when empty).
+	tokenListCustom: (chainId: string) => typedError<CustomToken[], CmdError>(__TAURI_INVOKE("token_list_custom", { chainId })),
+	// Remove one custom token. Returns `true` if a row was deleted.
+	tokenRemoveCustom: (chainId: string, contract: string) => typedError<boolean, CmdError>(__TAURI_INVOKE("token_remove_custom", { chainId, contract })),
 	// List every supported chain id alongside its default and (if any) overridden RPC.
 	listRpcEndpoints: () => typedError<RpcEndpoint[], CmdError>(__TAURI_INVOKE("list_rpc_endpoints")),
 	/**
@@ -179,6 +200,30 @@ export type CreateWatchOnlyArgs = {
 	accounts: WatchAccount[],
 };
 
+/**
+ *  One user-imported token row. Mirrors `OwnedTokenMeta` minus the
+ *  derived `id` / `source` (which are always `"custom"` here).
+ */
+export type CustomToken = {
+	// Atlas chain id (`"eth"`, `"polygon"`, …).
+	chain_id: string,
+	/**
+	 *  Contract address (case-preserved as the user typed it; lookups
+	 *  should compare case-insensitively).
+	 */
+	contract: string,
+	// On-chain ticker.
+	symbol: string,
+	// Display name.
+	display_name: string,
+	// Decimals (0–38).
+	decimals: number,
+	// `"erc-20"` or `"trc-20"`.
+	standard: string,
+	// Optional logo URL.
+	logo_uri: string | null,
+};
+
 export type ExchangeConfigArgs = {
 	api_key: string | null,
 	base_url: string | null,
@@ -260,6 +305,37 @@ export type NetworkStatus =
 // All samples failed.
 "offline";
 
+/**
+ *  Owned counterpart of [`TokenMeta`] used for tokens fetched at runtime
+ *  from tokenlists.org or imported manually by the user.
+ * 
+ *  Static + remote tokens unify behind this type at the IPC boundary so
+ *  the UI can display both kinds without caring where they came from.
+ */
+export type OwnedTokenMeta = {
+	/**
+	 *  Stable identifier — for remote tokens this is `chain_id-contract`
+	 *  in lowercase so duplicates dedupe naturally.
+	 */
+	id: string,
+	// On-chain symbol.
+	symbol: string,
+	// Display name.
+	display_name: string,
+	// Atlas chain id (`"eth"`, `"polygon"`, …).
+	chain_id: string,
+	// Hex (EIP-55) or base58 contract address.
+	contract: string,
+	// On-chain decimals.
+	decimals: number,
+	// Token standard.
+	standard: TokenStandard,
+	// Optional logo URL (only present on remote tokens).
+	logo_uri: string | null,
+	// `"static"`, `"remote"` (tokenlists.org), or `"custom"` (user-added).
+	source: string,
+};
+
 // A single cached price observation.
 export type PricePoint = {
 	// Price in the requested fiat currency.
@@ -336,6 +412,13 @@ export type SendTokenResult = {
 	// Network fee paid in the chain's native asset.
 	fee: Amount,
 };
+
+// Token contract standard.
+export type TokenStandard = 
+// Ethereum / EVM-compatible ERC-20 contract.
+"erc20" | 
+// Tron TRC-20 contract.
+"trc20";
 
 export type TokenSummary = {
 	id: string,

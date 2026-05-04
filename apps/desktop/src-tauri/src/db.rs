@@ -27,6 +27,16 @@ CREATE TABLE IF NOT EXISTS tx_history (
 );
 CREATE INDEX IF NOT EXISTS idx_tx_history_chain_ts
     ON tx_history(chain_id, timestamp DESC);
+CREATE TABLE IF NOT EXISTS custom_tokens (
+    chain_id     TEXT NOT NULL,
+    contract     TEXT NOT NULL,
+    symbol       TEXT NOT NULL,
+    display_name TEXT NOT NULL,
+    decimals     INTEGER NOT NULL,
+    standard     TEXT NOT NULL,
+    logo_uri     TEXT,
+    PRIMARY KEY (chain_id, contract)
+);
 "#;
 
 /// One on-chain transaction the user (or Atlas itself) initiated.
@@ -53,6 +63,27 @@ pub struct TxRecord {
     pub status: String,
     /// Optional user-supplied note.
     pub memo: Option<String>,
+}
+
+/// One user-imported token row. Mirrors `OwnedTokenMeta` minus the
+/// derived `id` / `source` (which are always `"custom"` here).
+#[derive(Debug, Clone, Serialize, Deserialize, sqlx::FromRow, specta::Type)]
+pub struct CustomToken {
+    /// Atlas chain id (`"eth"`, `"polygon"`, …).
+    pub chain_id: String,
+    /// Contract address (case-preserved as the user typed it; lookups
+    /// should compare case-insensitively).
+    pub contract: String,
+    /// On-chain ticker.
+    pub symbol: String,
+    /// Display name.
+    pub display_name: String,
+    /// Decimals (0–38).
+    pub decimals: u8,
+    /// `"erc-20"` or `"trc-20"`.
+    pub standard: String,
+    /// Optional logo URL.
+    pub logo_uri: Option<String>,
 }
 
 /// Thin wrapper around a SQLite connection pool.
@@ -152,6 +183,63 @@ impl Db {
             .await?;
         Ok(())
     }
+
+    /// Insert (or replace) a custom user-imported token row.
+    pub async fn add_custom_token(&self, t: &CustomToken) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"INSERT OR REPLACE INTO custom_tokens
+               (chain_id, contract, symbol, display_name, decimals, standard, logo_uri)
+               VALUES (?, ?, ?, ?, ?, ?, ?)"#,
+        )
+        .bind(&t.chain_id)
+        .bind(&t.contract)
+        .bind(&t.symbol)
+        .bind(&t.display_name)
+        .bind(t.decimals as i64)
+        .bind(&t.standard)
+        .bind(&t.logo_uri)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    /// List custom tokens. Pass `chain_id = ""` to query across chains.
+    pub async fn list_custom_tokens(
+        &self,
+        chain_id: &str,
+    ) -> Result<Vec<CustomToken>, sqlx::Error> {
+        if chain_id.is_empty() {
+            sqlx::query_as::<_, CustomToken>(
+                "SELECT chain_id, contract, symbol, display_name, decimals, standard, logo_uri
+                 FROM custom_tokens ORDER BY symbol",
+            )
+            .fetch_all(&self.pool)
+            .await
+        } else {
+            sqlx::query_as::<_, CustomToken>(
+                "SELECT chain_id, contract, symbol, display_name, decimals, standard, logo_uri
+                 FROM custom_tokens WHERE chain_id = ? ORDER BY symbol",
+            )
+            .bind(chain_id)
+            .fetch_all(&self.pool)
+            .await
+        }
+    }
+
+    /// Delete one custom-token row. Returns the number of rows affected
+    /// (0 if the token wasn't there).
+    pub async fn remove_custom_token(
+        &self,
+        chain_id: &str,
+        contract: &str,
+    ) -> Result<u64, sqlx::Error> {
+        let res = sqlx::query("DELETE FROM custom_tokens WHERE chain_id = ? AND contract = ?")
+            .bind(chain_id)
+            .bind(contract)
+            .execute(&self.pool)
+            .await?;
+        Ok(res.rows_affected())
+    }
 }
 
 #[cfg(test)]
@@ -183,5 +271,29 @@ mod tests {
         db.update_status("btc", "abc", "confirmed").await.unwrap();
         let rows = db.list_history("", 10).await.unwrap();
         assert_eq!(rows[0].status, "confirmed");
+    }
+
+    #[tokio::test]
+    async fn custom_token_round_trip() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = Db::open(&dir.path().join("atlas.db")).await.unwrap();
+        let t = CustomToken {
+            chain_id: "eth".into(),
+            contract: "0xdeadbeef".into(),
+            symbol: "FOO".into(),
+            display_name: "Foo Token".into(),
+            decimals: 18,
+            standard: "erc-20".into(),
+            logo_uri: None,
+        };
+        db.add_custom_token(&t).await.unwrap();
+        // Idempotent.
+        db.add_custom_token(&t).await.unwrap();
+        let rows = db.list_custom_tokens("eth").await.unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].symbol, "FOO");
+        let removed = db.remove_custom_token("eth", "0xdeadbeef").await.unwrap();
+        assert_eq!(removed, 1);
+        assert!(db.list_custom_tokens("").await.unwrap().is_empty());
     }
 }

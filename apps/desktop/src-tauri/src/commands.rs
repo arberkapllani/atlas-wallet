@@ -145,6 +145,134 @@ pub async fn list_tokens(_state: State<'_, Arc<AppState>>) -> CmdResult<Vec<Toke
         .collect())
 }
 
+/// Curated token-list URLs Atlas ships with by default. The frontend
+/// uses this to populate the "Refresh from tokenlists.org" picker.
+#[tauri::command]
+#[specta::specta]
+pub async fn token_list_default_urls() -> CmdResult<Vec<String>> {
+    Ok(atlas_token_registry::DEFAULT_TOKEN_LIST_URLS
+        .iter()
+        .map(|s| (*s).to_string())
+        .collect())
+}
+
+/// Fetch a Uniswap-format token list from `url` and return the parsed
+/// tokens for any chain Atlas supports. Network errors and invalid JSON
+/// surface as [`CmdError::InvalidInput`].
+#[tauri::command]
+#[specta::specta]
+pub async fn token_list_fetch(url: String) -> CmdResult<Vec<atlas_token_registry::OwnedTokenMeta>> {
+    atlas_token_registry::fetch_token_list(&url)
+        .await
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Add a custom user-imported token. Validates contract format (`0x` +
+/// 40 hex chars for EVM, base58 for Tron) before persisting so the UI
+/// can't poison the local DB with garbage.
+#[tauri::command]
+#[specta::specta]
+pub async fn token_add_custom(
+    state: State<'_, Arc<AppState>>,
+    chain_id: String,
+    contract: String,
+    symbol: String,
+    display_name: String,
+    decimals: u8,
+    logo_uri: Option<String>,
+) -> CmdResult<()> {
+    let trimmed = contract.trim().to_string();
+    let standard = if chain_id == "trx" {
+        if !is_valid_tron_address(&trimmed) {
+            return Err(CmdError::InvalidInput(format!(
+                "invalid TRC-20 contract address: {trimmed}"
+            )));
+        }
+        "trc-20"
+    } else if atlas_chain_evm::networks::by_id(&chain_id).is_some() {
+        if !is_valid_evm_address(&trimmed) {
+            return Err(CmdError::InvalidInput(format!(
+                "invalid EVM contract address: {trimmed}"
+            )));
+        }
+        "erc-20"
+    } else {
+        return Err(CmdError::InvalidInput(format!(
+            "custom tokens not supported on chain {chain_id}"
+        )));
+    };
+    if symbol.trim().is_empty() || display_name.trim().is_empty() {
+        return Err(CmdError::InvalidInput(
+            "symbol and display_name are required".into(),
+        ));
+    }
+    if decimals > 38 {
+        return Err(CmdError::InvalidInput("decimals must be at most 38".into()));
+    }
+    state
+        .db
+        .add_custom_token(&crate::db::CustomToken {
+            chain_id,
+            contract: trimmed,
+            symbol: symbol.trim().into(),
+            display_name: display_name.trim().into(),
+            decimals,
+            standard: standard.into(),
+            logo_uri,
+        })
+        .await
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    Ok(())
+}
+
+/// List custom tokens for `chain_id` (or all chains when empty).
+#[tauri::command]
+#[specta::specta]
+pub async fn token_list_custom(
+    state: State<'_, Arc<AppState>>,
+    chain_id: String,
+) -> CmdResult<Vec<crate::db::CustomToken>> {
+    state
+        .db
+        .list_custom_tokens(&chain_id)
+        .await
+        .map_err(|e| CmdError::Io(e.to_string()))
+}
+
+/// Remove one custom token. Returns `true` if a row was deleted.
+#[tauri::command]
+#[specta::specta]
+pub async fn token_remove_custom(
+    state: State<'_, Arc<AppState>>,
+    chain_id: String,
+    contract: String,
+) -> CmdResult<bool> {
+    let n = state
+        .db
+        .remove_custom_token(&chain_id, &contract)
+        .await
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    Ok(n > 0)
+}
+
+fn is_valid_evm_address(addr: &str) -> bool {
+    let Some(rest) = addr.strip_prefix("0x").or_else(|| addr.strip_prefix("0X")) else {
+        return false;
+    };
+    rest.len() == 40 && rest.bytes().all(|b| b.is_ascii_hexdigit())
+}
+
+fn is_valid_tron_address(addr: &str) -> bool {
+    // TRC-20 addresses are base58check-encoded with version byte 0x41
+    // — the encoded form is always 34 characters starting with 'T'.
+    addr.len() == 34
+        && addr.starts_with('T')
+        && addr.bytes().all(|b| {
+            matches!(b,
+                b'1'..=b'9' | b'A'..=b'H' | b'J'..=b'N' | b'P'..=b'Z' | b'a'..=b'k' | b'm'..=b'z')
+        })
+}
+
 // =============================================================================
 // Profile management
 // =============================================================================
