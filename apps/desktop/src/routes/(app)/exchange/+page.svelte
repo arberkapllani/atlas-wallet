@@ -3,7 +3,7 @@
   import Card from '$lib/ui/Card.svelte';
   import Input from '$lib/ui/Input.svelte';
   import Button from '$lib/ui/Button.svelte';
-  import { api, errorMessage, type ExchangeQuote, type ExchangeSwapResult } from '$lib/api';
+  import { api, errorMessage, type ExchangeQuote, type ExchangeSwapResult, type SlippageBand } from '$lib/api';
 
   /**
    * Phase 5.1 — live swaps via 1inch v6 on Ethereum mainnet.
@@ -55,6 +55,7 @@
   let debounceHandle: ReturnType<typeof setTimeout> | null = null;
 
   let slippageBps = 100; // 1 % default
+  let slippageBand: SlippageBand | null = null;
   let confirmOpen = false;
   let executing = false;
   let result: ExchangeSwapResult | null = null;
@@ -182,6 +183,34 @@
     const slipped = (out * BigInt(10_000 - slippageBps)) / 10_000n;
     return fromBaseUnits(slipped.toString(), toTok.decimals);
   })();
+
+  // Surface the backend's classification of the chosen slippage. The
+  // band drives both the colour and the label shown next to the
+  // tolerance picker, so the user gets a one-glance read on how
+  // aggressive the setting is.
+  async function refreshBand(bps: number) {
+    try {
+      slippageBand = await api.slippageBand(bps);
+    } catch {
+      slippageBand = null;
+    }
+  }
+  $: void refreshBand(slippageBps);
+
+  function bandTone(b: SlippageBand | null): string {
+    switch (b) {
+      case 'Low':
+        return 'text-success';
+      case 'Normal':
+        return 'text-fg';
+      case 'High':
+        return 'text-amber-400';
+      case 'Reckless':
+        return 'text-rose-400';
+      default:
+        return 'text-fg-muted';
+    }
+  }
 </script>
 
 <div class="p-8 max-w-2xl space-y-6">
@@ -288,7 +317,13 @@
 
       <div class="flex items-center justify-between text-xs">
         <span class="text-fg-muted">Max slippage</span>
-        <div class="flex gap-1">
+        <div class="flex items-center gap-2">
+          {#if slippageBand}
+            <span class="text-[10px] uppercase tracking-wider {bandTone(slippageBand)}">
+              {slippageBand}
+            </span>
+          {/if}
+          <div class="flex gap-1">
           {#each [50, 100, 300] as bps}
             <button
               type="button"
@@ -301,6 +336,7 @@
               {(bps / 100).toFixed(bps % 100 === 0 ? 0 : 1)}%
             </button>
           {/each}
+          </div>
         </div>
       </div>
 
