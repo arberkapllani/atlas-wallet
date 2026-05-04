@@ -1437,6 +1437,43 @@ pub async fn nft_gallery_view(
     Ok(atlas_nft_gallery::build_gallery(&items, &filter))
 }
 
+// ---- Staking aggregation --------------------------------------------
+
+/// Aggregate a user's delegations on one chain into a `ChainPosition`
+/// (totals + stake-weighted net APR). Validators are needed so we can
+/// resolve each delegation's APR.
+#[tauri::command]
+#[specta::specta]
+pub async fn staking_aggregate_chain(
+    chain: atlas_staking::StakingChain,
+    delegations: Vec<atlas_staking::Delegation>,
+    validators: Vec<atlas_staking::Validator>,
+) -> CmdResult<atlas_staking::ChainPosition> {
+    atlas_staking::aggregate_chain(chain, &delegations, &validators)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Pick a sensible validator from a candidate list (active +
+/// reasonable commission + decentralisation-friendly tiebreakers).
+#[tauri::command]
+#[specta::specta]
+pub async fn staking_recommend_validator(
+    validators: Vec<atlas_staking::Validator>,
+) -> CmdResult<Option<atlas_staking::Validator>> {
+    Ok(atlas_staking::recommend_validator(&validators).cloned())
+}
+
+/// Convert a nominal APR to APY using the chain's typical compounding
+/// frequency (saves the UI from hard-coding magic numbers).
+#[tauri::command]
+#[specta::specta]
+pub async fn staking_apr_to_apy(chain: atlas_staking::StakingChain, apr: f64) -> CmdResult<f64> {
+    Ok(atlas_staking::apr_to_apy(
+        apr,
+        chain.default_compounds_per_year(),
+    ))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

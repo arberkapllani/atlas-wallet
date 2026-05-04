@@ -210,6 +210,52 @@ export const commands = {
 	 *  the UI (collection grouping, value totals, optional spam filter).
 	 */
 	nftGalleryView: (items: OwnedNft[], filter: GalleryFilter) => typedError<GalleryView, CmdError>(__TAURI_INVOKE("nft_gallery_view", { items, filter })),
+	/**
+	 *  Aggregate a user's delegations on one chain into a `ChainPosition`
+	 *  (totals + stake-weighted net APR). Validators are needed so we can
+	 *  resolve each delegation's APR.
+	 */
+	stakingAggregateChain: (chain: StakingChain, delegations: Delegation[], validators: Validator[]) => typedError<ChainPosition, CmdError>(__TAURI_INVOKE("staking_aggregate_chain", { chain, delegations, validators })),
+	/**
+	 *  Pick a sensible validator from a candidate list (active +
+	 *  reasonable commission + decentralisation-friendly tiebreakers).
+	 */
+	stakingRecommendValidator: (validators: Validator[]) => typedError<{
+	chain: StakingChain,
+	// Chain-native identifier (vote pubkey, valoper address, pool id, etc).
+	id: string,
+	name: string,
+	// Commission in basis points (10000 = 100%).
+	commission_bps: number,
+	/**
+	 *  Self-reported total stake in the network's base units
+	 *  (lamports, uatom, lovelace, plancks, wei). Stored as f64 so
+	 *  extreme totals (Polkadot validators) round-trip cleanly through
+	 *  JSON without needing u128.
+	 */
+	total_stake: number,
+	/**
+	 *  Net APR (after the validator's commission) as a fraction
+	 *  (0.045 = 4.5%).
+	 */
+	net_apr: number,
+	/**
+	 *  Whether this validator is currently active (in the active set
+	 *  / not jailed / not slashed-out).
+	 */
+	active: boolean,
+	/**
+	 *  True if Atlas considers this validator decentralisation-friendly
+	 *  (small share of total stake, no jail history). Used to bias the
+	 *  recommendation list without hiding alternatives.
+	 */
+	recommended: boolean,
+} | null, CmdError>(__TAURI_INVOKE("staking_recommend_validator", { validators })),
+	/**
+	 *  Convert a nominal APR to APY using the chain's typical compounding
+	 *  frequency (saves the UI from hard-coding magic numbers).
+	 */
+	stakingAprToApy: (chain: StakingChain, apr: number) => typedError<number, CmdError>(__TAURI_INVOKE("staking_apr_to_apy", { chain, apr })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -412,6 +458,20 @@ export type BiometricStatus = {
 	available: boolean,
 	// `true` if the user has opted in to biometric unlock.
 	enabled: boolean,
+};
+
+// Aggregated staking position for one chain.
+export type ChainPosition = {
+	chain: StakingChain,
+	delegations: Delegation[],
+	total_staked: number,
+	total_pending_rewards: number,
+	total_unbonding: number,
+	/**
+	 *  Stake-weighted average net APR across the user's delegations.
+	 *  0.0 if `total_staked == 0`.
+	 */
+	weighted_net_apr: number,
 };
 
 export type ChainSummary = {
@@ -619,6 +679,21 @@ export type DappRisk =
 "unknown" | 
 // Origin is on the blocklist (phishing / known scam).
 "blocked";
+
+// User's delegation to one validator.
+export type Delegation = {
+	chain: StakingChain,
+	validator_id: string,
+	// Delegated amount in base units.
+	amount: number,
+	/**
+	 *  Pending rewards in base units. May be 0 for chains that
+	 *  auto-restake (Lido stETH).
+	 */
+	pending_rewards: number,
+	// Pending unbonding amount in base units (still locked).
+	unbonding: number,
+};
 
 // Subset of the estimate response.
 export type Estimate = {
@@ -1287,6 +1362,9 @@ vendor: string } |
 // Watch-only — cannot sign at all.
 { kind: "watch_only" };
 
+// Networks where Atlas surfaces native staking.
+export type StakingChain = "solana" | "cosmos" | "cardano" | "polkadot" | "ethereum" | "polygon";
+
 /**
  *  Atlas-side fee configuration. Each provider has a different
  *  affiliate mechanism; the wallet stores the union and the
@@ -1481,6 +1559,39 @@ export type UserOperation = {
 	 *  non-empty, the first 20 bytes are the paymaster contract.
 	 */
 	paymaster_and_data: string,
+};
+
+// One validator the user can delegate to.
+export type Validator = {
+	chain: StakingChain,
+	// Chain-native identifier (vote pubkey, valoper address, pool id, etc).
+	id: string,
+	name: string,
+	// Commission in basis points (10000 = 100%).
+	commission_bps: number,
+	/**
+	 *  Self-reported total stake in the network's base units
+	 *  (lamports, uatom, lovelace, plancks, wei). Stored as f64 so
+	 *  extreme totals (Polkadot validators) round-trip cleanly through
+	 *  JSON without needing u128.
+	 */
+	total_stake: number,
+	/**
+	 *  Net APR (after the validator's commission) as a fraction
+	 *  (0.045 = 4.5%).
+	 */
+	net_apr: number,
+	/**
+	 *  Whether this validator is currently active (in the active set
+	 *  / not jailed / not slashed-out).
+	 */
+	active: boolean,
+	/**
+	 *  True if Atlas considers this validator decentralisation-friendly
+	 *  (small share of total stake, no jail history). Used to bias the
+	 *  recommendation list without hiding alternatives.
+	 */
+	recommended: boolean,
 };
 
 /**

@@ -311,6 +311,7 @@ dependencies = [
  "atlas-profile",
  "atlas-settings",
  "atlas-shamir",
+ "atlas-staking",
  "atlas-token-registry",
  "atlas-wallet-core",
  "atlas-walletconnect",
@@ -521,6 +522,15 @@ version = "0.1.0"
 dependencies = [
  "hex",
  "rand 0.8.6",
+ "serde",
+ "specta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "atlas-staking"
+version = "0.1.0"
+dependencies = [
  "serde",
  "specta",
  "thiserror 1.0.69",
