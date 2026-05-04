@@ -1782,6 +1782,51 @@ pub async fn slippage_deadline_unix(now_unix: u64, deadline_secs: u64) -> CmdRes
         .map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+// ---- presentation formatters --------------------------------------
+
+/// Locale-aware currency formatter (e.g. "$1,234.56").
+#[tauri::command]
+#[specta::specta]
+pub async fn fmt_currency(
+    amount: f64,
+    code: String,
+    locale_tag: String,
+    decimals: u32,
+) -> CmdResult<String> {
+    Ok(atlas_fmt::format_currency(
+        amount,
+        &code,
+        &locale_tag,
+        decimals,
+    ))
+}
+
+/// Compact number formatter (e.g. 1234567 -> "1.23M").
+#[tauri::command]
+#[specta::specta]
+pub async fn fmt_compact(value: f64) -> CmdResult<String> {
+    Ok(atlas_fmt::format_compact(value))
+}
+
+/// Format a base-unit decimal string into a human token amount.
+#[tauri::command]
+#[specta::specta]
+pub async fn fmt_token_amount(
+    base_units: String,
+    decimals: u32,
+    max_significant: u32,
+) -> CmdResult<String> {
+    atlas_fmt::format_token_amount(&base_units, decimals, max_significant)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Shorten a 0x address to "0x1234\u{2026}abcd" form.
+#[tauri::command]
+#[specta::specta]
+pub async fn fmt_truncate_address(addr: String) -> CmdResult<String> {
+    Ok(atlas_fmt::truncate_address(&addr))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

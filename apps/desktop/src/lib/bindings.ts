@@ -341,6 +341,14 @@ export const commands = {
 	slippageMaxIn: (amountInQuote: string, slippageBps: number) => typedError<string, CmdError>(__TAURI_INVOKE("slippage_max_in", { amountInQuote, slippageBps })),
 	// Compute the absolute deadline timestamp (unix seconds).
 	slippageDeadlineUnix: (nowUnix: number, deadlineSecs: number) => typedError<number, CmdError>(__TAURI_INVOKE("slippage_deadline_unix", { nowUnix, deadlineSecs })),
+	// Locale-aware currency formatter (e.g. "$1,234.56").
+	fmtCurrency: (amount: number, code: string, localeTag: string, decimals: number) => typedError<string, CmdError>(__TAURI_INVOKE("fmt_currency", { amount, code, localeTag, decimals })),
+	// Compact number formatter (e.g. 1234567 -> "1.23M").
+	fmtCompact: (value: number) => typedError<string, CmdError>(__TAURI_INVOKE("fmt_compact", { value })),
+	// Format a base-unit decimal string into a human token amount.
+	fmtTokenAmount: (baseUnits: string, decimals: number, maxSignificant: number) => typedError<string, CmdError>(__TAURI_INVOKE("fmt_token_amount", { baseUnits, decimals, maxSignificant })),
+	// Shorten a 0x address to "0x1234\u{2026}abcd" form.
+	fmtTruncateAddress: (addr: string) => typedError<string, CmdError>(__TAURI_INVOKE("fmt_truncate_address", { addr })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.

@@ -359,6 +359,7 @@ dependencies = [
  "atlas-exchange-router",
  "atlas-exchange-thorchain",
  "atlas-fees",
+ "atlas-fmt",
  "atlas-gascost",
  "atlas-multisig-btc",
  "atlas-multisig-evm",
