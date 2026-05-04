@@ -42,6 +42,7 @@ atlas-profile = { workspace = true }
 atlas-settings = { workspace = true }
 atlas-token-registry = { workspace = true }
 atlas-nft-registry = { workspace = true }
+atlas-biometric = { workspace = true }
 atlas-exchange-1inch = { workspace = true }
 uuid = { workspace = true }
 

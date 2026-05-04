@@ -75,6 +75,14 @@ export const commands = {
 	 *  string to disable the feature.
 	 */
 	setAntiPhishingPhrase: (phrase: string | null) => typedError<string | null, CmdError>(__TAURI_INVOKE("set_anti_phishing_phrase", { phrase })),
+	// Combined biometric availability + user preference.
+	biometricStatus: () => typedError<BiometricStatus, CmdError>(__TAURI_INVOKE("biometric_status")),
+	/**
+	 *  Persist the user's biometric-unlock preference. The actual
+	 *  platform check happens at unlock time; this command only
+	 *  records the preference.
+	 */
+	setBiometricUnlockEnabled: (enabled: boolean) => typedError<boolean, CmdError>(__TAURI_INVOKE("set_biometric_unlock_enabled", { enabled })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -230,6 +238,18 @@ export type BalanceUpdatedEvent = {
 	// Base-units integer encoded as a decimal string for u128 safety.
 	amount: string,
 	asset: string,
+};
+
+/**
+ *  Snapshot of biometric capabilities + user preference. Used by
+ *  the unlock screen to decide whether to show the Hello / Touch
+ *  ID prompt button.
+ */
+export type BiometricStatus = {
+	// `true` if the OS reports an enrolled sensor reachable.
+	available: boolean,
+	// `true` if the user has opted in to biometric unlock.
+	enabled: boolean,
 };
 
 export type ChainSummary = {

@@ -147,6 +147,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-biometric"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
 name = "atlas-chain-bitcoin"
 version = "0.1.0"
 dependencies = [
@@ -254,6 +263,7 @@ name = "atlas-desktop"
 version = "0.1.0"
 dependencies = [
  "aes-gcm",
+ "atlas-biometric",
  "atlas-chain-bitcoin",
  "atlas-chain-cardano",
  "atlas-chain-cosmos",

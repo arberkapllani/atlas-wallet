@@ -45,6 +45,8 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::set_auto_lock_minutes,
             commands::get_anti_phishing_phrase,
             commands::set_anti_phishing_phrase,
+            commands::biometric_status,
+            commands::set_biometric_unlock_enabled,
             commands::network_health,
             commands::network_health_all,
             commands::get_exchange_settings,

@@ -818,6 +818,45 @@ pub async fn set_anti_phishing_phrase(
     Ok(state.settings.anti_phishing_phrase())
 }
 
+/// Snapshot of biometric capabilities + user preference. Used by
+/// the unlock screen to decide whether to show the Hello / Touch
+/// ID prompt button.
+#[derive(Debug, serde::Serialize, specta::Type)]
+pub struct BiometricStatus {
+    /// `true` if the OS reports an enrolled sensor reachable.
+    pub available: bool,
+    /// `true` if the user has opted in to biometric unlock.
+    pub enabled: bool,
+}
+
+/// Combined biometric availability + user preference.
+#[tauri::command]
+#[specta::specta]
+pub async fn biometric_status(state: State<'_, Arc<AppState>>) -> CmdResult<BiometricStatus> {
+    let provider = atlas_biometric::default_provider();
+    let available = provider.is_available().await;
+    Ok(BiometricStatus {
+        available,
+        enabled: state.settings.biometric_unlock_enabled(),
+    })
+}
+
+/// Persist the user's biometric-unlock preference. The actual
+/// platform check happens at unlock time; this command only
+/// records the preference.
+#[tauri::command]
+#[specta::specta]
+pub async fn set_biometric_unlock_enabled(
+    state: State<'_, Arc<AppState>>,
+    enabled: bool,
+) -> CmdResult<bool> {
+    state
+        .settings
+        .set_biometric_unlock_enabled(enabled)
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    Ok(state.settings.biometric_unlock_enabled())
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

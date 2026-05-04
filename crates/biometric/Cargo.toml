@@ -1,0 +1,13 @@
+[package]
+name = "atlas-biometric"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Cross-platform biometric (Windows Hello / Touch ID) wrapper for Atlas."
+
+[dependencies]
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }

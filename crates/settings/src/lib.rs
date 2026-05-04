@@ -83,6 +83,13 @@ pub struct SettingsData {
     /// immediately recognisable. Absent = feature disabled.
     #[serde(default)]
     pub anti_phishing_phrase: Option<String>,
+    /// `true` if the user has opted into biometric (Windows Hello
+    /// / Touch ID) confirmation when re-unlocking within the
+    /// auto-lock window. Defaults to `false`. Atlas never replaces
+    /// the master password — biometrics only gate access to a
+    /// *previously-unlocked* seed cached in memory.
+    #[serde(default)]
+    pub biometric_unlock_enabled: bool,
 }
 
 fn default_auto_lock_minutes() -> u32 {
@@ -98,6 +105,7 @@ impl Default for SettingsData {
             oneinch_base_url: None,
             auto_lock_minutes: default_auto_lock_minutes(),
             anti_phishing_phrase: None,
+            biometric_unlock_enabled: false,
         }
     }
 }
@@ -270,6 +278,25 @@ impl Settings {
         {
             let mut g = self.inner.write().expect("settings poisoned");
             g.anti_phishing_phrase = normalised;
+        }
+        self.persist()
+    }
+
+    /// `true` if biometric unlock has been opted in. The actual
+    /// availability of the platform sensor is checked separately
+    /// at unlock time — this flag only stores the user preference.
+    pub fn biometric_unlock_enabled(&self) -> bool {
+        self.inner
+            .read()
+            .expect("settings poisoned")
+            .biometric_unlock_enabled
+    }
+
+    /// Persist the user's biometric-unlock preference.
+    pub fn set_biometric_unlock_enabled(&self, enabled: bool) -> Result<(), SettingsError> {
+        {
+            let mut g = self.inner.write().expect("settings poisoned");
+            g.biometric_unlock_enabled = enabled;
         }
         self.persist()
     }
