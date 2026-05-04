@@ -274,6 +274,7 @@ dependencies = [
  "atlas-chain-utxo",
  "atlas-exchange-1inch",
  "atlas-exchange-jupiter",
+ "atlas-exchange-thorchain",
  "atlas-nft-registry",
  "atlas-price-oracle",
  "atlas-profile",
@@ -315,6 +316,19 @@ dependencies = [
 
 [[package]]
 name = "atlas-exchange-jupiter"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "specta",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
+name = "atlas-exchange-thorchain"
 version = "0.1.0"
 dependencies = [
  "async-trait",

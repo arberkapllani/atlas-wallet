@@ -132,6 +132,12 @@ export const commands = {
 	 *  `atlas-chain-solana`.
 	 */
 	jupiterSwap: (args: JupiterSwapArgs) => typedError<SwapTransaction, CmdError>(__TAURI_INVOKE("jupiter_swap", { args })),
+	/**
+	 *  Fetch a THORChain swap quote. The returned `inbound_address`
+	 *  + `memo` are what the wallet then sends to on the source
+	 *  chain.
+	 */
+	thorchainQuote: (args: ThorchainQuoteArgs) => typedError<ThorchainQuote, CmdError>(__TAURI_INVOKE("thorchain_quote", { args })),
 	listProfiles: () => typedError<ProfileSummary[], CmdError>(__TAURI_INVOKE("list_profiles")),
 	activeProfile: () => typedError<{
 	// Stable id (as string for JS).
@@ -695,6 +701,64 @@ export type SwapTransaction = {
 	swapTransaction: string,
 	// Last valid blockhash (for retries / expiry).
 	lastValidBlockHeight: number,
+};
+
+/**
+ *  Subset of the `/thorchain/quote/swap` response. THORChain's
+ *  schema includes many advisory fields; we keep what the wallet
+ *  actually needs to build the deposit transaction.
+ */
+export type ThorchainQuote = {
+	// Address on the source chain to send funds to.
+	inbound_address: string,
+	// Memo string to attach to the deposit transaction.
+	memo: string,
+	// Estimated output in 1e8 base units (decimal string).
+	expected_amount_out: string,
+	// Total fees in destination asset, 1e8 base units.
+	total_swap_seconds?: number | null,
+	/**
+	 *  Block height at which the inbound address rotates.
+	 *  THORChain rotates vaults; deposits after this height are
+	 *  risky.
+	 */
+	expiry?: number | null,
+	/**
+	 *  Suggested gas / fee on the source chain (advisory,
+	 *  decimal string in 1e8 base units when present). Surfaced
+	 *  as a JSON string in TS bindings since specta can't derive
+	 *  on `serde_json::Value`.
+	 */
+	fees?: string | null,
+	// Optional minimum recommended slippage tolerance (bps).
+	recommended_min_amount_in?: string | null,
+	/**
+	 *  Warnings the protocol attaches to the quote (e.g.
+	 *  "outbound delay > 24 h"). Surfaced verbatim to the UI.
+	 */
+	notes?: string | null,
+	// Echoed router contract address (EVM only).
+	router?: string | null,
+};
+
+export type ThorchainQuoteArgs = {
+	/**
+	 *  Source asset in THORChain notation (e.g. "BTC.BTC",
+	 *  "ETH.USDC-0xa0b8...eb48").
+	 */
+	from_asset: string,
+	// Destination asset.
+	to_asset: string,
+	// Amount in 1e8-fixed-point base units (string-encoded).
+	amount: string,
+	// Recipient address on the destination chain.
+	destination: string,
+	// Optional affiliate THORName.
+	affiliate: string | null,
+	// Optional affiliate basis points (0..=1000).
+	affiliate_bps: number | null,
+	// Optional minimum acceptable output (slippage protection).
+	min_amount_out: string | null,
 };
 
 // Token contract standard.

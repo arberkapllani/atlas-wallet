@@ -45,6 +45,7 @@ atlas-nft-registry = { workspace = true }
 atlas-biometric = { workspace = true }
 atlas-exchange-1inch = { workspace = true }
 atlas-exchange-jupiter = { workspace = true }
+atlas-exchange-thorchain = { workspace = true }
 uuid = { workspace = true }
 
 specta = { workspace = true }

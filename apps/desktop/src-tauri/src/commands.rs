@@ -1310,6 +1310,58 @@ pub async fn jupiter_swap(
 }
 
 // =============================================================================
+// THORChain (cross-chain native swaps) — read-only quote.
+// =============================================================================
+//
+// THORChain doesn't return an unsigned transaction; the wallet
+// builds and signs the deposit on the source chain itself, using
+// the inbound_address + memo from the quote. The signing path
+// reuses atlas-chain-bitcoin / atlas-chain-evm / etc. directly.
+
+#[derive(Debug, serde::Deserialize, specta::Type)]
+pub struct ThorchainQuoteArgs {
+    /// Source asset in THORChain notation (e.g. "BTC.BTC",
+    /// "ETH.USDC-0xa0b8...eb48").
+    pub from_asset: String,
+    /// Destination asset.
+    pub to_asset: String,
+    /// Amount in 1e8-fixed-point base units (string-encoded).
+    pub amount: String,
+    /// Recipient address on the destination chain.
+    pub destination: String,
+    /// Optional affiliate THORName.
+    pub affiliate: Option<String>,
+    /// Optional affiliate basis points (0..=1000).
+    pub affiliate_bps: Option<u32>,
+    /// Optional minimum acceptable output (slippage protection).
+    pub min_amount_out: Option<String>,
+}
+
+/// Fetch a THORChain swap quote. The returned `inbound_address`
+/// + `memo` are what the wallet then sends to on the source
+/// chain.
+#[tauri::command]
+#[specta::specta]
+pub async fn thorchain_quote(
+    args: ThorchainQuoteArgs,
+) -> CmdResult<atlas_exchange_thorchain::ThorchainQuote> {
+    let client = atlas_exchange_thorchain::ThorchainClient::new();
+    let req = atlas_exchange_thorchain::ThorchainQuoteRequest {
+        from_asset: args.from_asset,
+        to_asset: args.to_asset,
+        amount: args.amount,
+        destination: args.destination,
+        affiliate: args.affiliate,
+        affiliate_bps: args.affiliate_bps,
+        min_amount_out: args.min_amount_out,
+    };
+    client
+        .quote(&req)
+        .await
+        .map_err(|e| CmdError::Chain(e.to_string()))
+}
+
+// =============================================================================
 // Internal helpers
 // =============================================================================
 
