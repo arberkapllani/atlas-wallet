@@ -19,6 +19,9 @@
   import DappRegistryCard from '$lib/settings/DappRegistryCard.svelte';
   import NftGalleryCard from '$lib/settings/NftGalleryCard.svelte';
   import AaUserOpCard from '$lib/settings/AaUserOpCard.svelte';
+  import ShamirCard from '$lib/settings/ShamirCard.svelte';
+  import WalletConnectCard from '$lib/settings/WalletConnectCard.svelte';
+  import BiometricStatusCard from '$lib/settings/BiometricStatusCard.svelte';
   import { goto } from '$app/navigation';
   import { wallet } from '$lib/stores/wallet';
 </script>
@@ -64,6 +67,12 @@
   <NftGalleryCard />
 
   <AaUserOpCard />
+
+  <ShamirCard />
+
+  <WalletConnectCard />
+
+  <BiometricStatusCard />
 
   <Card title="Security">
     <div class="space-y-3 text-sm">

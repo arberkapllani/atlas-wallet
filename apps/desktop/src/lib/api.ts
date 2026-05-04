@@ -70,7 +70,10 @@ export type {
   CollectionGroup,
   OwnedNft,
   UserOperation,
-  UserOpHashes
+  UserOpHashes,
+  Share,
+  WcUri,
+  BiometricStatus
 } from './bindings';
 import type {
   Eip1559Suggestion,
@@ -126,7 +129,10 @@ import type {
   CollectionGroup,
   OwnedNft,
   UserOperation,
-  UserOpHashes
+  UserOpHashes,
+  Share,
+  WcUri,
+  BiometricStatus
 } from './bindings';
 
 export interface ChainSummary {
@@ -548,7 +554,19 @@ export const api = {
   aaUserOpHash: (entryPoint: string, chainId: number, op: UserOperation) =>
     invoke<UserOpHashes>('aa_user_op_hash', { entryPoint, chainId, op }),
   aaEncodeExecuteCalldata: (target: string, value: string, data: string) =>
-    invoke<string>('aa_encode_execute_calldata', { target, value, data })
+    invoke<string>('aa_encode_execute_calldata', { target, value, data }),
+
+  // atlas-shamir SLIP-39-style secret sharing.
+  shamirSplit: (secretHex: string, threshold: number, total: number) =>
+    invoke<Share[]>('shamir_split', { secretHex, threshold, total }),
+  shamirCombine: (shares: Share[]) => invoke<string>('shamir_combine', { shares }),
+
+  // atlas-walletconnect v2 pairing-URI parser.
+  wcParseUri: (uri: string) => invoke<WcUri>('wc_parse_uri', { uri }),
+  wcBuildUri: (uri: WcUri) => invoke<string>('wc_build_uri', { uri }),
+
+  // atlas-biometric status + preference.
+  biometricStatusReport: () => invoke<BiometricStatus>('biometric_status')
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */
