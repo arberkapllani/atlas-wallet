@@ -5,6 +5,7 @@
   import { formatAmount, type Amount } from '$lib/api';
   import Button from '$lib/ui/Button.svelte';
   import Card from '$lib/ui/Card.svelte';
+  import DiversificationCard from '$lib/portfolio/DiversificationCard.svelte';
 
   $: total = (() => {
     let v = 0;
@@ -80,4 +81,6 @@
       {/each}
     </div>
   </Card>
+
+  <DiversificationCard />
 </div>
