@@ -41,6 +41,7 @@ members = [
     "crates/blocklist",
     "crates/pnl",
     "crates/fmt",
+    "crates/payuri",
     "apps/desktop/src-tauri",
 ]
 
@@ -135,6 +136,7 @@ atlas-eip712 = { path = "crates/eip712" }
 atlas-blocklist = { path = "crates/blocklist" }
 atlas-pnl = { path = "crates/pnl" }
 atlas-fmt = { path = "crates/fmt" }
+atlas-payuri = { path = "crates/payuri" }
 
 # Misc
 uuid = { version = "1.10", features = ["v4", "serde"] }

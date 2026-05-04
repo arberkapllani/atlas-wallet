@@ -92,6 +92,7 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::eip712_classify,
             commands::blocklist_assess,
             commands::pnl_compute,
+            commands::payuri_parse,
             commands::network_health,
             commands::network_health_all,
             commands::get_exchange_settings,

@@ -350,6 +350,7 @@ dependencies = [
  "atlas-nft-gallery",
  "atlas-nft-registry",
  "atlas-onramp",
+ "atlas-payuri",
  "atlas-phishing",
  "atlas-pnl",
  "atlas-price-oracle",
@@ -540,6 +541,15 @@ dependencies = [
  "hmac",
  "serde",
  "sha2",
+ "specta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "atlas-payuri"
+version = "0.1.0"
+dependencies = [
+ "serde",
  "specta",
  "thiserror 1.0.69",
 ]

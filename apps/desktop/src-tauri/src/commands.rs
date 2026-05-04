@@ -1612,6 +1612,15 @@ pub async fn pnl_compute(
     atlas_pnl::compute(&trades, &prices, method).map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+// ---- Payment URI parser/builder ------------------------------------
+
+/// Parse a BIP-21 / EIP-681 payment URI scanned from a QR code.
+#[tauri::command]
+#[specta::specta]
+pub async fn payuri_parse(input: String) -> CmdResult<atlas_payuri::PaymentIntent> {
+    atlas_payuri::parse(&input).map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

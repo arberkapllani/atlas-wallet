@@ -65,6 +65,7 @@ atlas-address-poisoning = { workspace = true }
 atlas-eip712 = { workspace = true }
 atlas-blocklist = { workspace = true }
 atlas-pnl = { workspace = true }
+atlas-payuri = { workspace = true }
 uuid = { workspace = true }
 
 specta = { workspace = true }

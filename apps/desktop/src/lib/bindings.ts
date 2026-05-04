@@ -296,6 +296,8 @@ export const commands = {
 	blocklistAssess: (address: string, list: Blocklist) => typedError<BlocklistVerdict, CmdError>(__TAURI_INVOKE("blocklist_assess", { address, list })),
 	// Compute realized + unrealized P&L over a list of trades.
 	pnlCompute: (trades: Trade[], prices: { [key in string]: number }, method: AccountingMethod) => typedError<PortfolioReport, CmdError>(__TAURI_INVOKE("pnl_compute", { trades, prices, method })),
+	// Parse a BIP-21 / EIP-681 payment URI scanned from a QR code.
+	payuriParse: (input: string) => typedError<PaymentIntent, CmdError>(__TAURI_INVOKE("payuri_parse", { input })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -607,6 +609,14 @@ export type BiometricStatus = {
 	available: boolean,
 	// `true` if the user has opted in to biometric unlock.
 	enabled: boolean,
+};
+
+export type BitcoinPayment = {
+	address: string,
+	// Amount in BTC as a decimal string (preserves precision).
+	amount_btc: string | null,
+	label: string | null,
+	message: string | null,
 };
 
 // In-memory, hash-keyed blocklist.
@@ -973,6 +983,29 @@ export type Estimate = {
 	 *  later creating a fixed-rate exchange.
 	 */
 	rateId?: string | null,
+};
+
+export type EthereumPayment = {
+	// `to` for native, or the contract for `transfer`.
+	address: string,
+	chain_id: number | null,
+	/**
+	 *  `Some` only when a `transfer` function call is encoded
+	 *  (ERC-20 token transfers).
+	 */
+	function: string | null,
+	/**
+	 *  For ERC-20: real recipient (decoded from `address` query
+	 *  parameter on the contract call).
+	 */
+	token_recipient: string | null,
+	/**
+	 *  Amount in wei as a decimal string. For ERC-20 this is the
+	 *  `uint256` parameter (token base units).
+	 */
+	amount_wei: string | null,
+	// Optional gas / gasPrice query params, unparsed.
+	gas: string | null,
 };
 
 export type ExchangeConfigArgs = {
@@ -1374,6 +1407,9 @@ export type OwnedTokenMeta = {
 	// `"static"`, `"remote"` (tokenlists.org), or `"custom"` (user-added).
 	source: string,
 };
+
+// Discriminated payment intent.
+export type PaymentIntent = { kind: "Bitcoin" } & (BitcoinPayment) | { kind: "Ethereum" } & (EthereumPayment);
 
 // Configuration for `analyze`.
 export type PhishingConfig = {
