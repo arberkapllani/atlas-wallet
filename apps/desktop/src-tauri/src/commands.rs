@@ -1909,6 +1909,109 @@ async fn persist_txnotes(state: &Arc<AppState>) -> CmdResult<()> {
         .map_err(|e| CmdError::InvalidInput(format!("persist txnotes: {e}")))
 }
 
+// ---- contacts (address book) --------------------------------------
+
+/// All contacts, ordered by name.
+#[tauri::command]
+#[specta::specta]
+pub async fn contacts_list(
+    state: State<'_, Arc<AppState>>,
+) -> CmdResult<Vec<atlas_contacts::Contact>> {
+    Ok(state.contacts.read().await.list())
+}
+
+/// Get one contact by uuid.
+#[tauri::command]
+#[specta::specta]
+pub async fn contacts_get(
+    state: State<'_, Arc<AppState>>,
+    id: String,
+) -> CmdResult<Option<atlas_contacts::Contact>> {
+    Ok(state.contacts.read().await.get(&id).cloned())
+}
+
+/// Add a new contact and return the assigned uuid.
+#[tauri::command]
+#[specta::specta]
+pub async fn contacts_add(
+    state: State<'_, Arc<AppState>>,
+    name: String,
+    note: String,
+    addresses: Vec<atlas_contacts::ContactAddress>,
+) -> CmdResult<String> {
+    let id = {
+        let mut book = state.contacts.write().await;
+        book.add(&name, &note, &addresses)
+            .map_err(|e| CmdError::InvalidInput(e.to_string()))?
+    };
+    persist_contacts(&state).await?;
+    Ok(id)
+}
+
+/// Update an existing contact.
+#[tauri::command]
+#[specta::specta]
+pub async fn contacts_update(
+    state: State<'_, Arc<AppState>>,
+    id: String,
+    name: String,
+    note: String,
+    addresses: Vec<atlas_contacts::ContactAddress>,
+) -> CmdResult<()> {
+    {
+        let mut book = state.contacts.write().await;
+        book.update(&id, &name, &note, &addresses)
+            .map_err(|e| CmdError::InvalidInput(e.to_string()))?;
+    }
+    persist_contacts(&state).await
+}
+
+/// Remove a contact. Returns whether one existed.
+#[tauri::command]
+#[specta::specta]
+pub async fn contacts_remove(state: State<'_, Arc<AppState>>, id: String) -> CmdResult<bool> {
+    let removed = {
+        let mut book = state.contacts.write().await;
+        book.remove(&id)
+    };
+    if removed {
+        persist_contacts(&state).await?;
+    }
+    Ok(removed)
+}
+
+/// Find the contact (if any) that owns this `chain`+`address`.
+#[tauri::command]
+#[specta::specta]
+pub async fn contacts_find_by_address(
+    state: State<'_, Arc<AppState>>,
+    chain: atlas_contacts::ContactChain,
+    address: String,
+) -> CmdResult<Option<atlas_contacts::Contact>> {
+    Ok(state
+        .contacts
+        .read()
+        .await
+        .find_by_address(chain, &address)
+        .cloned())
+}
+
+/// Case-insensitive substring search across name + note.
+#[tauri::command]
+#[specta::specta]
+pub async fn contacts_search(
+    state: State<'_, Arc<AppState>>,
+    query: String,
+) -> CmdResult<Vec<atlas_contacts::Contact>> {
+    Ok(state.contacts.read().await.search(&query))
+}
+
+async fn persist_contacts(state: &Arc<AppState>) -> CmdResult<()> {
+    let snapshot = state.contacts.read().await.clone();
+    crate::state::save_json(&state.data_dir, "contacts.json", &snapshot)
+        .map_err(|e| CmdError::InvalidInput(format!("persist contacts: {e}")))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

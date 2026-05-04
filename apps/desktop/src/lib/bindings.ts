@@ -366,6 +366,30 @@ export const commands = {
 	txnotesListByTag: (tag: string) => typedError<TxNote[], CmdError>(__TAURI_INVOKE("txnotes_list_by_tag", { tag })),
 	// Distinct, sorted list of every tag used across all notes.
 	txnotesAllTags: () => typedError<string[], CmdError>(__TAURI_INVOKE("txnotes_all_tags")),
+	// All contacts, ordered by name.
+	contactsList: () => typedError<Contact[], CmdError>(__TAURI_INVOKE("contacts_list")),
+	// Get one contact by uuid.
+	contactsGet: (id: string) => typedError<{
+	id: string,
+	name: string,
+	note: string,
+	addresses: ContactAddress[],
+} | null, CmdError>(__TAURI_INVOKE("contacts_get", { id })),
+	// Add a new contact and return the assigned uuid.
+	contactsAdd: (name: string, note: string, addresses: ContactAddress[]) => typedError<string, CmdError>(__TAURI_INVOKE("contacts_add", { name, note, addresses })),
+	// Update an existing contact.
+	contactsUpdate: (id: string, name: string, note: string, addresses: ContactAddress[]) => typedError<null, CmdError>(__TAURI_INVOKE("contacts_update", { id, name, note, addresses })),
+	// Remove a contact. Returns whether one existed.
+	contactsRemove: (id: string) => typedError<boolean, CmdError>(__TAURI_INVOKE("contacts_remove", { id })),
+	// Find the contact (if any) that owns this `chain`+`address`.
+	contactsFindByAddress: (chain: ContactChain, address: string) => typedError<{
+	id: string,
+	name: string,
+	note: string,
+	addresses: ContactAddress[],
+} | null, CmdError>(__TAURI_INVOKE("contacts_find_by_address", { chain, address })),
+	// Case-insensitive substring search across name + note.
+	contactsSearch: (query: string) => typedError<Contact[], CmdError>(__TAURI_INVOKE("contacts_search", { query })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -841,6 +865,21 @@ export type CollectionGroup = {
 	// Items in stable order (by token-id string).
 	items: OwnedNft[],
 };
+
+export type Contact = {
+	id: string,
+	name: string,
+	note: string,
+	addresses: ContactAddress[],
+};
+
+export type ContactAddress = {
+	chain: ContactChain,
+	// Lower-cased, trimmed.
+	address: string,
+};
+
+export type ContactChain = "Bitcoin" | "Ethereum";
 
 export type CreateHardwareArgs = {
 	name: string,

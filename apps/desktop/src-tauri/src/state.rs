@@ -171,7 +171,6 @@ pub struct AppState {
     /// Per-tx notes & tags. Persisted as JSON in `data_dir/txnotes.json`.
     pub txnotes: RwLock<atlas_txnotes::TxNoteStore>,
     /// Address book. Persisted as JSON in `data_dir/contacts.json`.
-    #[allow(dead_code)]
     pub contacts: RwLock<atlas_contacts::ContactBook>,
     /// In-memory ring-buffer of recent privacy-redacted events.
     #[allow(dead_code)]

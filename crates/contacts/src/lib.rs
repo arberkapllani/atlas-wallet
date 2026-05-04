@@ -1,7 +1,7 @@
 //! Address book / contacts store.
 //!
 //! Pure data: a contact has a stable id (UUID), a display name, an
-//! optional note, and one or more chain-tagged addresses. The
+//! optional note, and one or more ContactChain-tagged addresses. The
 //! same person can hold both a Bitcoin and an Ethereum address
 //! under one entry.
 
@@ -27,14 +27,14 @@ const MAX_NOTE_LEN: usize = 256;
 const MAX_ADDRESSES: usize = 16;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Type)]
-pub enum Chain {
+pub enum ContactChain {
     Bitcoin,
     Ethereum,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Type)]
 pub struct ContactAddress {
-    pub chain: Chain,
+    pub chain: ContactChain,
     /// Lower-cased, trimmed.
     pub address: String,
 }
@@ -136,8 +136,8 @@ impl ContactBook {
         self.contacts.remove(id).is_some()
     }
 
-    /// Look up the contact owning a given address (chain-aware).
-    pub fn find_by_address(&self, chain: Chain, address: &str) -> Option<&Contact> {
+    /// Look up the contact owning a given address (ContactChain-aware).
+    pub fn find_by_address(&self, chain: ContactChain, address: &str) -> Option<&Contact> {
         let needle = address.trim().to_lowercase();
         self.contacts.values().find(|c| {
             c.addresses
@@ -213,7 +213,7 @@ fn validate(
 mod tests {
     use super::*;
 
-    fn addr(chain: Chain, a: &str) -> ContactAddress {
+    fn addr(chain: ContactChain, a: &str) -> ContactAddress {
         ContactAddress {
             chain,
             address: a.to_string(),
@@ -224,7 +224,7 @@ mod tests {
     fn add_then_get() {
         let mut book = ContactBook::new();
         let id = book
-            .add("Alice", "friend", &[addr(Chain::Bitcoin, "bc1qabc")])
+            .add("Alice", "friend", &[addr(ContactChain::Bitcoin, "bc1qabc")])
             .unwrap();
         let c = book.get(&id).unwrap();
         assert_eq!(c.name, "Alice");
@@ -235,7 +235,7 @@ mod tests {
     fn address_is_lowercased_and_trimmed() {
         let mut book = ContactBook::new();
         let id = book
-            .add("Bob", "", &[addr(Chain::Ethereum, "  0xDeadBeef ")])
+            .add("Bob", "", &[addr(ContactChain::Ethereum, "  0xDeadBeef ")])
             .unwrap();
         assert_eq!(book.get(&id).unwrap().addresses[0].address, "0xdeadbeef");
     }
@@ -243,17 +243,22 @@ mod tests {
     #[test]
     fn find_by_address_is_case_insensitive() {
         let mut book = ContactBook::new();
-        book.add("Bob", "", &[addr(Chain::Ethereum, "0xdeadbeef")])
+        book.add("Bob", "", &[addr(ContactChain::Ethereum, "0xdeadbeef")])
             .unwrap();
-        let c = book.find_by_address(Chain::Ethereum, "0xDEADBEEF").unwrap();
+        let c = book
+            .find_by_address(ContactChain::Ethereum, "0xDEADBEEF")
+            .unwrap();
         assert_eq!(c.name, "Bob");
     }
 
     #[test]
     fn find_by_address_chain_isolation() {
         let mut book = ContactBook::new();
-        book.add("Bob", "", &[addr(Chain::Bitcoin, "abc")]).unwrap();
-        assert!(book.find_by_address(Chain::Ethereum, "abc").is_none());
+        book.add("Bob", "", &[addr(ContactChain::Bitcoin, "abc")])
+            .unwrap();
+        assert!(book
+            .find_by_address(ContactChain::Ethereum, "abc")
+            .is_none());
     }
 
     #[test]
@@ -264,9 +269,9 @@ mod tests {
                 "Bob",
                 "",
                 &[
-                    addr(Chain::Bitcoin, "abc"),
-                    addr(Chain::Bitcoin, "ABC"),
-                    addr(Chain::Bitcoin, "abc"),
+                    addr(ContactChain::Bitcoin, "abc"),
+                    addr(ContactChain::Bitcoin, "ABC"),
+                    addr(ContactChain::Bitcoin, "abc"),
                 ],
             )
             .unwrap();
@@ -292,7 +297,7 @@ mod tests {
     fn empty_address_in_list_is_rejected() {
         let mut book = ContactBook::new();
         let err = book
-            .add("Bob", "", &[addr(Chain::Bitcoin, "  ")])
+            .add("Bob", "", &[addr(ContactChain::Bitcoin, "  ")])
             .unwrap_err();
         assert!(matches!(err, ContactError::InvalidInput(_)));
     }
@@ -353,7 +358,7 @@ mod tests {
     #[test]
     fn json_round_trip() {
         let mut book = ContactBook::new();
-        book.add("Alice", "x", &[addr(Chain::Bitcoin, "abc")])
+        book.add("Alice", "x", &[addr(ContactChain::Bitcoin, "abc")])
             .unwrap();
         let restored = ContactBook::from_json(&book.to_json()).unwrap();
         assert_eq!(restored.len(), 1);
