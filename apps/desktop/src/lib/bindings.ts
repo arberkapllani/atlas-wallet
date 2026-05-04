@@ -326,6 +326,21 @@ export const commands = {
 	gascostFormatEth: (wei: string, decimals: number) => typedError<string, CmdError>(__TAURI_INVOKE("gascost_format_eth", { wei, decimals })),
 	// Score a portfolio's concentration and return per-position weights.
 	diversificationAnalyse: (holdings: Holding[]) => typedError<DiversificationReport, CmdError>(__TAURI_INVOKE("diversification_analyse", { holdings })),
+	// Validate slippage bps + deadline seconds. Returns the canonicalised pair.
+	slippageValidate: (slippageBps: number, deadlineSecs: number) => typedError<SwapSettings, CmdError>(__TAURI_INVOKE("slippage_validate", { slippageBps, deadlineSecs })),
+	// Bucket a slippage value into Low / Normal / High / Reckless.
+	slippageBand: (slippageBps: number) => typedError<SlippageBand, CmdError>(__TAURI_INVOKE("slippage_band", { slippageBps })),
+	/**
+	 *  Floor `amountOutMin` from a quote and slippage tolerance.
+	 * 
+	 *  `amount_out_quote` is a u128 passed as a decimal string so it
+	 *  survives the JS bridge.
+	 */
+	slippageMinOut: (amountOutQuote: string, slippageBps: number) => typedError<string, CmdError>(__TAURI_INVOKE("slippage_min_out", { amountOutQuote, slippageBps })),
+	// Ceiling `amountInMax` from a quote and slippage tolerance.
+	slippageMaxIn: (amountInQuote: string, slippageBps: number) => typedError<string, CmdError>(__TAURI_INVOKE("slippage_max_in", { amountInQuote, slippageBps })),
+	// Compute the absolute deadline timestamp (unix seconds).
+	slippageDeadlineUnix: (nowUnix: number, deadlineSecs: number) => typedError<number, CmdError>(__TAURI_INVOKE("slippage_deadline_unix", { nowUnix, deadlineSecs })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -1880,6 +1895,16 @@ vendor: string } |
 // Watch-only — cannot sign at all.
 { kind: "watch_only" };
 
+export type SlippageBand = 
+// <= 50 bps (0.50 %).
+"Low" | 
+// 50 < x <= 200 bps (0.50 % – 2.00 %).
+"Normal" | 
+// 200 < x <= 1000 bps (2 % – 10 %).
+"High" | 
+// > 1000 bps (over 10 %): show a confirmation banner.
+"Reckless";
+
 // One source's USD (or otherwise consistent unit) price quote.
 export type SourceQuote = {
 	// Human-readable source name (e.g. `"coingecko"`, `"1inch"`).
@@ -1918,6 +1943,11 @@ export type SwapFeeConfig = {
 	fee_bps: number,
 	// THORChain affiliate THORName, when configured.
 	thorchain_affiliate: string | null,
+};
+
+export type SwapSettings = {
+	slippage_bps: number,
+	deadline_secs: number,
 };
 
 /**

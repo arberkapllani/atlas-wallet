@@ -70,6 +70,7 @@ atlas-fees = { workspace = true }
 atlas-ens = { workspace = true }
 atlas-gascost = { workspace = true }
 atlas-diversification = { workspace = true }
+atlas-slippage = { workspace = true }
 uuid = { workspace = true }
 
 specta = { workspace = true }

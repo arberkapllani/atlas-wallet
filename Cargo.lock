@@ -372,6 +372,7 @@ dependencies = [
  "atlas-profile",
  "atlas-settings",
  "atlas-shamir",
+ "atlas-slippage",
  "atlas-staking",
  "atlas-token-registry",
  "atlas-tx-history",

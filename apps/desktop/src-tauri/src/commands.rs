@@ -1725,6 +1725,63 @@ pub async fn diversification_analyse(
     atlas_diversification::analyse(&holdings).map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+// ---- swap slippage / deadline math --------------------------------
+
+/// Validate slippage bps + deadline seconds. Returns the canonicalised pair.
+#[tauri::command]
+#[specta::specta]
+pub async fn slippage_validate(
+    slippage_bps: u32,
+    deadline_secs: u64,
+) -> CmdResult<atlas_slippage::SwapSettings> {
+    atlas_slippage::SwapSettings::new(slippage_bps, deadline_secs)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Bucket a slippage value into Low / Normal / High / Reckless.
+#[tauri::command]
+#[specta::specta]
+pub async fn slippage_band(slippage_bps: u32) -> CmdResult<atlas_slippage::SlippageBand> {
+    let s = atlas_slippage::SwapSettings::new(slippage_bps, atlas_slippage::MIN_DEADLINE_SECS)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))?;
+    Ok(s.band())
+}
+
+/// Floor `amountOutMin` from a quote and slippage tolerance.
+///
+/// `amount_out_quote` is a u128 passed as a decimal string so it
+/// survives the JS bridge.
+#[tauri::command]
+#[specta::specta]
+pub async fn slippage_min_out(amount_out_quote: String, slippage_bps: u32) -> CmdResult<String> {
+    let q: u128 = amount_out_quote
+        .parse()
+        .map_err(|_| CmdError::InvalidInput("amount_out_quote not a u128".into()))?;
+    atlas_slippage::min_out(q, slippage_bps)
+        .map(|v| v.to_string())
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Ceiling `amountInMax` from a quote and slippage tolerance.
+#[tauri::command]
+#[specta::specta]
+pub async fn slippage_max_in(amount_in_quote: String, slippage_bps: u32) -> CmdResult<String> {
+    let q: u128 = amount_in_quote
+        .parse()
+        .map_err(|_| CmdError::InvalidInput("amount_in_quote not a u128".into()))?;
+    atlas_slippage::max_in(q, slippage_bps)
+        .map(|v| v.to_string())
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Compute the absolute deadline timestamp (unix seconds).
+#[tauri::command]
+#[specta::specta]
+pub async fn slippage_deadline_unix(now_unix: u64, deadline_secs: u64) -> CmdResult<u64> {
+    atlas_slippage::deadline_unix(now_unix, deadline_secs)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]
