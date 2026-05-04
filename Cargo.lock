@@ -253,6 +253,7 @@ dependencies = [
 name = "atlas-desktop"
 version = "0.1.0"
 dependencies = [
+ "aes-gcm",
  "atlas-chain-bitcoin",
  "atlas-chain-cardano",
  "atlas-chain-cosmos",
@@ -268,6 +269,7 @@ dependencies = [
  "atlas-token-registry",
  "atlas-wallet-core",
  "hex",
+ "rand 0.8.6",
  "reqwest 0.12.28",
  "serde",
  "serde_json",

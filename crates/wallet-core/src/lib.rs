@@ -12,11 +12,13 @@
 #![forbid(unsafe_code)]
 #![warn(missing_docs, rust_2018_idioms)]
 
+pub mod appkey;
 pub mod derive;
 pub mod error;
 pub mod mnemonic;
 pub mod vault;
 
+pub use appkey::derive_app_key;
 pub use derive::{derive_account, AccountKey, ChainKind};
 pub use error::{Error, Result};
 pub use mnemonic::{Mnemonic, MnemonicLength};

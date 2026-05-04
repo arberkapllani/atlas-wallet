@@ -37,6 +37,14 @@ CREATE TABLE IF NOT EXISTS custom_tokens (
     logo_uri     TEXT,
     PRIMARY KEY (chain_id, contract)
 );
+CREATE TABLE IF NOT EXISTS address_book (
+    chain_id   TEXT NOT NULL,
+    address    TEXT NOT NULL,
+    nonce      BLOB NOT NULL,
+    ciphertext BLOB NOT NULL,
+    created_at INTEGER NOT NULL,
+    PRIMARY KEY (chain_id, address)
+);
 "#;
 
 /// One on-chain transaction the user (or Atlas itself) initiated.
@@ -240,6 +248,86 @@ impl Db {
             .await?;
         Ok(res.rows_affected())
     }
+
+    /// Insert (or replace) one address-book row. The caller supplies the
+    /// per-row 12-byte AES-GCM nonce and the encrypted payload (label +
+    /// notes blob), so the SQL layer never sees plaintext.
+    pub async fn address_book_put(
+        &self,
+        chain_id: &str,
+        address: &str,
+        nonce: &[u8],
+        ciphertext: &[u8],
+        created_at: i64,
+    ) -> Result<(), sqlx::Error> {
+        sqlx::query(
+            r#"INSERT OR REPLACE INTO address_book
+               (chain_id, address, nonce, ciphertext, created_at)
+               VALUES (?, ?, ?, ?, ?)"#,
+        )
+        .bind(chain_id)
+        .bind(address)
+        .bind(nonce)
+        .bind(ciphertext)
+        .bind(created_at)
+        .execute(&self.pool)
+        .await?;
+        Ok(())
+    }
+
+    /// List every address-book row (newest first). Pass `chain_id = ""`
+    /// to query across every chain.
+    pub async fn address_book_list(
+        &self,
+        chain_id: &str,
+    ) -> Result<Vec<AddressBookRow>, sqlx::Error> {
+        if chain_id.is_empty() {
+            sqlx::query_as::<_, AddressBookRow>(
+                "SELECT chain_id, address, nonce, ciphertext, created_at
+                 FROM address_book ORDER BY created_at DESC",
+            )
+            .fetch_all(&self.pool)
+            .await
+        } else {
+            sqlx::query_as::<_, AddressBookRow>(
+                "SELECT chain_id, address, nonce, ciphertext, created_at
+                 FROM address_book WHERE chain_id = ? ORDER BY created_at DESC",
+            )
+            .bind(chain_id)
+            .fetch_all(&self.pool)
+            .await
+        }
+    }
+
+    /// Delete one address-book row. Returns the number of rows affected.
+    pub async fn address_book_remove(
+        &self,
+        chain_id: &str,
+        address: &str,
+    ) -> Result<u64, sqlx::Error> {
+        let res = sqlx::query("DELETE FROM address_book WHERE chain_id = ? AND address = ?")
+            .bind(chain_id)
+            .bind(address)
+            .execute(&self.pool)
+            .await?;
+        Ok(res.rows_affected())
+    }
+}
+
+/// One encrypted address-book row, as stored in SQLite. Decryption is
+/// handled in the command layer (which holds the unlocked seed).
+#[derive(Debug, Clone, sqlx::FromRow)]
+pub struct AddressBookRow {
+    /// Atlas chain id (`"eth"`, `"btc"`, …).
+    pub chain_id: String,
+    /// Public address (plaintext — required for joins / lookups).
+    pub address: String,
+    /// 12-byte AES-GCM nonce.
+    pub nonce: Vec<u8>,
+    /// AES-256-GCM ciphertext of the JSON `{label, notes}` blob.
+    pub ciphertext: Vec<u8>,
+    /// Unix timestamp (seconds).
+    pub created_at: i64,
 }
 
 #[cfg(test)]
@@ -295,5 +383,27 @@ mod tests {
         let removed = db.remove_custom_token("eth", "0xdeadbeef").await.unwrap();
         assert_eq!(removed, 1);
         assert!(db.list_custom_tokens("").await.unwrap().is_empty());
+    }
+
+    #[tokio::test]
+    async fn address_book_round_trip() {
+        let dir = tempfile::tempdir().unwrap();
+        let db = Db::open(&dir.path().join("atlas.db")).await.unwrap();
+        let nonce = [0u8; 12];
+        let ct = b"opaque-ciphertext".to_vec();
+        db.address_book_put("btc", "bc1qabc", &nonce, &ct, 1_700_000_000)
+            .await
+            .unwrap();
+        // Idempotent on duplicate primary key (overwrites the row).
+        db.address_book_put("btc", "bc1qabc", &nonce, &ct, 1_700_000_001)
+            .await
+            .unwrap();
+        let rows = db.address_book_list("btc").await.unwrap();
+        assert_eq!(rows.len(), 1);
+        assert_eq!(rows[0].address, "bc1qabc");
+        assert_eq!(rows[0].ciphertext, ct);
+        let removed = db.address_book_remove("btc", "bc1qabc").await.unwrap();
+        assert_eq!(removed, 1);
+        assert!(db.address_book_list("").await.unwrap().is_empty());
     }
 }

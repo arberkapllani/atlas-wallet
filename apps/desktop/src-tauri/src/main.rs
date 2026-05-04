@@ -58,6 +58,9 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::tx_history_list,
             commands::tx_history_set_status,
             commands::tx_history_record,
+            commands::address_book_put,
+            commands::address_book_list,
+            commands::address_book_remove,
         ])
         .events(tauri_specta::collect_events![
             events::WalletLockedEvent,

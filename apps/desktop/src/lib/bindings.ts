@@ -124,6 +124,24 @@ export const commands = {
 	 *  (e.g. an external broadcast the user wants to track).
 	 */
 	txHistoryRecord: (record: TxRecord) => typedError<null, CmdError>(__TAURI_INVOKE("tx_history_record", { record })),
+	/**
+	 *  Add (or replace) an encrypted address-book entry. Requires the
+	 *  wallet to be unlocked because the encryption key is derived from
+	 *  the BIP-39 seed.
+	 */
+	addressBookPut: (chainId: string, address: string, label: string, notes: string | null) => typedError<null, CmdError>(__TAURI_INVOKE("address_book_put", { chainId, address, label, notes })),
+	/**
+	 *  List address-book entries (decrypted) for `chain_id`. Pass an empty
+	 *  string to list across every chain. Requires the wallet to be
+	 *  unlocked.
+	 */
+	addressBookList: (chainId: string) => typedError<AddressBookEntry[], CmdError>(__TAURI_INVOKE("address_book_list", { chainId })),
+	/**
+	 *  Remove one address-book entry. Returns `true` if a row was deleted.
+	 *  Does NOT require the wallet to be unlocked — the row identifiers
+	 *  (chain_id, address) are stored as plaintext.
+	 */
+	addressBookRemove: (chainId: string, address: string) => typedError<boolean, CmdError>(__TAURI_INVOKE("address_book_remove", { chainId, address })),
 };
 
 /** Events */
@@ -135,6 +153,20 @@ export const events = {
 };
 
 /* Types */
+// One decrypted address-book entry as the UI sees it.
+export type AddressBookEntry = {
+	// Atlas chain id (`"eth"`, `"btc"`, …).
+	chain_id: string,
+	// Public address (plaintext).
+	address: string,
+	// User-supplied display label (decrypted).
+	label: string,
+	// Optional notes (decrypted).
+	notes: string | null,
+	// Unix timestamp (seconds) when the entry was added.
+	created_at: number,
+};
+
 /**
  *  A precise on-chain amount: integer base units + asset metadata.
  * 

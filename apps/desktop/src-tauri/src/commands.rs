@@ -1334,3 +1334,161 @@ pub async fn tx_history_record(state: State<'_, Arc<AppState>>, record: TxRecord
         .await
         .map_err(|e| CmdError::Io(e.to_string()))
 }
+
+// =============================================================================
+// Address book (encrypted)
+// =============================================================================
+
+/// One decrypted address-book entry as the UI sees it.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+pub struct AddressBookEntry {
+    /// Atlas chain id (`"eth"`, `"btc"`, …).
+    pub chain_id: String,
+    /// Public address (plaintext).
+    pub address: String,
+    /// User-supplied display label (decrypted).
+    pub label: String,
+    /// Optional notes (decrypted).
+    pub notes: Option<String>,
+    /// Unix timestamp (seconds) when the entry was added.
+    pub created_at: i64,
+}
+
+/// Domain-separation context for the address-book encryption key.
+const ADDRESS_BOOK_CTX: &[u8] = b"atlas/address-book/v1";
+
+#[derive(Debug, Serialize, Deserialize)]
+struct AddressBookPlaintext {
+    label: String,
+    notes: Option<String>,
+}
+
+fn address_book_key(mnemonic: &Mnemonic) -> CmdResult<[u8; 32]> {
+    let key = atlas_wallet_core::derive_app_key(mnemonic.seed(), ADDRESS_BOOK_CTX)
+        .map_err(|e| CmdError::Wallet(e.to_string()))?;
+    Ok(*key)
+}
+
+fn encrypt_entry(
+    key: &[u8; 32],
+    plaintext: &AddressBookPlaintext,
+) -> CmdResult<([u8; 12], Vec<u8>)> {
+    use aes_gcm::aead::{Aead, KeyInit};
+    use aes_gcm::{Aes256Gcm, Key, Nonce};
+    use rand::RngCore;
+
+    let mut nonce = [0u8; 12];
+    rand::thread_rng().fill_bytes(&mut nonce);
+    let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key));
+    let pt = serde_json::to_vec(plaintext)
+        .map_err(|e| CmdError::InvalidInput(format!("address-book encode: {e}")))?;
+    let ct = cipher
+        .encrypt(Nonce::from_slice(&nonce), pt.as_ref())
+        .map_err(|_| CmdError::Wallet("address-book encryption failed".into()))?;
+    Ok((nonce, ct))
+}
+
+fn decrypt_entry(
+    key: &[u8; 32],
+    nonce: &[u8],
+    ciphertext: &[u8],
+) -> CmdResult<AddressBookPlaintext> {
+    use aes_gcm::aead::{Aead, KeyInit};
+    use aes_gcm::{Aes256Gcm, Key, Nonce};
+    let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key));
+    if nonce.len() != 12 {
+        return Err(CmdError::InvalidInput("address-book nonce length".into()));
+    }
+    let pt = cipher
+        .decrypt(Nonce::from_slice(nonce), ciphertext)
+        .map_err(|_| CmdError::Wallet("address-book decryption failed".into()))?;
+    serde_json::from_slice(&pt)
+        .map_err(|e| CmdError::InvalidInput(format!("address-book decode: {e}")))
+}
+
+/// Add (or replace) an encrypted address-book entry. Requires the
+/// wallet to be unlocked because the encryption key is derived from
+/// the BIP-39 seed.
+#[tauri::command]
+#[specta::specta]
+pub async fn address_book_put(
+    state: State<'_, Arc<AppState>>,
+    chain_id: String,
+    address: String,
+    label: String,
+    notes: Option<String>,
+) -> CmdResult<()> {
+    if address.trim().is_empty() {
+        return Err(CmdError::InvalidInput("address required".into()));
+    }
+    if label.trim().is_empty() {
+        return Err(CmdError::InvalidInput("label required".into()));
+    }
+    let mnemonic = require_mnemonic(&state).await?;
+    let key = address_book_key(&mnemonic)?;
+    let pt = AddressBookPlaintext {
+        label: label.trim().into(),
+        notes: notes
+            .map(|s| s.trim().to_string())
+            .filter(|s| !s.is_empty()),
+    };
+    let (nonce, ct) = encrypt_entry(&key, &pt)?;
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+    state
+        .db
+        .address_book_put(&chain_id, address.trim(), &nonce, &ct, now)
+        .await
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    Ok(())
+}
+
+/// List address-book entries (decrypted) for `chain_id`. Pass an empty
+/// string to list across every chain. Requires the wallet to be
+/// unlocked.
+#[tauri::command]
+#[specta::specta]
+pub async fn address_book_list(
+    state: State<'_, Arc<AppState>>,
+    chain_id: String,
+) -> CmdResult<Vec<AddressBookEntry>> {
+    let mnemonic = require_mnemonic(&state).await?;
+    let key = address_book_key(&mnemonic)?;
+    let rows = state
+        .db
+        .address_book_list(&chain_id)
+        .await
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    let mut out = Vec::with_capacity(rows.len());
+    for row in rows {
+        let pt = decrypt_entry(&key, &row.nonce, &row.ciphertext)?;
+        out.push(AddressBookEntry {
+            chain_id: row.chain_id,
+            address: row.address,
+            label: pt.label,
+            notes: pt.notes,
+            created_at: row.created_at,
+        });
+    }
+    Ok(out)
+}
+
+/// Remove one address-book entry. Returns `true` if a row was deleted.
+/// Does NOT require the wallet to be unlocked — the row identifiers
+/// (chain_id, address) are stored as plaintext.
+#[tauri::command]
+#[specta::specta]
+pub async fn address_book_remove(
+    state: State<'_, Arc<AppState>>,
+    chain_id: String,
+    address: String,
+) -> CmdResult<bool> {
+    let n = state
+        .db
+        .address_book_remove(&chain_id, &address)
+        .await
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    Ok(n > 0)
+}
