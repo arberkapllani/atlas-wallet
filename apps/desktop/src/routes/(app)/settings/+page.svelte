@@ -4,6 +4,7 @@
   import RpcEndpointsCard from '$lib/settings/RpcEndpointsCard.svelte';
   import NetworkHealthCard from '$lib/settings/NetworkHealthCard.svelte';
   import ExchangeSettingsCard from '$lib/settings/ExchangeSettingsCard.svelte';
+  import SwapFeeCard from '$lib/settings/SwapFeeCard.svelte';
   import AutoLockCard from '$lib/settings/AutoLockCard.svelte';
   import { goto } from '$app/navigation';
   import { wallet } from '$lib/stores/wallet';
@@ -20,6 +21,8 @@
   <RpcEndpointsCard />
 
   <ExchangeSettingsCard />
+
+  <SwapFeeCard />
 
   <AutoLockCard />
 

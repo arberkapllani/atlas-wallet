@@ -115,6 +115,11 @@ export interface ExchangeSwapResult {
   to_amount: string;
 }
 
+export interface SwapFeeConfig {
+  fee_bps: number;
+  thorchain_affiliate: string | null;
+}
+
 export const api = {
   vaultExists: () => invoke<boolean>('vault_exists'),
   isUnlocked: () => invoke<boolean>('is_unlocked'),
@@ -204,7 +209,19 @@ export const api = {
     amount: string;
     slippage_bps: number;
     fee_level: string;
-  }) => invoke<ExchangeSwapResult>('exchange_swap', { args })
+  }) => invoke<ExchangeSwapResult>('exchange_swap', { args }),
+
+  // Atlas swap fee + THORChain affiliate.
+  getSwapFeeConfig: () => invoke<SwapFeeConfig>('get_swap_fee_config'),
+  setSwapFeeBps: (bps: number) =>
+    invoke<number>('set_swap_fee_bps', { bps }),
+  setThorchainAffiliate: (name: string | null) =>
+    invoke<string | null>('set_thorchain_affiliate', { name }),
+
+  // Flashbots Protect (private mempool for Ethereum mainnet).
+  flashbotsProtectEnabled: () => invoke<boolean>('flashbots_protect_enabled'),
+  setFlashbotsProtect: (enabled: boolean) =>
+    invoke<boolean>('set_flashbots_protect', { enabled })
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */
