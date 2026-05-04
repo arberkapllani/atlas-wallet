@@ -1599,6 +1599,19 @@ pub async fn blocklist_assess(
     Ok(atlas_blocklist::assess(&address, &list))
 }
 
+// ---- Portfolio P&L ---------------------------------------------------
+
+/// Compute realized + unrealized P&L over a list of trades.
+#[tauri::command]
+#[specta::specta]
+pub async fn pnl_compute(
+    trades: Vec<atlas_pnl::Trade>,
+    prices: std::collections::HashMap<String, f64>,
+    method: atlas_pnl::AccountingMethod,
+) -> CmdResult<atlas_pnl::PortfolioReport> {
+    atlas_pnl::compute(&trades, &prices, method).map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

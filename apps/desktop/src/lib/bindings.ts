@@ -294,6 +294,8 @@ export const commands = {
 	eip712Classify: (json: string) => typedError<Eip712Report, CmdError>(__TAURI_INVOKE("eip712_classify", { json })),
 	// Look up an address against an in-memory blocklist.
 	blocklistAssess: (address: string, list: Blocklist) => typedError<BlocklistVerdict, CmdError>(__TAURI_INVOKE("blocklist_assess", { address, list })),
+	// Compute realized + unrealized P&L over a list of trades.
+	pnlCompute: (trades: Trade[], prices: { [key in string]: number }, method: AccountingMethod) => typedError<PortfolioReport, CmdError>(__TAURI_INVOKE("pnl_compute", { trades, prices, method })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -433,6 +435,9 @@ export const events = {
 };
 
 /* Types */
+// Accounting method for matching sells against buys.
+export type AccountingMethod = "Fifo" | "Lifo" | "AverageCost";
+
 // One decrypted address-book entry as the UI sees it.
 export type AddressBookEntry = {
 	// Atlas chain id (`"eth"`, `"btc"`, …).
@@ -1435,6 +1440,23 @@ export type PoisonConfig = {
 	dust_threshold: string,
 };
 
+// Aggregate report.
+export type PortfolioReport = {
+	positions: Position[],
+	realized: RealizedEvent[],
+	total_realized_usd: number,
+	total_unrealized_usd: number,
+};
+
+// Output: one row per asset still held.
+export type Position = {
+	asset: string,
+	quantity_held: number,
+	cost_basis_usd: number,
+	market_value_usd: number,
+	unrealized_pnl_usd: number,
+};
+
 // A single cached price observation.
 export type PricePoint = {
 	// Price in the requested fiat currency.
@@ -1509,6 +1531,16 @@ export type Quote = {
 	estimated_gas: number,
 	// Optional names of protocols routed through.
 	protocols: string[],
+};
+
+// Output: one row per Sell.
+export type RealizedEvent = {
+	asset: string,
+	ts: number,
+	quantity: number,
+	proceeds_usd: number,
+	cost_basis_usd: number,
+	gain_usd: number,
 };
 
 /**
@@ -1858,6 +1890,20 @@ export type TokenSummary = {
 	standard: string,
 	enabled_by_default: boolean,
 };
+
+// One trade entry.
+export type Trade = {
+	kind: TradeKind,
+	asset: string,
+	quantity: number,
+	// Price per unit in USD at the time of the trade.
+	unit_price_usd: number,
+	// Unix seconds.
+	ts: number,
+};
+
+// What the trade is.
+export type TradeKind = "Buy" | "Sell";
 
 // One row in the user's outbound history.
 export type TrustedCounterparty = {
