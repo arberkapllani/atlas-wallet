@@ -8,6 +8,54 @@
 
 import { invoke } from '@tauri-apps/api/core';
 
+// Phase-9 wired crates: re-export the specta-generated types from bindings.ts
+// rather than re-declaring them, so the wire format can never drift between
+// the Rust types and the front-end consumers.
+export type {
+  Eip1559Suggestion,
+  Eip1559Suggestions,
+  GasCost,
+  Holding,
+  DiversificationReport,
+  DiversificationBand,
+  PositionWeight,
+  SwapSettings,
+  SlippageBand,
+  TxNote,
+  Chain as TxNotesChain,
+  Contact,
+  ContactAddress,
+  ContactChain,
+  EventRecord,
+  EventLevel,
+  EventCategory,
+  SpendPolicy,
+  SpendState,
+  LimitEvaluation,
+  LimitDecision,
+  ReasonCode
+} from './bindings';
+import type {
+  Eip1559Suggestion,
+  Eip1559Suggestions,
+  GasCost,
+  Holding,
+  DiversificationReport,
+  SwapSettings,
+  SlippageBand,
+  TxNote,
+  Chain as TxNotesChain,
+  Contact,
+  ContactAddress,
+  ContactChain,
+  EventRecord,
+  EventLevel,
+  EventCategory,
+  SpendPolicy,
+  SpendState,
+  LimitEvaluation
+} from './bindings';
+
 export interface ChainSummary {
   id: string;
   display_name: string;
@@ -221,7 +269,149 @@ export const api = {
   // Flashbots Protect (private mempool for Ethereum mainnet).
   flashbotsProtectEnabled: () => invoke<boolean>('flashbots_protect_enabled'),
   setFlashbotsProtect: (enabled: boolean) =>
-    invoke<boolean>('set_flashbots_protect', { enabled })
+    invoke<boolean>('set_flashbots_protect', { enabled }),
+
+  // ---- Phase-9 wired crates ----------------------------------------
+
+  // atlas-fees: EVM EIP-1559 + UTXO sat/vB.
+  feesEip1559Suggest: (baseFeePerGas: string, recentPriorityFees: string[]) =>
+    invoke<Eip1559Suggestions>('fees_eip1559_suggest', {
+      baseFeePerGas,
+      recentPriorityFees
+    }),
+  feesBumpForReplacement: (suggestion: Eip1559Suggestion) =>
+    invoke<Eip1559Suggestion>('fees_bump_for_replacement', { suggestion }),
+  feesUtxoSats: (satPerVbyte: number, vsize: number) =>
+    invoke<number>('fees_utxo_sats', { satPerVbyte, vsize }),
+
+  // atlas-ens.
+  ensLooksLikeEns: (name: string) =>
+    invoke<boolean>('ens_looks_like_ens', { name }),
+  ensNormalise: (name: string) => invoke<string>('ens_normalise', { name }),
+  ensNamehash: (name: string) => invoke<string>('ens_namehash', { name }),
+
+  // atlas-gascost. `effectiveGasPriceWei` is a u128 decimal string.
+  gascostEstimate: (
+    gasUsed: number,
+    effectiveGasPriceWei: string,
+    nativePriceUsdMicro: number
+  ) =>
+    invoke<GasCost>('gascost_estimate', {
+      gasUsed,
+      effectiveGasPriceWei,
+      nativePriceUsdMicro
+    }),
+  gascostFormatEth: (wei: string, decimals: number) =>
+    invoke<string>('gascost_format_eth', { wei, decimals }),
+
+  // atlas-diversification.
+  diversificationAnalyse: (holdings: Holding[]) =>
+    invoke<DiversificationReport>('diversification_analyse', { holdings }),
+
+  // atlas-slippage. u128 amounts are decimal strings.
+  slippageValidate: (slippageBps: number, deadlineSecs: number) =>
+    invoke<SwapSettings>('slippage_validate', { slippageBps, deadlineSecs }),
+  slippageBand: (slippageBps: number) =>
+    invoke<SlippageBand>('slippage_band', { slippageBps }),
+  slippageMinOut: (amountOutQuote: string, slippageBps: number) =>
+    invoke<string>('slippage_min_out', { amountOutQuote, slippageBps }),
+  slippageMaxIn: (amountInQuote: string, slippageBps: number) =>
+    invoke<string>('slippage_max_in', { amountInQuote, slippageBps }),
+  slippageDeadlineUnix: (nowUnix: number, deadlineSecs: number) =>
+    invoke<number>('slippage_deadline_unix', { nowUnix, deadlineSecs }),
+
+  // atlas-fmt: presentation helpers backed by the same crate the host uses.
+  fmtCurrency: (
+    amount: number,
+    code: string,
+    localeTag: string,
+    decimals: number
+  ) =>
+    invoke<string>('fmt_currency', { amount, code, localeTag, decimals }),
+  fmtCompact: (value: number) => invoke<string>('fmt_compact', { value }),
+  fmtTokenAmount: (
+    baseUnits: string,
+    decimals: number,
+    maxSignificant: number
+  ) =>
+    invoke<string>('fmt_token_amount', {
+      baseUnits,
+      decimals,
+      maxSignificant
+    }),
+  fmtTruncateAddress: (addr: string) =>
+    invoke<string>('fmt_truncate_address', { addr }),
+
+  // atlas-txnotes (per-tx notes + tags, persisted to data_dir/txnotes.json).
+  txnotesList: () => invoke<TxNote[]>('txnotes_list'),
+  txnotesGet: (chain: TxNotesChain, txid: string) =>
+    invoke<TxNote | null>('txnotes_get', { chain, txid }),
+  txnotesUpsert: (
+    chain: TxNotesChain,
+    txid: string,
+    note: string,
+    tags: string[]
+  ) => invoke<void>('txnotes_upsert', { chain, txid, note, tags }),
+  txnotesRemove: (chain: TxNotesChain, txid: string) =>
+    invoke<boolean>('txnotes_remove', { chain, txid }),
+  txnotesListByTag: (tag: string) =>
+    invoke<TxNote[]>('txnotes_list_by_tag', { tag }),
+  txnotesAllTags: () => invoke<string[]>('txnotes_all_tags'),
+
+  // atlas-contacts (address book, persisted to data_dir/contacts.json).
+  contactsList: () => invoke<Contact[]>('contacts_list'),
+  contactsGet: (id: string) =>
+    invoke<Contact | null>('contacts_get', { id }),
+  contactsAdd: (name: string, note: string, addresses: ContactAddress[]) =>
+    invoke<string>('contacts_add', { name, note, addresses }),
+  contactsUpdate: (
+    id: string,
+    name: string,
+    note: string,
+    addresses: ContactAddress[]
+  ) => invoke<void>('contacts_update', { id, name, note, addresses }),
+  contactsRemove: (id: string) =>
+    invoke<boolean>('contacts_remove', { id }),
+  contactsFindByAddress: (chain: ContactChain, address: string) =>
+    invoke<Contact | null>('contacts_find_by_address', { chain, address }),
+  contactsSearch: (query: string) =>
+    invoke<Contact[]>('contacts_search', { query }),
+
+  // atlas-eventlog (in-memory ring, max 500 records).
+  eventsRecord: (
+    timestampUnixMs: number,
+    level: EventLevel,
+    category: EventCategory,
+    message: string
+  ) =>
+    invoke<void>('events_record', {
+      timestampUnixMs,
+      level,
+      category,
+      message
+    }),
+  eventsRecent: (limit: number) =>
+    invoke<EventRecord[]>('events_recent', { limit }),
+  eventsFilter: (
+    minLevel: EventLevel,
+    category: EventCategory | null,
+    limit: number
+  ) =>
+    invoke<EventRecord[]>('events_filter', { minLevel, category, limit }),
+  eventsClear: () => invoke<void>('events_clear'),
+  eventsExportRedacted: () =>
+    invoke<EventRecord[]>('events_export_redacted'),
+
+  // atlas-spendlimits (daily/per-tx USD caps, persisted to data_dir/spend.json).
+  spendGetPolicy: () => invoke<SpendPolicy>('spend_get_policy'),
+  spendSetPolicy: (policy: SpendPolicy) =>
+    invoke<void>('spend_set_policy', { policy }),
+  spendGetState: () => invoke<SpendState>('spend_get_state'),
+  spendEvaluate: (nowUnix: number, attemptUsd: number) =>
+    invoke<LimitEvaluation>('spend_evaluate', { nowUnix, attemptUsd }),
+  spendCommit: (nextState: SpendState) =>
+    invoke<void>('spend_commit', { nextState }),
+  spendReset: () => invoke<void>('spend_reset')
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */
