@@ -57,6 +57,13 @@
   let blocklistHit: import('$lib/api').BlocklistEntry | null = null;
   let blocklistSeq = 0;
 
+  // Address-poisoning candidate check: compares `to` against every
+  // address in the user's contact book. If a close-but-not-exact
+  // match exists, the recipient is likely a look-alike of a known
+  // friend; we surface a banner and disable the send button.
+  let mimicMatches: import('$lib/api').MimicMatch[] = [];
+  let mimicSeq = 0;
+
   async function refreshBlocklist(value: string) {
     const my = ++blocklistSeq;
     const trimmed = value.trim();
@@ -74,6 +81,24 @@
     }
   }
   $: void refreshBlocklist(to);
+
+  async function refreshMimic(value: string) {
+    const my = ++mimicSeq;
+    const trimmed = value.trim();
+    if (trimmed === '') {
+      mimicMatches = [];
+      return;
+    }
+    try {
+      const matches = await api.poisoningCheckCandidate(trimmed);
+      if (my !== mimicSeq) return;
+      mimicMatches = matches;
+    } catch {
+      if (my !== mimicSeq) return;
+      mimicMatches = [];
+    }
+  }
+  $: void refreshMimic(to);
 
   async function refreshEnsHint(value: string) {
     const my = ++ensSeq;
@@ -287,6 +312,23 @@
             <p class="text-rose-200/80">
               This address is on your local blocklist. Atlas will not let you send to it.
             </p>
+          </div>
+        {/if}
+        {#if mimicMatches.length > 0}
+          <div class="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs space-y-1">
+            <p class="text-amber-300 font-semibold">
+              Possible address-poisoning attempt
+            </p>
+            <p class="text-amber-200/90">
+              This recipient closely resembles {mimicMatches.length === 1 ? 'a' : `${mimicMatches.length}`} contact{mimicMatches.length === 1 ? '' : 's'} in your address book
+              but is not an exact match. Verify carefully before sending.
+            </p>
+            {#each mimicMatches.slice(0, 3) as m}
+              <p class="font-mono text-amber-200/80 break-all">
+                resembles 0x{m.trusted_address}
+                <span class="text-amber-200/60">(prefix {m.matching_prefix} / suffix {m.matching_suffix})</span>
+              </p>
+            {/each}
           </div>
         {/if}
         {#if ensHint.kind === 'checking'}

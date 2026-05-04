@@ -1578,6 +1578,28 @@ pub async fn poisoning_detect(
         .map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+/// Live-input check for the Send page: compare a candidate recipient
+/// against every address in the user's contact book and return any
+/// look-alikes whose hex prefix/suffix overlap exceeds the defaults.
+#[tauri::command]
+#[specta::specta]
+pub async fn poisoning_check_candidate(
+    state: State<'_, Arc<AppState>>,
+    candidate: String,
+) -> CmdResult<Vec<atlas_address_poisoning::MimicMatch>> {
+    let book = state.contacts.read().await;
+    let trusted: Vec<String> = book
+        .list()
+        .into_iter()
+        .flat_map(|c| c.addresses.into_iter().map(|a| a.address))
+        .collect();
+    drop(book);
+    let refs: Vec<&str> = trusted.iter().map(|s| s.as_str()).collect();
+    Ok(atlas_address_poisoning::compare_to_trusted(
+        &candidate, &refs, 0, 0,
+    ))
+}
+
 // ---- EIP-712 typed-data inspector -----------------------------------
 
 /// Classify an EIP-712 typed-data signing request before the user signs.

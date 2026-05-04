@@ -290,6 +290,12 @@ export const commands = {
 	 *  addresses the user has previously sent funds to.
 	 */
 	poisoningDetect: (transfers: IncomingTransfer[], trusted: TrustedCounterparty[], config: PoisonConfig) => typedError<PoisonAlert[], CmdError>(__TAURI_INVOKE("poisoning_detect", { transfers, trusted, config })),
+	/**
+	 *  Live-input check for the Send page: compare a candidate recipient
+	 *  against every address in the user's contact book and return any
+	 *  look-alikes whose hex prefix/suffix overlap exceeds the defaults.
+	 */
+	poisoningCheckCandidate: (candidate: string) => typedError<MimicMatch[], CmdError>(__TAURI_INVOKE("poisoning_check_candidate", { candidate })),
 	// Classify an EIP-712 typed-data signing request before the user signs.
 	eip712Classify: (json: string) => typedError<Eip712Report, CmdError>(__TAURI_INVOKE("eip712_classify", { json })),
 	/**
@@ -1456,6 +1462,16 @@ export type LimitEvaluation = {
 	next_state: SpendState,
 	// USD remaining in the day after this tx. Saturating at 0.
 	remaining_after_usd: number,
+};
+
+// One trusted address that closely resembles a candidate.
+export type MimicMatch = {
+	// The user's trusted address that the candidate mimics.
+	trusted_address: string,
+	// Number of leading hex characters that match.
+	matching_prefix: number,
+	// Number of trailing hex characters that match.
+	matching_suffix: number,
 };
 
 export type MoonPayBuyArgs = {

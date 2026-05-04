@@ -89,6 +89,7 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::calldata_decode,
             commands::phishing_analyze,
             commands::poisoning_detect,
+            commands::poisoning_check_candidate,
             commands::eip712_classify,
             commands::blocklist_check,
             commands::blocklist_list,

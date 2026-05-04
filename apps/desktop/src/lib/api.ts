@@ -36,7 +36,8 @@ export type {
   ReasonCode,
   BlocklistEntry,
   BlocklistCategory,
-  BlocklistVerdict
+  BlocklistVerdict,
+  MimicMatch
 } from './bindings';
 import type {
   Eip1559Suggestion,
@@ -58,7 +59,8 @@ import type {
   SpendState,
   LimitEvaluation,
   BlocklistEntry,
-  BlocklistVerdict
+  BlocklistVerdict,
+  MimicMatch
 } from './bindings';
 
 export interface ChainSummary {
@@ -427,7 +429,11 @@ export const api = {
   blocklistRemove: (address: string) =>
     invoke<boolean>('blocklist_remove', { address }),
   blocklistImportJson: (json: string) =>
-    invoke<number>('blocklist_import_json', { json })
+    invoke<number>('blocklist_import_json', { json }),
+
+  // atlas-address-poisoning live recipient check (consumes the contact book).
+  poisoningCheckCandidate: (candidate: string) =>
+    invoke<MimicMatch[]>('poisoning_check_candidate', { candidate })
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */

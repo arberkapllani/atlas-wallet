@@ -187,6 +187,64 @@ fn common_suffix(a: &str, b: &str) -> u32 {
         .count() as u32
 }
 
+// --- live-input helpers (Send page) ---------------------------------
+
+/// One trusted address that closely resembles a candidate.
+#[derive(Debug, Clone, Serialize, Deserialize, Type)]
+pub struct MimicMatch {
+    /// The user's trusted address that the candidate mimics.
+    pub trusted_address: String,
+    /// Number of leading hex characters that match.
+    pub matching_prefix: u32,
+    /// Number of trailing hex characters that match.
+    pub matching_suffix: u32,
+}
+
+/// Compare a single candidate address (about to be sent to) against
+/// a list of trusted addresses (e.g. the user's contact book) and
+/// return any close-but-not-exact look-alikes.
+///
+/// Use `min_prefix == 0 && min_suffix == 0` to fall back to
+/// `PoisonConfig::default()` thresholds.
+pub fn compare_to_trusted(
+    candidate: &str,
+    trusted: &[&str],
+    min_prefix: u32,
+    min_suffix: u32,
+) -> Vec<MimicMatch> {
+    let cand = normalise(candidate);
+    if cand.is_empty() {
+        return Vec::new();
+    }
+    let (mp, ms) = if min_prefix == 0 && min_suffix == 0 {
+        let d = PoisonConfig::default();
+        (d.min_prefix, d.min_suffix)
+    } else {
+        (min_prefix, min_suffix)
+    };
+    let mut out: Vec<MimicMatch> = Vec::new();
+    for t in trusted {
+        let tn = normalise(t);
+        if tn.is_empty() || tn == cand {
+            continue;
+        }
+        let p = common_prefix(&cand, &tn);
+        let s = common_suffix(&cand, &tn);
+        if p < mp && s < ms {
+            continue;
+        }
+        out.push(MimicMatch {
+            trusted_address: tn,
+            matching_prefix: p,
+            matching_suffix: s,
+        });
+    }
+    out.sort_by(|a, b| {
+        (b.matching_prefix + b.matching_suffix).cmp(&(a.matching_prefix + a.matching_suffix))
+    });
+    out
+}
+
 fn is_dust_amount(amount: &str, threshold: &str) -> bool {
     let amount = amount.trim();
     if amount.is_empty() || amount == "0" {
