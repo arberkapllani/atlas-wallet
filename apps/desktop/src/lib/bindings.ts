@@ -281,6 +281,8 @@ export const commands = {
 	approvalsAnalyze: (approvals: Approval[], config: ApprovalConfig, now: number) => typedError<ApprovalRisk[], CmdError>(__TAURI_INVOKE("approvals_analyze", { approvals, config, now })),
 	// Aggregate per-chain risk counts for the dashboard header.
 	approvalsSummarise: (rows: ApprovalRisk[]) => typedError<ApprovalSummary[], CmdError>(__TAURI_INVOKE("approvals_summarise", { rows })),
+	// Decode raw EVM calldata into a structured action description.
+	calldataDecode: (data: string) => typedError<DecodedCall, CmdError>(__TAURI_INVOKE("calldata_decode", { data })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -820,6 +822,33 @@ export type DappRisk =
 "unknown" | 
 // Origin is on the blocklist (phishing / known scam).
 "blocked";
+
+// Result of decoding one tx.
+export type DecodedCall = 
+// Empty calldata (plain native-asset transfer).
+{ tag: "NativeTransfer" } | 
+// `transfer(address recipient, uint256 amount)`.
+{ tag: "Erc20Transfer"; recipient: string; amount: string } | 
+// `transferFrom(address from, address to, uint256 amount)`.
+{ tag: "Erc20TransferFrom"; from: string; to: string; amount: string } | 
+// `approve(address spender, uint256 amount)`.
+{ tag: "Erc20Approve"; spender: string; amount: string; unlimited: boolean } | 
+// `increaseAllowance(address spender, uint256 added)`.
+{ tag: "Erc20IncreaseAllowance"; spender: string; added: string } | 
+// `decreaseAllowance(address spender, uint256 subtracted)`.
+{ tag: "Erc20DecreaseAllowance"; spender: string; subtracted: string } | 
+// `safeTransferFrom(address from, address to, uint256 idOrAmt)`.
+{ tag: "NftSafeTransferFrom"; from: string; to: string; token_id: string } | 
+// `setApprovalForAll(address operator, bool approved)`.
+{ tag: "NftSetApprovalForAll"; operator: string; approved: boolean } | 
+// `deposit()` on a wrapped-native (e.g. WETH9).
+{ tag: "WrapDeposit" } | 
+// `withdraw(uint256)` on a wrapped-native.
+{ tag: "WrapWithdraw"; amount: string } | 
+// `multicall(bytes[])` (Uniswap V3 / Aggregator style).
+{ tag: "Multicall"; inner_count: number } | 
+// Selector did not match any known shape.
+{ tag: "Unknown"; selector: string };
 
 // User's delegation to one validator.
 export type Delegation = {

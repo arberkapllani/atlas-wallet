@@ -59,6 +59,7 @@ atlas-nft-gallery = { workspace = true }
 atlas-staking = { workspace = true }
 atlas-tx-history = { workspace = true }
 atlas-approvals = { workspace = true }
+atlas-calldata = { workspace = true }
 uuid = { workspace = true }
 
 specta = { workspace = true }

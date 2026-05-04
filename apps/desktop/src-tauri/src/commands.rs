@@ -1542,6 +1542,15 @@ pub async fn approvals_summarise(
     Ok(atlas_approvals::summarise(&rows))
 }
 
+// ---- EVM calldata decoder -------------------------------------------
+
+/// Decode raw EVM calldata into a structured action description.
+#[tauri::command]
+#[specta::specta]
+pub async fn calldata_decode(data: String) -> CmdResult<atlas_calldata::DecodedCall> {
+    atlas_calldata::decode(&data).map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

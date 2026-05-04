@@ -176,6 +176,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-calldata"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "serde",
+ "specta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "atlas-chain-bitcoin"
 version = "0.1.0"
 dependencies = [
@@ -298,6 +308,7 @@ dependencies = [
  "atlas-aa-erc4337",
  "atlas-approvals",
  "atlas-biometric",
+ "atlas-calldata",
  "atlas-chain-bitcoin",
  "atlas-chain-cardano",
  "atlas-chain-cosmos",
