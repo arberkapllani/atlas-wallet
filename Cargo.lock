@@ -304,6 +304,7 @@ dependencies = [
  "atlas-exchange-thorchain",
  "atlas-multisig-btc",
  "atlas-multisig-evm",
+ "atlas-nft-gallery",
  "atlas-nft-registry",
  "atlas-onramp",
  "atlas-price-oracle",
@@ -440,6 +441,16 @@ dependencies = [
  "hex",
  "serde",
  "sha3",
+ "specta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "atlas-nft-gallery"
+version = "0.1.0"
+dependencies = [
+ "atlas-nft-registry",
+ "serde",
  "specta",
  "thiserror 1.0.69",
 ]

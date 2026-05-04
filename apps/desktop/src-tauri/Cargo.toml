@@ -55,6 +55,7 @@ atlas-aa-erc4337 = { workspace = true }
 atlas-shamir = { workspace = true }
 atlas-walletconnect = { workspace = true }
 atlas-dapp-registry = { workspace = true }
+atlas-nft-gallery = { workspace = true }
 uuid = { workspace = true }
 
 specta = { workspace = true }

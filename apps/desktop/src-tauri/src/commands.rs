@@ -1424,6 +1424,19 @@ pub async fn dapp_list_curated() -> CmdResult<Vec<atlas_dapp_registry::DappEntry
     Ok(atlas_dapp_registry::DappRegistry::with_defaults().entries)
 }
 
+// ---- NFT gallery aggregation ----------------------------------------
+
+/// Aggregate a flat list of owned NFTs into the gallery view used by
+/// the UI (collection grouping, value totals, optional spam filter).
+#[tauri::command]
+#[specta::specta]
+pub async fn nft_gallery_view(
+    items: Vec<atlas_nft_registry::OwnedNft>,
+    filter: atlas_nft_gallery::GalleryFilter,
+) -> CmdResult<atlas_nft_gallery::GalleryView> {
+    Ok(atlas_nft_gallery::build_gallery(&items, &filter))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

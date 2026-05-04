@@ -205,6 +205,11 @@ export const commands = {
 	dappAssessOrigin: (url: string) => typedError<DappAssessment, CmdError>(__TAURI_INVOKE("dapp_assess_origin", { url })),
 	// Return the built-in curated dApp list (UI directory / search).
 	dappListCurated: () => typedError<DappEntry[], CmdError>(__TAURI_INVOKE("dapp_list_curated")),
+	/**
+	 *  Aggregate a flat list of owned NFTs into the gallery view used by
+	 *  the UI (collection grouping, value totals, optional spam filter).
+	 */
+	nftGalleryView: (items: OwnedNft[], filter: GalleryFilter) => typedError<GalleryView, CmdError>(__TAURI_INVOKE("nft_gallery_view", { items, filter })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -482,6 +487,28 @@ export type CoSignerInvite = {
 	policy_hint: string | null,
 };
 
+// One collection grouping in the gallery.
+export type CollectionGroup = {
+	// `chain:contract` — stable cross-chain key.
+	key: string,
+	chain_id: string,
+	contract: string,
+	// Display name (falls back to the contract address when absent).
+	name: string,
+	item_count: number,
+	/**
+	 *  Sum of per-item `floor_usd` values that were known. Items with
+	 *  unknown floor are excluded from the sum and recorded in
+	 *  `unpriced_count`.
+	 */
+	estimated_value_usd: number,
+	unpriced_count: number,
+	// Cover image: the first item's image, if any.
+	cover_image: string | null,
+	// Items in stable order (by token-id string).
+	items: OwnedNft[],
+};
+
 export type CreateHardwareArgs = {
 	name: string,
 	vendor: HardwareVendor,
@@ -664,6 +691,39 @@ export type FeeOption = {
 	eta_seconds: number,
 	// Implementation-defined hint payload (e.g. sat/vB or gas price), JSON-encoded as string for FFI simplicity.
 	raw_hint: string,
+};
+
+// Filter knobs passed in from the UI.
+export type GalleryFilter = {
+	/**
+	 *  If true, items matching the spam heuristic are routed to
+	 *  `hidden_items` instead of being grouped.
+	 */
+	hide_spam: boolean,
+	/**
+	 *  Hide collections worth less than this in USD (estimated). 0
+	 *  disables the filter.
+	 */
+	min_collection_value_usd: number,
+	// If non-empty, only items on these chains are included.
+	chains: string[],
+};
+
+// Aggregated view of a user's NFT holdings.
+export type GalleryView = {
+	/**
+	 *  Visible collections, sorted by estimated USD value desc, then
+	 *  by item count desc, then by name.
+	 */
+	collections: CollectionGroup[],
+	/**
+	 *  Items the spam filter set aside. Surfaced so the user can
+	 *  un-hide them from settings.
+	 */
+	hidden_items: OwnedNft[],
+	total_collections: number,
+	total_items: number,
+	total_value_usd: number,
 };
 
 /**

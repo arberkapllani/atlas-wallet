@@ -1,0 +1,10 @@
+[package]
+name = "atlas-nft-gallery"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+specta = { workspace = true }
+thiserror = { workspace = true }
+atlas-nft-registry = { workspace = true }
