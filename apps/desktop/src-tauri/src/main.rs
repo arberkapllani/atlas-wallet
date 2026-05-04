@@ -101,6 +101,7 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::ens_namehash,
             commands::gascost_estimate,
             commands::gascost_format_eth,
+            commands::diversification_analyse,
             commands::network_health,
             commands::network_health_all,
             commands::get_exchange_settings,

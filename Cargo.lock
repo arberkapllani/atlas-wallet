@@ -350,6 +350,7 @@ dependencies = [
  "atlas-chain-tron",
  "atlas-chain-utxo",
  "atlas-dapp-registry",
+ "atlas-diversification",
  "atlas-eip712",
  "atlas-ens",
  "atlas-exchange-1inch",

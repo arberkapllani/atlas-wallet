@@ -1714,6 +1714,17 @@ pub async fn gascost_format_eth(wei: String, decimals: u32) -> CmdResult<String>
     Ok(atlas_gascost::format_eth(wei, decimals))
 }
 
+// ---- portfolio diversification ------------------------------------
+
+/// Score a portfolio's concentration and return per-position weights.
+#[tauri::command]
+#[specta::specta]
+pub async fn diversification_analyse(
+    holdings: Vec<atlas_diversification::Holding>,
+) -> CmdResult<atlas_diversification::DiversificationReport> {
+    atlas_diversification::analyse(&holdings).map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

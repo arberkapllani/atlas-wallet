@@ -324,6 +324,8 @@ export const commands = {
 	gascostEstimate: (gasUsed: number, effectiveGasPriceWei: string, nativePriceUsdMicro: number) => typedError<GasCost, CmdError>(__TAURI_INVOKE("gascost_estimate", { gasUsed, effectiveGasPriceWei, nativePriceUsdMicro })),
 	// Format a wei amount as a fixed-decimal native-token string.
 	gascostFormatEth: (wei: string, decimals: number) => typedError<string, CmdError>(__TAURI_INVOKE("gascost_format_eth", { wei, decimals })),
+	// Score a portfolio's concentration and return per-position weights.
+	diversificationAnalyse: (holdings: Holding[]) => typedError<DiversificationReport, CmdError>(__TAURI_INVOKE("diversification_analyse", { holdings })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -951,6 +953,18 @@ export type Delegation = {
 	unbonding: number,
 };
 
+export type DiversificationBand = "Diversified" | "Balanced" | "Concentrated" | "HighlyConcentrated";
+
+export type DiversificationReport = {
+	total_usd: number,
+	position_count: number,
+	// 0..=10000, single-asset = 10000.
+	hhi: number,
+	band: DiversificationBand,
+	largest_share: number,
+	positions: PositionWeight[],
+};
+
 // EIP-1559 fee suggestion (all in wei).
 export type Eip1559Suggestion = {
 	tier: FeeTier,
@@ -1179,6 +1193,11 @@ export type HistorySummary = {
 	// First and last txs (by timestamp) in the filtered range.
 	first_timestamp: number | null,
 	last_timestamp: number | null,
+};
+
+export type Holding = {
+	symbol: string,
+	usd_value: number,
 };
 
 /**
@@ -1546,6 +1565,13 @@ export type Position = {
 	cost_basis_usd: number,
 	market_value_usd: number,
 	unrealized_pnl_usd: number,
+};
+
+export type PositionWeight = {
+	symbol: string,
+	usd_value: number,
+	// Weight as a fraction of the total, 0..=1.
+	weight: number,
 };
 
 // A single cached price observation.
