@@ -36,6 +36,7 @@ atlas-chain-solana = { workspace = true }
 atlas-chain-tron = { workspace = true }
 atlas-chain-cosmos = { workspace = true }
 atlas-chain-cardano = { workspace = true }
+atlas-chain-utxo = { workspace = true }
 atlas-price-oracle = { workspace = true }
 atlas-profile = { workspace = true }
 atlas-settings = { workspace = true }

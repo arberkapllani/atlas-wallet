@@ -94,6 +94,17 @@ pub async fn list_chains(_state: State<'_, Arc<AppState>>) -> CmdResult<Vec<Chai
         // surfacing an account the user can't actually send from yet.
         enabled_by_default: false,
     });
+    for n in atlas_chain_utxo::NETWORKS {
+        out.push(ChainSummary {
+            id: n.id.into(),
+            display_name: n.display_name.into(),
+            symbol: n.symbol.into(),
+            decimals: n.decimals,
+            family: "utxo".into(),
+            // Watch-only until P3.1 Ledger HID — off by default.
+            enabled_by_default: false,
+        });
+    }
     Ok(out)
 }
 
@@ -951,6 +962,13 @@ async fn active_address_for_chain(state: &AppState, chain_id: &str) -> CmdResult
             // users wanting to track ADA balances should add a
             // watch-only account for it.
             if chain_id == "ada" {
+                return Ok(None);
+            }
+            // LTC/DOGE/BCH derivation also waits on P3.1 — same
+            // rationale: most holders sign on hardware anyway, and
+            // shipping software signing first invites phishing-via-
+            // clipboard UX problems.
+            if atlas_chain_utxo::network_by_id(chain_id).is_some() {
                 return Ok(None);
             }
             let mnemonic = require_mnemonic(state).await?;

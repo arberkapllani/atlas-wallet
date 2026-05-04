@@ -9,6 +9,7 @@ members = [
     "crates/chain-tron",
     "crates/chain-cosmos",
     "crates/chain-cardano",
+    "crates/chain-utxo",
     "crates/price-oracle",
     "crates/profile",
     "crates/settings",
@@ -75,6 +76,7 @@ atlas-chain-solana = { path = "crates/chain-solana" }
 atlas-chain-tron = { path = "crates/chain-tron" }
 atlas-chain-cosmos = { path = "crates/chain-cosmos" }
 atlas-chain-cardano = { path = "crates/chain-cardano" }
+atlas-chain-utxo = { path = "crates/chain-utxo" }
 atlas-price-oracle = { path = "crates/price-oracle" }
 atlas-profile = { path = "crates/profile" }
 atlas-settings = { path = "crates/settings" }

@@ -1,0 +1,15 @@
+[package]
+name = "atlas-chain-utxo"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "UTXO chain providers (LTC/DOGE/BCH) — watch-only via Blockchair"
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+async-trait = { workspace = true }
+reqwest = { workspace = true }
+atlas-chain-traits = { workspace = true }

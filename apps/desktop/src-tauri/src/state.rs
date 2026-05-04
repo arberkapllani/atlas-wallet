@@ -10,6 +10,7 @@ use atlas_chain_evm::{EvmProvider, NETWORKS};
 use atlas_chain_solana::SolanaProvider;
 use atlas_chain_traits::ChainProvider;
 use atlas_chain_tron::TronProvider;
+use atlas_chain_utxo::UtxoProvider;
 use atlas_price_oracle::PriceOracle;
 use atlas_profile::ProfileRegistry;
 use atlas_settings::Settings;
@@ -39,6 +40,9 @@ pub fn default_endpoint(chain_id: &str) -> Option<&'static str> {
     if chain_id == "ada" {
         return Some(atlas_chain_cardano::DEFAULT_API);
     }
+    if atlas_chain_utxo::network_by_id(chain_id).is_some() {
+        return Some(atlas_chain_utxo::DEFAULT_API);
+    }
     NETWORKS
         .iter()
         .find(|n| n.id == chain_id)
@@ -57,6 +61,9 @@ pub fn all_chain_ids() -> Vec<&'static str> {
         ids.push(n.id);
     }
     ids.push("ada");
+    for n in atlas_chain_utxo::NETWORKS {
+        ids.push(n.id);
+    }
     ids
 }
 
@@ -77,6 +84,9 @@ fn build_provider(chain_id: &str, rpc_url: &str) -> Option<Arc<dyn ChainProvider
     }
     if chain_id == "ada" {
         return Some(Arc::new(CardanoProvider::with_api(rpc_url.to_string())));
+    }
+    if let Some(n) = atlas_chain_utxo::network_by_id(chain_id) {
+        return Some(Arc::new(UtxoProvider::with_api(n, rpc_url.to_string())));
     }
     NETWORKS
         .iter()
