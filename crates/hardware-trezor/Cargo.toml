@@ -1,0 +1,15 @@
+[package]
+name = "atlas-hardware-trezor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Trezor protocol framing + per-coin helpers (Ethereum, Bitcoin)"
+
+[dependencies]
+async-trait = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

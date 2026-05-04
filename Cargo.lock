@@ -312,6 +312,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-hardware-trezor"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
 name = "atlas-nft-registry"
 version = "0.1.0"
 dependencies = [
