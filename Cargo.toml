@@ -50,6 +50,7 @@ members = [
     "crates/ens",
     "crates/gascost",
     "crates/diversification",
+    "crates/spendlimits",
     "apps/desktop/src-tauri",
 ]
 
@@ -153,6 +154,7 @@ atlas-eventlog = { path = "crates/eventlog" }
 atlas-ens = { path = "crates/ens" }
 atlas-gascost = { path = "crates/gascost" }
 atlas-diversification = { path = "crates/diversification" }
+atlas-spendlimits = { path = "crates/spendlimits" }
 
 # Misc
 uuid = { version = "1.10", features = ["v4", "serde"] }
