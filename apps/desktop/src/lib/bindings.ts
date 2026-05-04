@@ -400,6 +400,26 @@ export const commands = {
 	eventsClear: () => typedError<null, CmdError>(__TAURI_INVOKE("events_clear")),
 	// Privacy-redacted snapshot for "Report a problem".
 	eventsExportRedacted: () => typedError<EventRecord[], CmdError>(__TAURI_INVOKE("events_export_redacted")),
+	// Read the active spend-limit policy.
+	spendGetPolicy: () => typedError<SpendPolicy, CmdError>(__TAURI_INVOKE("spend_get_policy")),
+	// Replace the spend-limit policy. Validates before persisting.
+	spendSetPolicy: (policy: SpendPolicy) => typedError<null, CmdError>(__TAURI_INVOKE("spend_set_policy", { policy })),
+	// Read the rolling daily-spend state.
+	spendGetState: () => typedError<SpendState, CmdError>(__TAURI_INVOKE("spend_get_state")),
+	/**
+	 *  Evaluate a prospective tx against the active policy/state.
+	 * 
+	 *  Read-only: the returned `next_state` is what the host should
+	 *  pass to `spend_commit` only after the tx is actually broadcast.
+	 */
+	spendEvaluate: (nowUnix: number, attemptUsd: number) => typedError<LimitEvaluation, CmdError>(__TAURI_INVOKE("spend_evaluate", { nowUnix, attemptUsd })),
+	/**
+	 *  Persist the `next_state` produced by `spend_evaluate` after a
+	 *  successful broadcast.
+	 */
+	spendCommit: (nextState: SpendState) => typedError<null, CmdError>(__TAURI_INVOKE("spend_commit", { nextState })),
+	// Reset the rolling spend state to zero (keeps the policy).
+	spendReset: () => typedError<null, CmdError>(__TAURI_INVOKE("spend_reset")),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -1410,6 +1430,24 @@ export type JupiterSwapArgs = {
 	fee_account: string | null,
 };
 
+export type LimitDecision = "Allowed" | "RequiresConfirmation" | "Blocked";
+
+export type LimitEvaluation = {
+	decision: LimitDecision,
+	/**
+	 *  Reason text the UI can show: "Daily cap exceeded", etc.
+	 *  Empty when `Allowed`.
+	 */
+	reason: ReasonCode,
+	/**
+	 *  State to persist *if* the tx goes through. Already includes
+	 *  the rolled-over window and the new spend.
+	 */
+	next_state: SpendState,
+	// USD remaining in the day after this tx. Saturating at 0.
+	remaining_after_usd: number,
+};
+
 export type MoonPayBuyArgs = {
 	currency_code: string,
 	wallet_address: string,
@@ -1762,6 +1800,8 @@ export type RealizedEvent = {
 	gain_usd: number,
 };
 
+export type ReasonCode = "None" | "PerTxCapExceeded" | "DailyCapExceeded";
+
 /**
  *  Snapshot of the recovery-drill reminder state. Frontend uses
  *  this to decide whether to show the "verify your seed" banner.
@@ -1998,6 +2038,23 @@ export type SourceQuote = {
 	source: string,
 	// Quoted price.
 	price: number,
+};
+
+export type SpendPolicy = {
+	// 0 = disabled.
+	daily_usd_limit: number,
+	// 0 = disabled.
+	per_tx_usd_limit: number,
+	/**
+	 *  If true, exceeding the daily cap blocks the tx; otherwise
+	 *  it just requires an extra confirmation.
+	 */
+	hard_block_on_daily: boolean,
+};
+
+export type SpendState = {
+	window_started_at: number,
+	spent_in_window_usd: number,
 };
 
 // Networks where Atlas surfaces native staking.

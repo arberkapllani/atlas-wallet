@@ -2075,6 +2075,91 @@ pub async fn events_export_redacted(
     Ok(state.events.read().await.export_redacted())
 }
 
+// ---- spend limits -------------------------------------------------
+
+/// Read the active spend-limit policy.
+#[tauri::command]
+#[specta::specta]
+pub async fn spend_get_policy(
+    state: State<'_, Arc<AppState>>,
+) -> CmdResult<atlas_spendlimits::SpendPolicy> {
+    Ok(state.spend.read().await.policy)
+}
+
+/// Replace the spend-limit policy. Validates before persisting.
+#[tauri::command]
+#[specta::specta]
+pub async fn spend_set_policy(
+    state: State<'_, Arc<AppState>>,
+    policy: atlas_spendlimits::SpendPolicy,
+) -> CmdResult<()> {
+    policy
+        .validate()
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))?;
+    {
+        let mut s = state.spend.write().await;
+        s.policy = policy;
+    }
+    persist_spend(&state).await
+}
+
+/// Read the rolling daily-spend state.
+#[tauri::command]
+#[specta::specta]
+pub async fn spend_get_state(
+    state: State<'_, Arc<AppState>>,
+) -> CmdResult<atlas_spendlimits::SpendState> {
+    Ok(state.spend.read().await.state)
+}
+
+/// Evaluate a prospective tx against the active policy/state.
+///
+/// Read-only: the returned `next_state` is what the host should
+/// pass to `spend_commit` only after the tx is actually broadcast.
+#[tauri::command]
+#[specta::specta]
+pub async fn spend_evaluate(
+    state: State<'_, Arc<AppState>>,
+    now_unix: u64,
+    attempt_usd: u64,
+) -> CmdResult<atlas_spendlimits::LimitEvaluation> {
+    let store = state.spend.read().await;
+    atlas_spendlimits::evaluate(&store.policy, &store.state, now_unix, attempt_usd)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Persist the `next_state` produced by `spend_evaluate` after a
+/// successful broadcast.
+#[tauri::command]
+#[specta::specta]
+pub async fn spend_commit(
+    state: State<'_, Arc<AppState>>,
+    next_state: atlas_spendlimits::SpendState,
+) -> CmdResult<()> {
+    {
+        let mut s = state.spend.write().await;
+        s.state = next_state;
+    }
+    persist_spend(&state).await
+}
+
+/// Reset the rolling spend state to zero (keeps the policy).
+#[tauri::command]
+#[specta::specta]
+pub async fn spend_reset(state: State<'_, Arc<AppState>>) -> CmdResult<()> {
+    {
+        let mut s = state.spend.write().await;
+        s.state = atlas_spendlimits::SpendState::default();
+    }
+    persist_spend(&state).await
+}
+
+async fn persist_spend(state: &Arc<AppState>) -> CmdResult<()> {
+    let snapshot = state.spend.read().await.clone();
+    crate::state::save_json(&state.data_dir, "spend.json", &snapshot)
+        .map_err(|e| CmdError::InvalidInput(format!("persist spend: {e}")))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

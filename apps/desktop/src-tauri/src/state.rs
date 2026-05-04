@@ -175,7 +175,6 @@ pub struct AppState {
     /// In-memory ring-buffer of recent privacy-redacted events.
     pub events: RwLock<atlas_eventlog::EventLog>,
     /// Per-profile spend-limit policy + state. Persisted as JSON.
-    #[allow(dead_code)]
     pub spend: RwLock<SpendStore>,
 }
 
