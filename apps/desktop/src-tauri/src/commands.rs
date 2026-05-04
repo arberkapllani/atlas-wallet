@@ -1504,6 +1504,21 @@ pub async fn tx_history_export_csv(rows: Vec<atlas_tx_history::Tx>) -> CmdResult
     Ok(atlas_tx_history::export_csv(&rows))
 }
 
+// ---- Multi-source price oracle --------------------------------------
+
+/// Aggregate independent price feeds into a single median quote with
+/// outlier rejection. Quotes are pre-fetched by the frontend (or by
+/// other Tauri commands) so this command itself does no I/O.
+#[tauri::command]
+#[specta::specta]
+pub async fn price_oracle_aggregate(
+    quotes: Vec<atlas_price_oracle::SourceQuote>,
+    max_deviation_bps: u32,
+) -> CmdResult<atlas_price_oracle::AggregatedPrice> {
+    atlas_price_oracle::aggregate_prices(&quotes, max_deviation_bps)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

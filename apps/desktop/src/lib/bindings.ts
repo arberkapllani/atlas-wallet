@@ -268,6 +268,12 @@ export const commands = {
 	txHistorySummarise: (rows: Tx[]) => typedError<HistorySummary, CmdError>(__TAURI_INVOKE("tx_history_summarise", { rows })),
 	// Render a row set as RFC-4180-style CSV, ready for download.
 	txHistoryExportCsv: (rows: Tx[]) => typedError<string, CmdError>(__TAURI_INVOKE("tx_history_export_csv", { rows })),
+	/**
+	 *  Aggregate independent price feeds into a single median quote with
+	 *  outlier rejection. Quotes are pre-fetched by the frontend (or by
+	 *  other Tauri commands) so this command itself does no I/O.
+	 */
+	priceOracleAggregate: (quotes: SourceQuote[], maxDeviationBps: number) => typedError<AggregatedPrice, CmdError>(__TAURI_INVOKE("price_oracle_aggregate", { quotes, maxDeviationBps })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -419,6 +425,21 @@ export type AddressBookEntry = {
 	notes: string | null,
 	// Unix timestamp (seconds) when the entry was added.
 	created_at: number,
+};
+
+// Output of `aggregate_prices`.
+export type AggregatedPrice = {
+	// Median of the surviving quotes.
+	price: number,
+	// Sources whose quote was within tolerance.
+	accepted: SourceQuote[],
+	// Sources rejected as outliers.
+	rejected: SourceQuote[],
+	/**
+	 *  Median absolute deviation from the *initial* median, in bps,
+	 *  across all input quotes (volatility hint for the UI).
+	 */
+	spread_bps: number,
 };
 
 /**
@@ -1427,6 +1448,14 @@ export type SigningCapability =
 vendor: string } | 
 // Watch-only — cannot sign at all.
 { kind: "watch_only" };
+
+// One source's USD (or otherwise consistent unit) price quote.
+export type SourceQuote = {
+	// Human-readable source name (e.g. `"coingecko"`, `"1inch"`).
+	source: string,
+	// Quoted price.
+	price: number,
+};
 
 // Networks where Atlas surfaces native staking.
 export type StakingChain = "solana" | "cosmos" | "cardano" | "polkadot" | "ethereum" | "polygon";
