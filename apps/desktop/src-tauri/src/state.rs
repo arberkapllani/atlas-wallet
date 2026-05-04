@@ -173,7 +173,6 @@ pub struct AppState {
     /// Address book. Persisted as JSON in `data_dir/contacts.json`.
     pub contacts: RwLock<atlas_contacts::ContactBook>,
     /// In-memory ring-buffer of recent privacy-redacted events.
-    #[allow(dead_code)]
     pub events: RwLock<atlas_eventlog::EventLog>,
     /// Per-profile spend-limit policy + state. Persisted as JSON.
     #[allow(dead_code)]

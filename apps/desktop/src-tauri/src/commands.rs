@@ -2012,6 +2012,69 @@ async fn persist_contacts(state: &Arc<AppState>) -> CmdResult<()> {
         .map_err(|e| CmdError::InvalidInput(format!("persist contacts: {e}")))
 }
 
+// ---- in-memory event log ------------------------------------------
+
+/// Append a redactable event to the in-memory ring buffer.
+#[tauri::command]
+#[specta::specta]
+pub async fn events_record(
+    state: State<'_, Arc<AppState>>,
+    timestamp_unix_ms: u64,
+    level: atlas_eventlog::EventLevel,
+    category: atlas_eventlog::EventCategory,
+    message: String,
+) -> CmdResult<()> {
+    state
+        .events
+        .write()
+        .await
+        .record(timestamp_unix_ms, level, category, &message)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Most recent events (newest first).
+#[tauri::command]
+#[specta::specta]
+pub async fn events_recent(
+    state: State<'_, Arc<AppState>>,
+    limit: u32,
+) -> CmdResult<Vec<atlas_eventlog::EventRecord>> {
+    Ok(state.events.read().await.recent(limit as usize))
+}
+
+/// Filter by min-level + optional category, newest first.
+#[tauri::command]
+#[specta::specta]
+pub async fn events_filter(
+    state: State<'_, Arc<AppState>>,
+    min_level: atlas_eventlog::EventLevel,
+    category: Option<atlas_eventlog::EventCategory>,
+    limit: u32,
+) -> CmdResult<Vec<atlas_eventlog::EventRecord>> {
+    Ok(state
+        .events
+        .read()
+        .await
+        .filter(min_level, category, limit as usize))
+}
+
+/// Drop the entire event buffer.
+#[tauri::command]
+#[specta::specta]
+pub async fn events_clear(state: State<'_, Arc<AppState>>) -> CmdResult<()> {
+    state.events.write().await.clear();
+    Ok(())
+}
+
+/// Privacy-redacted snapshot for "Report a problem".
+#[tauri::command]
+#[specta::specta]
+pub async fn events_export_redacted(
+    state: State<'_, Arc<AppState>>,
+) -> CmdResult<Vec<atlas_eventlog::EventRecord>> {
+    Ok(state.events.read().await.export_redacted())
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

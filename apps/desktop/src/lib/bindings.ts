@@ -390,6 +390,16 @@ export const commands = {
 } | null, CmdError>(__TAURI_INVOKE("contacts_find_by_address", { chain, address })),
 	// Case-insensitive substring search across name + note.
 	contactsSearch: (query: string) => typedError<Contact[], CmdError>(__TAURI_INVOKE("contacts_search", { query })),
+	// Append a redactable event to the in-memory ring buffer.
+	eventsRecord: (timestampUnixMs: number, level: EventLevel, category: EventCategory, message: string) => typedError<null, CmdError>(__TAURI_INVOKE("events_record", { timestampUnixMs, level, category, message })),
+	// Most recent events (newest first).
+	eventsRecent: (limit: number) => typedError<EventRecord[], CmdError>(__TAURI_INVOKE("events_recent", { limit })),
+	// Filter by min-level + optional category, newest first.
+	eventsFilter: (minLevel: EventLevel, category: "Wallet" | "Transaction" | "Network" | "Security" | "Ui" | "Other" | null, limit: number) => typedError<EventRecord[], CmdError>(__TAURI_INVOKE("events_filter", { minLevel, category, limit })),
+	// Drop the entire event buffer.
+	eventsClear: () => typedError<null, CmdError>(__TAURI_INVOKE("events_clear")),
+	// Privacy-redacted snapshot for "Report a problem".
+	eventsExportRedacted: () => typedError<EventRecord[], CmdError>(__TAURI_INVOKE("events_export_redacted")),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -1141,6 +1151,17 @@ export type EthereumPayment = {
 	amount_wei: string | null,
 	// Optional gas / gasPrice query params, unparsed.
 	gas: string | null,
+};
+
+export type EventCategory = "Wallet" | "Transaction" | "Network" | "Security" | "Ui" | "Other";
+
+export type EventLevel = "Debug" | "Info" | "Warn" | "Error";
+
+export type EventRecord = {
+	timestamp_unix_ms: number,
+	level: EventLevel,
+	category: EventCategory,
+	message: string,
 };
 
 export type ExchangeConfigArgs = {
