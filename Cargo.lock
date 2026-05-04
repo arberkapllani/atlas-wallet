@@ -405,6 +405,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-ens"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "sha3",
+ "specta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "atlas-eventlog"
 version = "0.1.0"
 dependencies = [
