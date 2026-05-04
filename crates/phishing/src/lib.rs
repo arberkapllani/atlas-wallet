@@ -69,6 +69,37 @@ pub struct PhishingConfig {
     pub targets: Vec<String>,
 }
 
+/// Built-in defence config for major DeFi/DEX/NFT brands. Use as a
+/// starting point; the host can extend allowlist/blocklist.
+pub fn default_config() -> PhishingConfig {
+    PhishingConfig {
+        allowlist: Vec::new(),
+        blocklist: Vec::new(),
+        targets: vec![
+            "uniswap.org".into(),
+            "app.uniswap.org".into(),
+            "aave.com".into(),
+            "curve.fi".into(),
+            "lido.fi".into(),
+            "opensea.io".into(),
+            "blur.io".into(),
+            "1inch.io".into(),
+            "compound.finance".into(),
+            "sushi.com".into(),
+            "pancakeswap.finance".into(),
+            "raydium.io".into(),
+            "jup.ag".into(),
+            "magiceden.io".into(),
+            "ledger.com".into(),
+            "trezor.io".into(),
+            "metamask.io".into(),
+            "phantom.app".into(),
+            "rabby.io".into(),
+            "safe.global".into(),
+        ],
+    }
+}
+
 /// Analyse an origin URL.
 pub fn analyze(origin: &str, config: &PhishingConfig) -> Result<PhishingReport, PhishingError> {
     let parsed = Url::parse(origin).map_err(|e| PhishingError::InvalidUrl(e.to_string()))?;

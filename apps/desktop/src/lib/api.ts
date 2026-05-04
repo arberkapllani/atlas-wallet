@@ -37,7 +37,10 @@ export type {
   BlocklistEntry,
   BlocklistCategory,
   BlocklistVerdict,
-  MimicMatch
+  MimicMatch,
+  PhishingReport,
+  PhishingVerdict,
+  PhishingConfig
 } from './bindings';
 import type {
   Eip1559Suggestion,
@@ -60,7 +63,10 @@ import type {
   LimitEvaluation,
   BlocklistEntry,
   BlocklistVerdict,
-  MimicMatch
+  MimicMatch,
+  PhishingReport,
+  PhishingVerdict,
+  PhishingConfig
 } from './bindings';
 
 export interface ChainSummary {
@@ -433,7 +439,13 @@ export const api = {
 
   // atlas-address-poisoning live recipient check (consumes the contact book).
   poisoningCheckCandidate: (candidate: string) =>
-    invoke<MimicMatch[]>('poisoning_check_candidate', { candidate })
+    invoke<MimicMatch[]>('poisoning_check_candidate', { candidate }),
+
+  // atlas-phishing dApp/origin URL safety check.
+  phishingAnalyzeDefault: (origin: string) =>
+    invoke<PhishingReport>('phishing_analyze_default', { origin }),
+  phishingAnalyze: (origin: string, config: PhishingConfig) =>
+    invoke<PhishingReport>('phishing_analyze', { origin, config })
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */

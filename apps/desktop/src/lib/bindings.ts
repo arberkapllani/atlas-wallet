@@ -206,6 +206,15 @@ export const commands = {
 	// Return the built-in curated dApp list (UI directory / search).
 	dappListCurated: () => typedError<DappEntry[], CmdError>(__TAURI_INVOKE("dapp_list_curated")),
 	/**
+	 *  Analyse an arbitrary origin URL using the built-in defence config
+	 *  (curated DEX/NFT/wallet brand list) plus typosquat / homoglyph /
+	 *  Punycode heuristics. The dApp registry handles the curated good
+	 *  origins; this command catches the long tail.
+	 */
+	phishingAnalyzeDefault: (origin: string) => typedError<PhishingReport, CmdError>(__TAURI_INVOKE("phishing_analyze_default", { origin })),
+	// Analyse a dApp origin URL for phishing indicators.
+	phishingAnalyze: (origin: string, config: PhishingConfig) => typedError<PhishingReport, CmdError>(__TAURI_INVOKE("phishing_analyze", { origin, config })),
+	/**
 	 *  Aggregate a flat list of owned NFTs into the gallery view used by
 	 *  the UI (collection grouping, value totals, optional spam filter).
 	 */
@@ -283,8 +292,6 @@ export const commands = {
 	approvalsSummarise: (rows: ApprovalRisk[]) => typedError<ApprovalSummary[], CmdError>(__TAURI_INVOKE("approvals_summarise", { rows })),
 	// Decode raw EVM calldata into a structured action description.
 	calldataDecode: (data: string) => typedError<DecodedCall, CmdError>(__TAURI_INVOKE("calldata_decode", { data })),
-	// Analyse a dApp origin URL for phishing indicators.
-	phishingAnalyze: (origin: string, config: PhishingConfig) => typedError<PhishingReport, CmdError>(__TAURI_INVOKE("phishing_analyze", { origin, config })),
 	/**
 	 *  Flag incoming transfers from addresses that visually mimic
 	 *  addresses the user has previously sent funds to.

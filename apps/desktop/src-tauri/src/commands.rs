@@ -1424,6 +1424,19 @@ pub async fn dapp_list_curated() -> CmdResult<Vec<atlas_dapp_registry::DappEntry
     Ok(atlas_dapp_registry::DappRegistry::with_defaults().entries)
 }
 
+// ---- Phishing-domain detector ---------------------------------------
+
+/// Analyse an arbitrary origin URL using the built-in defence config
+/// (curated DEX/NFT/wallet brand list) plus typosquat / homoglyph /
+/// Punycode heuristics. The dApp registry handles the curated good
+/// origins; this command catches the long tail.
+#[tauri::command]
+#[specta::specta]
+pub async fn phishing_analyze_default(origin: String) -> CmdResult<atlas_phishing::PhishingReport> {
+    atlas_phishing::analyze(&origin, &atlas_phishing::default_config())
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 // ---- NFT gallery aggregation ----------------------------------------
 
 /// Aggregate a flat list of owned NFTs into the gallery view used by
