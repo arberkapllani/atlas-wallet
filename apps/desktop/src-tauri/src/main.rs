@@ -43,6 +43,8 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::set_fiat_currency,
             commands::get_auto_lock_minutes,
             commands::set_auto_lock_minutes,
+            commands::get_anti_phishing_phrase,
+            commands::set_anti_phishing_phrase,
             commands::network_health,
             commands::network_health_all,
             commands::get_exchange_settings,

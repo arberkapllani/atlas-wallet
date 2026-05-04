@@ -792,6 +792,32 @@ pub async fn set_auto_lock_minutes(
     Ok(clamped)
 }
 
+/// Currently configured anti-phishing phrase. Surfaced on every
+/// unlock screen so users can tell a phishing UI from the real
+/// Atlas.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_anti_phishing_phrase(
+    state: State<'_, Arc<AppState>>,
+) -> CmdResult<Option<String>> {
+    Ok(state.settings.anti_phishing_phrase())
+}
+
+/// Set or clear the anti-phishing phrase. Pass `None` / empty
+/// string to disable the feature.
+#[tauri::command]
+#[specta::specta]
+pub async fn set_anti_phishing_phrase(
+    state: State<'_, Arc<AppState>>,
+    phrase: Option<String>,
+) -> CmdResult<Option<String>> {
+    state
+        .settings
+        .set_anti_phishing_phrase(phrase.as_deref())
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    Ok(state.settings.anti_phishing_phrase())
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

@@ -64,6 +64,17 @@ export const commands = {
 	 *  Values above 1440 (24h) are clamped to discourage forever-unlocked sessions.
 	 */
 	setAutoLockMinutes: (minutes: number) => typedError<number, CmdError>(__TAURI_INVOKE("set_auto_lock_minutes", { minutes })),
+	/**
+	 *  Currently configured anti-phishing phrase. Surfaced on every
+	 *  unlock screen so users can tell a phishing UI from the real
+	 *  Atlas.
+	 */
+	getAntiPhishingPhrase: () => typedError<string | null, CmdError>(__TAURI_INVOKE("get_anti_phishing_phrase")),
+	/**
+	 *  Set or clear the anti-phishing phrase. Pass `None` / empty
+	 *  string to disable the feature.
+	 */
+	setAntiPhishingPhrase: (phrase: string | null) => typedError<string | null, CmdError>(__TAURI_INVOKE("set_anti_phishing_phrase", { phrase })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.

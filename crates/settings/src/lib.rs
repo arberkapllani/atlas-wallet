@@ -78,6 +78,11 @@ pub struct SettingsData {
     /// `0` disables auto-lock. Absent (legacy file) → default 5 minutes.
     #[serde(default = "default_auto_lock_minutes")]
     pub auto_lock_minutes: u32,
+    /// User-chosen anti-phishing phrase. Surfaced on every Atlas
+    /// unlock screen so a phishing UI without this phrase is
+    /// immediately recognisable. Absent = feature disabled.
+    #[serde(default)]
+    pub anti_phishing_phrase: Option<String>,
 }
 
 fn default_auto_lock_minutes() -> u32 {
@@ -92,6 +97,7 @@ impl Default for SettingsData {
             oneinch_api_key: None,
             oneinch_base_url: None,
             auto_lock_minutes: default_auto_lock_minutes(),
+            anti_phishing_phrase: None,
         }
     }
 }
@@ -228,6 +234,46 @@ impl Settings {
         self.persist()
     }
 
+    /// Currently configured anti-phishing phrase, if any. The phrase
+    /// is plaintext on purpose: Atlas surfaces it on every unlock
+    /// screen so a phishing UI that *doesn't* know it is instantly
+    /// distinguishable. Treat the value as low-sensitivity (no key
+    /// material derives from it).
+    pub fn anti_phishing_phrase(&self) -> Option<String> {
+        self.inner
+            .read()
+            .expect("settings poisoned")
+            .anti_phishing_phrase
+            .clone()
+    }
+
+    /// Set or clear the anti-phishing phrase. Empty / whitespace
+    /// clears it. The phrase is trimmed and capped at 200 chars to
+    /// keep the unlock screen readable.
+    pub fn set_anti_phishing_phrase(&self, phrase: Option<&str>) -> Result<(), SettingsError> {
+        let normalised = match phrase {
+            Some(p) => {
+                let trimmed = p.trim();
+                if trimmed.is_empty() {
+                    None
+                } else if trimmed.chars().count() > 200 {
+                    return Err(SettingsError::Io(std::io::Error::new(
+                        std::io::ErrorKind::InvalidInput,
+                        "anti-phishing phrase must be 200 characters or fewer",
+                    )));
+                } else {
+                    Some(trimmed.to_string())
+                }
+            }
+            None => None,
+        };
+        {
+            let mut g = self.inner.write().expect("settings poisoned");
+            g.anti_phishing_phrase = normalised;
+        }
+        self.persist()
+    }
+
     /// Persist (or clear) the 1inch base URL. Empty/whitespace clears it.
     pub fn set_oneinch_base_url(&self, url: Option<&str>) -> Result<(), SettingsError> {
         {
@@ -318,5 +364,27 @@ mod tests {
         assert_eq!(FiatCurrency::parse("eur"), Some(FiatCurrency::Eur));
         assert_eq!(FiatCurrency::parse("Gbp"), Some(FiatCurrency::Gbp));
         assert_eq!(FiatCurrency::parse("jpy"), None);
+    }
+
+    #[test]
+    fn anti_phishing_phrase_round_trips_and_trims() {
+        let dir = tempfile::tempdir().unwrap();
+        {
+            let s = Settings::load_or_init(dir.path()).unwrap();
+            assert_eq!(s.anti_phishing_phrase(), None);
+            s.set_anti_phishing_phrase(Some("  blue heron at dusk  "))
+                .unwrap();
+        }
+        let s = Settings::load_or_init(dir.path()).unwrap();
+        assert_eq!(
+            s.anti_phishing_phrase().as_deref(),
+            Some("blue heron at dusk")
+        );
+        // Empty / whitespace clears.
+        s.set_anti_phishing_phrase(Some("   ")).unwrap();
+        assert_eq!(s.anti_phishing_phrase(), None);
+        // Length limit enforced.
+        let too_long = "x".repeat(201);
+        assert!(s.set_anti_phishing_phrase(Some(&too_long)).is_err());
     }
 }
