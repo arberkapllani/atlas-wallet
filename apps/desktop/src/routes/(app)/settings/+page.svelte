@@ -16,6 +16,7 @@
   import TypedDataCard from '$lib/settings/TypedDataCard.svelte';
   import TradesCard from '$lib/settings/TradesCard.svelte';
   import PayUriCard from '$lib/settings/PayUriCard.svelte';
+  import DappRegistryCard from '$lib/settings/DappRegistryCard.svelte';
   import { goto } from '$app/navigation';
   import { wallet } from '$lib/stores/wallet';
 </script>
@@ -55,6 +56,8 @@
   <TradesCard />
 
   <PayUriCard />
+
+  <DappRegistryCard />
 
   <Card title="Security">
     <div class="space-y-3 text-sm">

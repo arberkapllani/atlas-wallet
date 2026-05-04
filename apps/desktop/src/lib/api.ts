@@ -60,7 +60,11 @@ export type {
   PortfolioReport,
   PaymentIntent,
   BitcoinPayment,
-  EthereumPayment
+  EthereumPayment,
+  DappAssessment,
+  DappEntry,
+  DappRisk,
+  DappCategory
 } from './bindings';
 import type {
   Eip1559Suggestion,
@@ -106,7 +110,11 @@ import type {
   PortfolioReport,
   PaymentIntent,
   BitcoinPayment,
-  EthereumPayment
+  EthereumPayment,
+  DappAssessment,
+  DappEntry,
+  DappRisk,
+  DappCategory
 } from './bindings';
 
 export interface ChainSummary {
@@ -514,7 +522,11 @@ export const api = {
     invoke<PortfolioReport>('trades_compute_pnl', { prices, method }),
 
   // atlas-payuri payment URI parser (BIP-21 / EIP-681).
-  payuriParse: (input: string) => invoke<PaymentIntent>('payuri_parse', { input })
+  payuriParse: (input: string) => invoke<PaymentIntent>('payuri_parse', { input }),
+
+  // atlas-dapp-registry origin assessor.
+  dappAssessOrigin: (url: string) => invoke<DappAssessment>('dapp_assess_origin', { url }),
+  dappListCurated: () => invoke<DappEntry[]>('dapp_list_curated')
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */
