@@ -103,6 +103,19 @@ export const commands = {
 	setSwapFeeBps: (bps: number) => typedError<number, CmdError>(__TAURI_INVOKE("set_swap_fee_bps", { bps })),
 	// Persist (or clear) the THORChain affiliate THORName.
 	setThorchainAffiliate: (name: string | null) => typedError<string | null, CmdError>(__TAURI_INVOKE("set_thorchain_affiliate", { name })),
+	/**
+	 *  Whether the Ethereum-mainnet RPC currently points at the
+	 *  Flashbots Protect endpoint.
+	 */
+	flashbotsProtectEnabled: () => typedError<boolean, CmdError>(__TAURI_INVOKE("flashbots_protect_enabled")),
+	/**
+	 *  Toggle Flashbots Protect for Ethereum mainnet. When enabled,
+	 *  the wallet sets the `ethereum` RPC override to the Flashbots
+	 *  Protect URL; when disabled, the override is cleared so Atlas
+	 *  falls back to its default mainnet RPC. Other chains are
+	 *  unaffected.
+	 */
+	setFlashbotsProtect: (enabled: boolean) => typedError<boolean, CmdError>(__TAURI_INVOKE("set_flashbots_protect", { enabled })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.

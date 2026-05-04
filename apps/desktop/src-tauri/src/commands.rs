@@ -1009,6 +1009,63 @@ pub async fn set_thorchain_affiliate(
     Ok(state.settings.thorchain_affiliate())
 }
 
+/// Default Flashbots Protect endpoint. Routes Ethereum mainnet
+/// transactions through a private MEV-aware mempool instead of
+/// the public one, blocking sandwich and front-run attacks.
+pub const FLASHBOTS_PROTECT_URL: &str = "https://rpc.flashbots.net";
+
+/// Whether the Ethereum-mainnet RPC currently points at the
+/// Flashbots Protect endpoint.
+#[tauri::command]
+#[specta::specta]
+pub async fn flashbots_protect_enabled(state: State<'_, Arc<AppState>>) -> CmdResult<bool> {
+    Ok(state
+        .settings
+        .rpc_override("ethereum")
+        .as_deref()
+        .map(|u| u.starts_with(FLASHBOTS_PROTECT_URL))
+        .unwrap_or(false))
+}
+
+/// Toggle Flashbots Protect for Ethereum mainnet. When enabled,
+/// the wallet sets the `ethereum` RPC override to the Flashbots
+/// Protect URL; when disabled, the override is cleared so Atlas
+/// falls back to its default mainnet RPC. Other chains are
+/// unaffected.
+#[tauri::command]
+#[specta::specta]
+pub async fn set_flashbots_protect(
+    state: State<'_, Arc<AppState>>,
+    enabled: bool,
+) -> CmdResult<bool> {
+    if enabled {
+        state
+            .settings
+            .set_rpc_override("ethereum", FLASHBOTS_PROTECT_URL)
+            .map_err(|e| CmdError::Io(e.to_string()))?;
+    } else {
+        // Only clear the override if we set it. Don't stomp on a
+        // user's custom RPC.
+        let cur = state.settings.rpc_override("ethereum");
+        if cur
+            .as_deref()
+            .map(|u| u.starts_with(FLASHBOTS_PROTECT_URL))
+            .unwrap_or(false)
+        {
+            state
+                .settings
+                .clear_rpc_override("ethereum")
+                .map_err(|e| CmdError::Io(e.to_string()))?;
+        }
+    }
+    Ok(state
+        .settings
+        .rpc_override("ethereum")
+        .as_deref()
+        .map(|u| u.starts_with(FLASHBOTS_PROTECT_URL))
+        .unwrap_or(false))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

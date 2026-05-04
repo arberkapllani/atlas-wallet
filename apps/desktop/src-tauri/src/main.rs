@@ -53,6 +53,8 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::get_swap_fee_config,
             commands::set_swap_fee_bps,
             commands::set_thorchain_affiliate,
+            commands::flashbots_protect_enabled,
+            commands::set_flashbots_protect,
             commands::network_health,
             commands::network_health_all,
             commands::get_exchange_settings,
