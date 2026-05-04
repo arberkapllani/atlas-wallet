@@ -633,6 +633,31 @@ export const commands = {
 	 *  actually issuing one.
 	 */
 	torEnforceDecision: () => typedError<ProxyDecision, CmdError>(__TAURI_INVOKE("tor_enforce_decision")),
+	/**
+	 *  All `(UtxoRef, UtxoLabel)` pairs currently stored, sorted by
+	 *  `txid` then `vout`.
+	 */
+	coincontrolLabelList: () => typedError<LabeledUtxoEntry[], CmdError>(__TAURI_INVOKE("coincontrol_label_list")),
+	// Insert or replace the label for `utxo`.
+	coincontrolLabelUpsert: (utxo: UtxoRef, label: UtxoLabel) => typedError<null, CmdError>(__TAURI_INVOKE("coincontrol_label_upsert", { utxo, label })),
+	/**
+	 *  Remove the label for `utxo`. Returns `true` if a label was
+	 *  present.
+	 */
+	coincontrolLabelRemove: (utxo: UtxoRef) => typedError<boolean, CmdError>(__TAURI_INVOKE("coincontrol_label_remove", { utxo })),
+	/**
+	 *  Inspect a manually-built selection and return every privacy
+	 *  concern that applies. Empty result = selection is internally
+	 *  consistent.
+	 */
+	coincontrolDetectMix: (selected: LabeledUtxo[]) => typedError<MixWarning[], CmdError>(__TAURI_INVOKE("coincontrol_detect_mix", { selected })),
+	/**
+	 *  Ask the wallet to propose a single-bucket selection that funds
+	 *  `target` (in base units). Strategy controls how UTXOs are
+	 *  picked inside the bucket. Buckets are tried in this order:
+	 *  Private → Anonymous → Unlabelled → Identifying.
+	 */
+	coincontrolSuggestSelection: (target: number, available: LabeledUtxo[], strategy: SelectionStrategy) => typedError<Selection, CmdError>(__TAURI_INVOKE("coincontrol_suggest_selection", { target, available, strategy })),
 };
 
 /** Events */
@@ -1510,6 +1535,33 @@ export type JupiterSwapArgs = {
 	fee_account: string | null,
 };
 
+// A candidate for coin selection: UTXO ref + value + label.
+export type LabeledUtxo = {
+	// Outpoint reference.
+	utxo: UtxoRef,
+	/**
+	 *  Value in base units (sats for Bitcoin, gwei is N/A —
+	 *  account-based chains don't use this crate).
+	 */
+	value: number,
+	// Optional confirmations. `None` means unknown / unconfirmed.
+	confirmations?: number | null,
+	// Provenance + notes.
+	label: UtxoLabel,
+};
+
+/**
+ *  Tuple-style entry surfaced to the IPC layer (so specta can
+ *  generate a typed pair without exposing the internal map key
+ *  format).
+ */
+export type LabeledUtxoEntry = {
+	// Outpoint reference.
+	utxo: UtxoRef,
+	// Label currently stored for this outpoint.
+	label: UtxoLabel,
+};
+
 export type LimitDecision = "Allowed" | "RequiresConfirmation" | "Blocked";
 
 export type LimitEvaluation = {
@@ -1537,6 +1589,36 @@ export type MimicMatch = {
 	// Number of trailing hex characters that match.
 	matching_suffix: number,
 };
+
+// Reasons [`detect_mix`] flags a selection.
+export type MixWarning = 
+/**
+ *  At least one identifying input (KYC) and one private input
+ *  would share the transaction. Spending both together breaks
+ *  the privacy of the private one.
+ */
+{ kind: "kyc_meets_private"; 
+// Outpoints flagged as KYC.
+kyc: UtxoRef[]; 
+// Outpoints flagged as Private.
+private: UtxoRef[] } | 
+/**
+ *  At least one identifying input is being combined with an
+ *  otherwise-anonymous P2P input. Less severe than the above —
+ *  only the P2P counterparty's view is widened.
+ */
+{ kind: "kyc_meets_p2p"; 
+// Outpoints flagged as KYC.
+kyc: UtxoRef[]; 
+// Outpoints flagged as P2P.
+p2p: UtxoRef[] } | 
+/**
+ *  Selection contains UTXOs whose origin has not yet been
+ *  labelled. The user should triage them before spending.
+ */
+{ kind: "unknown_origin"; 
+// Unlabelled outpoints.
+unknown: UtxoRef[] };
 
 export type MoonPayBuyArgs = {
 	currency_code: string,
@@ -1653,6 +1735,44 @@ export type NetworkStatus =
  *  generic Safe.
  */
 export type Operation = "call" | "delegatecall";
+
+/**
+ *  Where a UTXO came from. The bucket determines what it can
+ *  safely be combined with.
+ */
+export type Origin = 
+/**
+ *  Origin not yet labelled. Treated as `Mixed`-equivalent for
+ *  safety — the user should label it before spending.
+ */
+"unknown" | 
+/**
+ *  Came from a KYC source (centralised exchange withdrawal,
+ *  regulated on-ramp, custodial wallet). The user's real-world
+ *  identity is tied to this UTXO forever.
+ */
+"kyc_tainted" | 
+/**
+ *  Came from a non-KYC P2P trade (Bisq, RoboSats, Hodl Hodl,
+ *  LocalMonero etc.). No off-chain identity link, but a
+ *  counterparty knows one of the addresses.
+ */
+"p2p" | 
+/**
+ *  Came from mining or a similar self-generated source. No
+ *  counterparty involved.
+ */
+"mining" | 
+/**
+ *  Output of a CoinJoin / WabiSabi / payjoin round. The
+ *  privacy bucket — must never be re-merged with a KYC input.
+ */
+"private" | 
+/**
+ *  User accepted the coin as direct payment from a non-KYC
+ *  peer who knows them by name (donation button, friend).
+ */
+"donation";
 
 /**
  *  One NFT a user owns. Mirrors the subset of Reservoir's
@@ -1811,6 +1931,26 @@ export type PricePoint = {
 	// 24h change as a percentage.
 	change_24h: number,
 };
+
+/**
+ *  Coarse partition of UTXOs into privacy buckets. Selection runs
+ *  independently in each bucket.
+ */
+export type PrivacyBucket = 
+// `Origin::Private` only.
+"private" | 
+/**
+ *  `Origin::P2p` and `Origin::Mining` — high anonymity, no
+ *  real-world identity link.
+ */
+"anonymous" | 
+/**
+ *  `Origin::KycTainted` and `Origin::Donation` — already
+ *  linked to identity.
+ */
+"identifying" | 
+// `Origin::Unknown` — not yet triaged.
+"unlabelled";
 
 // Frontend-friendly summary of a profile.
 export type ProfileSummary = {
@@ -2068,6 +2208,40 @@ export type SafeTxHashes = {
 	safe_tx_hash: string,
 	domain_separator: string,
 };
+
+// Result of [`suggest_selection`].
+export type Selection = {
+	/**
+	 *  Outpoints chosen by the algorithm, in the order they were
+	 *  added.
+	 */
+	inputs: LabeledUtxo[],
+	// Sum of `inputs`. Always `>= target` on success.
+	total_value: number,
+	// Privacy bucket the algorithm restricted itself to.
+	bucket: PrivacyBucket,
+};
+
+/**
+ *  Strategy for [`suggest_selection`] when more than one
+ *  privacy-safe combination satisfies the target.
+ */
+export type SelectionStrategy = 
+/**
+ *  Pick smallest UTXOs first. Consolidates dust over time but
+ *  produces larger transactions and higher fees.
+ */
+"smallest_first" | 
+/**
+ *  Pick largest UTXOs first. Cheapest in fees but creates
+ *  larger leftover change.
+ */
+"largest_first" | 
+/**
+ *  Greedily pick UTXOs whose individual value is closest to
+ *  the remaining target. Tends to minimise change leftover.
+ */
+"branch_and_bound";
 
 export type SendNativeArgs = {
 	chain_id: string,
@@ -2485,6 +2659,36 @@ export type UserOperation = {
 	 *  non-empty, the first 20 bytes are the paymaster contract.
 	 */
 	paymaster_and_data: string,
+};
+
+/**
+ *  User-attached metadata for a UTXO. Persisted in
+ *  `data_dir/utxo_labels.json`.
+ */
+export type UtxoLabel = {
+	// Provenance bucket.
+	origin: Origin,
+	/**
+	 *  Optional free-form note shown in the UI (e.g. "RoboSats
+	 *  trade 2026-01", "Whirlpool round 137").
+	 */
+	note?: string,
+	/**
+	 *  Optional user-defined tags. Useful for grouping UTXOs by
+	 *  purpose (`["savings", "cold"]`).
+	 */
+	tags?: string[],
+};
+
+/**
+ *  Reference to a single UTXO. `txid` is hex (lowercase, 64 chars
+ *  for Bitcoin); `vout` is the 0-based output index.
+ */
+export type UtxoRef = {
+	// Transaction id (hex, lowercase).
+	txid: string,
+	// 0-based output index inside that transaction.
+	vout: number,
 };
 
 // One validator the user can delegate to.

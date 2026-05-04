@@ -77,7 +77,16 @@ export type {
   TorMode,
   TorStatus,
   TorConfig,
-  ProxyDecision
+  ProxyDecision,
+  Origin,
+  UtxoRef,
+  UtxoLabel,
+  LabeledUtxo,
+  LabeledUtxoEntry,
+  MixWarning,
+  SelectionStrategy,
+  PrivacyBucket,
+  Selection
 } from './bindings';
 import type {
   Eip1559Suggestion,
@@ -140,7 +149,16 @@ import type {
   TorMode,
   TorStatus,
   TorConfig,
-  ProxyDecision
+  ProxyDecision,
+  Origin,
+  UtxoRef,
+  UtxoLabel,
+  LabeledUtxo,
+  LabeledUtxoEntry,
+  MixWarning,
+  SelectionStrategy,
+  PrivacyBucket,
+  Selection
 } from './bindings';
 
 export interface ChainSummary {
@@ -585,7 +603,22 @@ export const api = {
   torStart: () => invoke<TorStatus>('tor_start'),
   torStop: () => invoke<null>('tor_stop'),
   torNewCircuit: () => invoke<null>('tor_new_circuit'),
-  torEnforceDecision: () => invoke<ProxyDecision>('tor_enforce_decision')
+  torEnforceDecision: () => invoke<ProxyDecision>('tor_enforce_decision'),
+
+  // atlas-coincontrol UTXO labelling + privacy-aware selection.
+  coincontrolLabelList: () => invoke<LabeledUtxoEntry[]>('coincontrol_label_list'),
+  coincontrolLabelUpsert: (utxo: UtxoRef, label: UtxoLabel) =>
+    invoke<null>('coincontrol_label_upsert', { utxo, label }),
+  coincontrolLabelRemove: (utxo: UtxoRef) =>
+    invoke<boolean>('coincontrol_label_remove', { utxo }),
+  coincontrolDetectMix: (selected: LabeledUtxo[]) =>
+    invoke<MixWarning[]>('coincontrol_detect_mix', { selected }),
+  coincontrolSuggestSelection: (
+    target: number,
+    available: LabeledUtxo[],
+    strategy: SelectionStrategy
+  ) =>
+    invoke<Selection>('coincontrol_suggest_selection', { target, available, strategy })
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */

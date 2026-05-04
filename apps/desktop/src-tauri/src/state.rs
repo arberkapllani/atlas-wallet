@@ -189,6 +189,10 @@ pub struct AppState {
     /// `data_dir/tor.json`. The provider is the offline stub today;
     /// real `arti-client` integration lands in a follow-up commit.
     pub tor: TorState,
+    /// Per-UTXO privacy labels (origin tag + note + tags). Persisted
+    /// as JSON in `data_dir/utxo_labels.json`. Used by the coin-
+    /// control settings card and (in a follow-up) the send flow.
+    pub utxo_labels: RwLock<atlas_coincontrol::UtxoLabelStore>,
 }
 
 /// Bundle of the Tor provider, persisted mode, and current
@@ -245,6 +249,10 @@ impl AppState {
             mode: RwLock::new(tor_persisted.mode),
             config: RwLock::new(tor_persisted.config),
         };
+        let utxo_labels = load_json_or_default::<atlas_coincontrol::UtxoLabelStore>(
+            &data_dir,
+            "utxo_labels.json",
+        );
         Ok(Self {
             data_dir,
             profiles: RwLock::new(registry),
@@ -260,6 +268,7 @@ impl AppState {
             blocklist: RwLock::new(blocklist),
             trades: RwLock::new(trades),
             tor,
+            utxo_labels: RwLock::new(utxo_labels),
         })
     }
 }

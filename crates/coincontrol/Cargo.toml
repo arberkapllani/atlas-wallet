@@ -1,0 +1,14 @@
+[package]
+name = "atlas-coincontrol"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "UTXO labelling, mix detection and privacy-aware coin selection"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+specta = { workspace = true }
+thiserror = { workspace = true }

@@ -3562,3 +3562,97 @@ pub async fn tor_enforce_decision(
     let config = state.tor.config.read().await.clone();
     Ok(atlas_tor::enforce(mode, &status, &config))
 }
+
+// =============================================================================
+// Coin control (UTXO labels + privacy-aware selection)
+// =============================================================================
+//
+// Combining a KYC-tainted UTXO with a private one in the same
+// transaction destroys the privacy of the private one through
+// the common-input-ownership heuristic. These commands let the
+// UI label UTXOs by provenance, ask whether a planned selection
+// is privacy-safe, and have the wallet propose a single-bucket
+// selection that funds a target value.
+
+async fn persist_utxo_labels(state: &Arc<AppState>) -> Result<(), CmdError> {
+    let snapshot = state.utxo_labels.read().await.clone();
+    crate::state::save_json(&state.data_dir, "utxo_labels.json", &snapshot)
+        .map_err(|e| CmdError::Io(e.to_string()))
+}
+
+/// All `(UtxoRef, UtxoLabel)` pairs currently stored, sorted by
+/// `txid` then `vout`.
+#[tauri::command]
+#[specta::specta]
+pub async fn coincontrol_label_list(
+    state: State<'_, Arc<AppState>>,
+) -> CmdResult<Vec<atlas_coincontrol::LabeledUtxoEntry>> {
+    let store = state.utxo_labels.read().await;
+    Ok(store
+        .entries()
+        .into_iter()
+        .map(|(utxo, label)| atlas_coincontrol::LabeledUtxoEntry { utxo, label })
+        .collect())
+}
+
+/// Insert or replace the label for `utxo`.
+#[tauri::command]
+#[specta::specta]
+pub async fn coincontrol_label_upsert(
+    state: State<'_, Arc<AppState>>,
+    utxo: atlas_coincontrol::UtxoRef,
+    label: atlas_coincontrol::UtxoLabel,
+) -> CmdResult<()> {
+    if utxo.txid.trim().is_empty() {
+        return Err(CmdError::InvalidInput("txid required".into()));
+    }
+    {
+        let mut store = state.utxo_labels.write().await;
+        store.upsert(utxo, label);
+    }
+    persist_utxo_labels(&state).await
+}
+
+/// Remove the label for `utxo`. Returns `true` if a label was
+/// present.
+#[tauri::command]
+#[specta::specta]
+pub async fn coincontrol_label_remove(
+    state: State<'_, Arc<AppState>>,
+    utxo: atlas_coincontrol::UtxoRef,
+) -> CmdResult<bool> {
+    let removed = {
+        let mut store = state.utxo_labels.write().await;
+        store.remove(&utxo)
+    };
+    if removed {
+        persist_utxo_labels(&state).await?;
+    }
+    Ok(removed)
+}
+
+/// Inspect a manually-built selection and return every privacy
+/// concern that applies. Empty result = selection is internally
+/// consistent.
+#[tauri::command]
+#[specta::specta]
+pub async fn coincontrol_detect_mix(
+    selected: Vec<atlas_coincontrol::LabeledUtxo>,
+) -> CmdResult<Vec<atlas_coincontrol::MixWarning>> {
+    Ok(atlas_coincontrol::detect_mix(&selected))
+}
+
+/// Ask the wallet to propose a single-bucket selection that funds
+/// `target` (in base units). Strategy controls how UTXOs are
+/// picked inside the bucket. Buckets are tried in this order:
+/// Private → Anonymous → Unlabelled → Identifying.
+#[tauri::command]
+#[specta::specta]
+pub async fn coincontrol_suggest_selection(
+    target: u64,
+    available: Vec<atlas_coincontrol::LabeledUtxo>,
+    strategy: atlas_coincontrol::SelectionStrategy,
+) -> CmdResult<atlas_coincontrol::Selection> {
+    atlas_coincontrol::suggest_selection(target, &available, strategy)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}

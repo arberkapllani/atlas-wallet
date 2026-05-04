@@ -23,6 +23,7 @@
   import WalletConnectCard from '$lib/settings/WalletConnectCard.svelte';
   import BiometricStatusCard from '$lib/settings/BiometricStatusCard.svelte';
   import TorCard from '$lib/settings/TorCard.svelte';
+  import CoinControlCard from '$lib/settings/CoinControlCard.svelte';
   import { goto } from '$app/navigation';
   import { wallet } from '$lib/stores/wallet';
 </script>
@@ -36,6 +37,8 @@
   <NetworkHealthCard />
 
   <TorCard />
+
+  <CoinControlCard />
 
   <RpcEndpointsCard />
 
