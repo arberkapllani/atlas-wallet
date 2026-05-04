@@ -58,6 +58,7 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::exchange_swap,
             commands::list_profiles,
             commands::active_profile,
+            commands::active_signing_capability,
             commands::switch_profile,
             commands::rename_profile,
             commands::delete_profile,

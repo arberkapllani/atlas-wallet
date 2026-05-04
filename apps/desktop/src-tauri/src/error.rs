@@ -9,6 +9,12 @@ pub enum CmdError {
     NotInitialized(String),
     #[error("locked")]
     Locked,
+    /// Active profile is hardware-backed; the frontend must route
+    /// the operation through the connected device rather than
+    /// asking for a password. Carries the vendor name (`"ledger"`
+    /// / `"trezor"`) so the UI can pick the right driver.
+    #[error("hardware signature required ({0})")]
+    HardwareSignatureRequired(String),
     #[error("invalid input: {0}")]
     InvalidInput(String),
     #[error("wallet core: {0}")]

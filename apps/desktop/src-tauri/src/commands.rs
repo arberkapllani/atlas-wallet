@@ -291,6 +291,50 @@ pub async fn active_profile(state: State<'_, Arc<AppState>>) -> CmdResult<Option
     Ok(reg.active().map(ProfileSummary::from))
 }
 
+/// How the active profile signs transactions. Used by the Send
+/// flow to decide whether to show the password prompt, the
+/// hardware-device prompt, or refuse outright (watch-only).
+#[derive(Debug, serde::Serialize, specta::Type)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum SigningCapability {
+    /// No active profile yet.
+    None,
+    /// Hot wallet — sign in-process after password unlock.
+    Hot,
+    /// Hardware-backed — caller must drive the device.
+    Hardware {
+        /// `"ledger"` or `"trezor"`.
+        vendor: String,
+    },
+    /// Watch-only — cannot sign at all.
+    WatchOnly,
+}
+
+/// Returns how the active profile expects to sign transactions.
+/// Frontend Send / Swap flows poll this on mount so they can
+/// switch the confirm button between "Unlock to send",
+/// "Confirm on device", and "Watch-only — cannot send".
+#[tauri::command]
+#[specta::specta]
+pub async fn active_signing_capability(
+    state: State<'_, Arc<AppState>>,
+) -> CmdResult<SigningCapability> {
+    let reg = state.profiles.read().await;
+    Ok(match reg.active() {
+        None => SigningCapability::None,
+        Some(p) => match &p.kind {
+            ProfileKind::Hot { .. } => SigningCapability::Hot,
+            ProfileKind::Hardware { vendor, .. } => SigningCapability::Hardware {
+                vendor: match vendor {
+                    atlas_profile::HardwareVendor::Ledger => "ledger".into(),
+                    atlas_profile::HardwareVendor::Trezor => "trezor".into(),
+                },
+            },
+            ProfileKind::WatchOnly { .. } => SigningCapability::WatchOnly,
+        },
+    })
+}
+
 #[tauri::command]
 #[specta::specta]
 pub async fn switch_profile(state: State<'_, Arc<AppState>>, id: String) -> CmdResult<()> {
@@ -1193,21 +1237,46 @@ fn decode_hex_payload(s: &str) -> CmdResult<Vec<u8>> {
 // =============================================================================
 
 async fn require_mnemonic(state: &AppState) -> CmdResult<Arc<Mnemonic>> {
+    // If the active profile is hardware-backed, surface a distinct
+    // error so the frontend routes signing through the device
+    // instead of prompting for a password.
+    {
+        let reg = state.profiles.read().await;
+        if let Some(active) = reg.active() {
+            if let ProfileKind::Hardware { vendor, .. } = &active.kind {
+                let v = match vendor {
+                    atlas_profile::HardwareVendor::Ledger => "ledger",
+                    atlas_profile::HardwareVendor::Trezor => "trezor",
+                };
+                return Err(CmdError::HardwareSignatureRequired(v.into()));
+            }
+        }
+    }
     state.mnemonic.read().await.clone().ok_or(CmdError::Locked)
 }
 
-/// Returns an error if the active profile is watch-only.
+/// Returns an error if the active profile cannot sign at all
+/// (watch-only) or requires hardware (handed back as
+/// [`CmdError::HardwareSignatureRequired`] so the UI can route
+/// to the device flow).
 async fn require_signing_capable(state: &AppState) -> CmdResult<()> {
     let reg = state.profiles.read().await;
     let active = reg.active().ok_or_else(|| {
         CmdError::NotInitialized("no active profile — create or import a wallet first".into())
     })?;
-    if !active.kind.is_signing_capable() {
-        return Err(CmdError::InvalidInput(
+    match &active.kind {
+        ProfileKind::Hot { .. } => Ok(()),
+        ProfileKind::Hardware { vendor, .. } => {
+            let v = match vendor {
+                atlas_profile::HardwareVendor::Ledger => "ledger",
+                atlas_profile::HardwareVendor::Trezor => "trezor",
+            };
+            Err(CmdError::HardwareSignatureRequired(v.into()))
+        }
+        ProfileKind::WatchOnly { .. } => Err(CmdError::InvalidInput(
             "active profile is watch-only".into(),
-        ));
+        )),
     }
-    Ok(())
 }
 
 /// Returns the on-disk vault path for the active hot profile.

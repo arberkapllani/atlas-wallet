@@ -138,6 +138,13 @@ export const commands = {
 	// Number of watched accounts (0 for hot profiles).
 	watch_account_count: number,
 } | null, CmdError>(__TAURI_INVOKE("active_profile")),
+	/**
+	 *  Returns how the active profile expects to sign transactions.
+	 *  Frontend Send / Swap flows poll this on mount so they can
+	 *  switch the confirm button between "Unlock to send",
+	 *  "Confirm on device", and "Watch-only — cannot send".
+	 */
+	activeSigningCapability: () => typedError<SigningCapability, CmdError>(__TAURI_INVOKE("active_signing_capability")),
 	switchProfile: (id: string) => typedError<null, CmdError>(__TAURI_INVOKE("switch_profile", { id })),
 	renameProfile: (id: string, newName: string) => typedError<null, CmdError>(__TAURI_INVOKE("rename_profile", { id, newName })),
 	deleteProfile: (id: string) => typedError<null, CmdError>(__TAURI_INVOKE("delete_profile", { id })),
@@ -275,7 +282,14 @@ export type ChainSummary = {
 	enabled_by_default: boolean,
 };
 
-export type CmdError = { kind: "NotInitialized"; message: string } | { kind: "Locked" } | { kind: "InvalidInput"; message: string } | { kind: "Wallet"; message: string } | { kind: "Chain"; message: string } | { kind: "Io"; message: string } | { kind: "Profile"; message: string };
+export type CmdError = { kind: "NotInitialized"; message: string } | { kind: "Locked" } | 
+/**
+ *  Active profile is hardware-backed; the frontend must route
+ *  the operation through the connected device rather than
+ *  asking for a password. Carries the vendor name (`"ledger"`
+ *  / `"trezor"`) so the UI can pick the right driver.
+ */
+{ kind: "HardwareSignatureRequired"; message: string } | { kind: "InvalidInput"; message: string } | { kind: "Wallet"; message: string } | { kind: "Chain"; message: string } | { kind: "Io"; message: string } | { kind: "Profile"; message: string };
 
 export type CreateHardwareArgs = {
 	name: string,
@@ -580,6 +594,23 @@ export type SendTokenResult = {
 	// Network fee paid in the chain's native asset.
 	fee: Amount,
 };
+
+/**
+ *  How the active profile signs transactions. Used by the Send
+ *  flow to decide whether to show the password prompt, the
+ *  hardware-device prompt, or refuse outright (watch-only).
+ */
+export type SigningCapability = 
+// No active profile yet.
+{ kind: "none" } | 
+// Hot wallet — sign in-process after password unlock.
+{ kind: "hot" } | 
+// Hardware-backed — caller must drive the device.
+{ kind: "hardware"; 
+// `"ledger"` or `"trezor"`.
+vendor: string } | 
+// Watch-only — cannot sign at all.
+{ kind: "watch_only" };
 
 // Token contract standard.
 export type TokenStandard = 
