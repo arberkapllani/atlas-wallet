@@ -47,7 +47,11 @@ export type {
   ApprovalSummary,
   ApprovalConfig,
   RiskLevel,
-  DecodedCall
+  DecodedCall,
+  Eip712Report,
+  Eip712Domain,
+  Eip712Category,
+  SignatureRisk
 } from './bindings';
 import type {
   Eip1559Suggestion,
@@ -80,7 +84,11 @@ import type {
   ApprovalSummary,
   ApprovalConfig,
   RiskLevel,
-  DecodedCall
+  DecodedCall,
+  Eip712Report,
+  Eip712Domain,
+  Eip712Category,
+  SignatureRisk
 } from './bindings';
 
 export interface ChainSummary {
@@ -468,7 +476,10 @@ export const api = {
     invoke<ApprovalSummary[]>('approvals_summarise', { rows }),
 
   // atlas-calldata EVM tx decoder.
-  calldataDecode: (data: string) => invoke<DecodedCall>('calldata_decode', { data })
+  calldataDecode: (data: string) => invoke<DecodedCall>('calldata_decode', { data }),
+
+  // atlas-eip712 typed-data inspector.
+  eip712Classify: (json: string) => invoke<Eip712Report>('eip712_classify', { json })
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */

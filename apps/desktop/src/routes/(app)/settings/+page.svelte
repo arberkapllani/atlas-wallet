@@ -13,6 +13,7 @@
   import UrlSafetyCard from '$lib/settings/UrlSafetyCard.svelte';
   import ApprovalsCard from '$lib/settings/ApprovalsCard.svelte';
   import CalldataCard from '$lib/settings/CalldataCard.svelte';
+  import TypedDataCard from '$lib/settings/TypedDataCard.svelte';
   import { goto } from '$app/navigation';
   import { wallet } from '$lib/stores/wallet';
 </script>
@@ -46,6 +47,8 @@
   <ApprovalsCard />
 
   <CalldataCard />
+
+  <TypedDataCard />
 
   <Card title="Security">
     <div class="space-y-3 text-sm">
