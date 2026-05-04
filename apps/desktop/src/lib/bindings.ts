@@ -349,6 +349,23 @@ export const commands = {
 	fmtTokenAmount: (baseUnits: string, decimals: number, maxSignificant: number) => typedError<string, CmdError>(__TAURI_INVOKE("fmt_token_amount", { baseUnits, decimals, maxSignificant })),
 	// Shorten a 0x address to "0x1234\u{2026}abcd" form.
 	fmtTruncateAddress: (addr: string) => typedError<string, CmdError>(__TAURI_INVOKE("fmt_truncate_address", { addr })),
+	// List all stored tx-notes.
+	txnotesList: () => typedError<TxNote[], CmdError>(__TAURI_INVOKE("txnotes_list")),
+	// Get a single note by chain + txid (case-insensitive).
+	txnotesGet: (chain: Chain, txid: string) => typedError<{
+	chain: Chain,
+	txid: string,
+	note: string,
+	tags: string[],
+} | null, CmdError>(__TAURI_INVOKE("txnotes_get", { chain, txid })),
+	// Insert or replace a tx-note. Empty note + empty tags removes it.
+	txnotesUpsert: (chain: Chain, txid: string, note: string, tags: string[]) => typedError<null, CmdError>(__TAURI_INVOKE("txnotes_upsert", { chain, txid, note, tags })),
+	// Remove a tx-note. Returns whether one existed.
+	txnotesRemove: (chain: Chain, txid: string) => typedError<boolean, CmdError>(__TAURI_INVOKE("txnotes_remove", { chain, txid })),
+	// List notes that carry a given tag (case-insensitive).
+	txnotesListByTag: (tag: string) => typedError<TxNote[], CmdError>(__TAURI_INVOKE("txnotes_list_by_tag", { tag })),
+	// Distinct, sorted list of every tag used across all notes.
+	txnotesAllTags: () => typedError<string[], CmdError>(__TAURI_INVOKE("txnotes_all_tags")),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -703,6 +720,8 @@ export type BlocklistEntry = {
 
 // Result of looking up an address.
 export type BlocklistVerdict = { kind: "Clean" } | { kind: "Listed"; data: BlocklistEntry };
+
+export type Chain = "Bitcoin" | "Ethereum";
 
 // Aggregated staking position for one chain.
 export type ChainPosition = {
@@ -2088,6 +2107,13 @@ export type Tx = {
 	// `"pending"`, `"confirmed"`, or `"failed"`.
 	status: string,
 	memo: string | null,
+};
+
+export type TxNote = {
+	chain: Chain,
+	txid: string,
+	note: string,
+	tags: string[],
 };
 
 // One on-chain transaction the user (or Atlas itself) initiated.

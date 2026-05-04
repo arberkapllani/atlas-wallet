@@ -1827,6 +1827,88 @@ pub async fn fmt_truncate_address(addr: String) -> CmdResult<String> {
     Ok(atlas_fmt::truncate_address(&addr))
 }
 
+// ---- per-tx notes & tags ------------------------------------------
+
+/// List all stored tx-notes.
+#[tauri::command]
+#[specta::specta]
+pub async fn txnotes_list(
+    state: State<'_, Arc<AppState>>,
+) -> CmdResult<Vec<atlas_txnotes::TxNote>> {
+    Ok(state.txnotes.read().await.list())
+}
+
+/// Get a single note by chain + txid (case-insensitive).
+#[tauri::command]
+#[specta::specta]
+pub async fn txnotes_get(
+    state: State<'_, Arc<AppState>>,
+    chain: atlas_txnotes::Chain,
+    txid: String,
+) -> CmdResult<Option<atlas_txnotes::TxNote>> {
+    Ok(state.txnotes.read().await.get(chain, &txid).cloned())
+}
+
+/// Insert or replace a tx-note. Empty note + empty tags removes it.
+#[tauri::command]
+#[specta::specta]
+pub async fn txnotes_upsert(
+    state: State<'_, Arc<AppState>>,
+    chain: atlas_txnotes::Chain,
+    txid: String,
+    note: String,
+    tags: Vec<String>,
+) -> CmdResult<()> {
+    {
+        let mut store = state.txnotes.write().await;
+        store
+            .upsert(chain, &txid, &note, &tags)
+            .map_err(|e| CmdError::InvalidInput(e.to_string()))?;
+    }
+    persist_txnotes(&state).await
+}
+
+/// Remove a tx-note. Returns whether one existed.
+#[tauri::command]
+#[specta::specta]
+pub async fn txnotes_remove(
+    state: State<'_, Arc<AppState>>,
+    chain: atlas_txnotes::Chain,
+    txid: String,
+) -> CmdResult<bool> {
+    let removed = {
+        let mut store = state.txnotes.write().await;
+        store.remove(chain, &txid)
+    };
+    if removed {
+        persist_txnotes(&state).await?;
+    }
+    Ok(removed)
+}
+
+/// List notes that carry a given tag (case-insensitive).
+#[tauri::command]
+#[specta::specta]
+pub async fn txnotes_list_by_tag(
+    state: State<'_, Arc<AppState>>,
+    tag: String,
+) -> CmdResult<Vec<atlas_txnotes::TxNote>> {
+    Ok(state.txnotes.read().await.list_by_tag(&tag))
+}
+
+/// Distinct, sorted list of every tag used across all notes.
+#[tauri::command]
+#[specta::specta]
+pub async fn txnotes_all_tags(state: State<'_, Arc<AppState>>) -> CmdResult<Vec<String>> {
+    Ok(state.txnotes.read().await.all_tags())
+}
+
+async fn persist_txnotes(state: &Arc<AppState>) -> CmdResult<()> {
+    let snapshot = state.txnotes.read().await.clone();
+    crate::state::save_json(&state.data_dir, "txnotes.json", &snapshot)
+        .map_err(|e| CmdError::InvalidInput(format!("persist txnotes: {e}")))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

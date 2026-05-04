@@ -168,6 +168,24 @@ pub struct AppState {
     pub prices: PriceOracle,
     pub settings: Settings,
     pub db: Db,
+    /// Per-tx notes & tags. Persisted as JSON in `data_dir/txnotes.json`.
+    pub txnotes: RwLock<atlas_txnotes::TxNoteStore>,
+    /// Address book. Persisted as JSON in `data_dir/contacts.json`.
+    #[allow(dead_code)]
+    pub contacts: RwLock<atlas_contacts::ContactBook>,
+    /// In-memory ring-buffer of recent privacy-redacted events.
+    #[allow(dead_code)]
+    pub events: RwLock<atlas_eventlog::EventLog>,
+    /// Per-profile spend-limit policy + state. Persisted as JSON.
+    #[allow(dead_code)]
+    pub spend: RwLock<SpendStore>,
+}
+
+/// Bundle of policy + observed state for the spend-limit evaluator.
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+pub struct SpendStore {
+    pub policy: atlas_spendlimits::SpendPolicy,
+    pub state: atlas_spendlimits::SpendState,
 }
 
 impl AppState {
@@ -180,6 +198,10 @@ impl AppState {
         let db = Db::open(&data_dir.join("atlas.db"))
             .await
             .map_err(|e| std::io::Error::other(e.to_string()))?;
+        let txnotes = load_json_or_default::<atlas_txnotes::TxNoteStore>(&data_dir, "txnotes.json");
+        let contacts =
+            load_json_or_default::<atlas_contacts::ContactBook>(&data_dir, "contacts.json");
+        let spend = load_json_or_default::<SpendStore>(&data_dir, "spend.json");
         Ok(Self {
             data_dir,
             profiles: RwLock::new(registry),
@@ -188,8 +210,40 @@ impl AppState {
             prices: PriceOracle::new(),
             settings,
             db,
+            txnotes: RwLock::new(txnotes),
+            contacts: RwLock::new(contacts),
+            events: RwLock::new(atlas_eventlog::EventLog::default()),
+            spend: RwLock::new(spend),
         })
     }
+}
+
+/// Load `<data_dir>/<file>` as JSON into `T`, falling back to `T::default()`
+/// on any I/O or parse error. The host owns persistence for these tiny
+/// pure-data crates so no schema lock-in.
+fn load_json_or_default<T: Default + serde::de::DeserializeOwned>(
+    data_dir: &std::path::Path,
+    file: &str,
+) -> T {
+    let path = data_dir.join(file);
+    match std::fs::read_to_string(&path) {
+        Ok(s) if !s.trim().is_empty() => serde_json::from_str(&s).unwrap_or_default(),
+        _ => T::default(),
+    }
+}
+
+/// Atomically write `value` as pretty JSON to `<data_dir>/<file>`.
+pub fn save_json<T: serde::Serialize>(
+    data_dir: &std::path::Path,
+    file: &str,
+    value: &T,
+) -> std::io::Result<()> {
+    let path = data_dir.join(file);
+    let tmp = path.with_extension("tmp");
+    let bytes = serde_json::to_vec_pretty(value).map_err(std::io::Error::other)?;
+    std::fs::write(&tmp, bytes)?;
+    std::fs::rename(&tmp, &path)?;
+    Ok(())
 }
 
 // Stub helper for legacy bitcoin-providers we don't expose.
