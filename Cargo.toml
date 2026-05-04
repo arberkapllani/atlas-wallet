@@ -40,6 +40,7 @@ members = [
     "crates/eip712",
     "crates/blocklist",
     "crates/pnl",
+    "crates/fmt",
     "apps/desktop/src-tauri",
 ]
 
@@ -133,6 +134,7 @@ atlas-address-poisoning = { path = "crates/address-poisoning" }
 atlas-eip712 = { path = "crates/eip712" }
 atlas-blocklist = { path = "crates/blocklist" }
 atlas-pnl = { path = "crates/pnl" }
+atlas-fmt = { path = "crates/fmt" }
 
 # Misc
 uuid = { version = "1.10", features = ["v4", "serde"] }

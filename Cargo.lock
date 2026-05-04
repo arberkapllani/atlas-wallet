@@ -461,6 +461,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-fmt"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "specta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "atlas-hardware-ledger"
 version = "0.1.0"
 dependencies = [
