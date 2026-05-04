@@ -64,7 +64,11 @@ export type {
   DappAssessment,
   DappEntry,
   DappRisk,
-  DappCategory
+  DappCategory,
+  GalleryView,
+  GalleryFilter,
+  CollectionGroup,
+  OwnedNft
 } from './bindings';
 import type {
   Eip1559Suggestion,
@@ -114,7 +118,11 @@ import type {
   DappAssessment,
   DappEntry,
   DappRisk,
-  DappCategory
+  DappCategory,
+  GalleryView,
+  GalleryFilter,
+  CollectionGroup,
+  OwnedNft
 } from './bindings';
 
 export interface ChainSummary {
@@ -526,7 +534,11 @@ export const api = {
 
   // atlas-dapp-registry origin assessor.
   dappAssessOrigin: (url: string) => invoke<DappAssessment>('dapp_assess_origin', { url }),
-  dappListCurated: () => invoke<DappEntry[]>('dapp_list_curated')
+  dappListCurated: () => invoke<DappEntry[]>('dapp_list_curated'),
+
+  // atlas-nft-gallery aggregation over owned NFTs.
+  nftGalleryView: (items: OwnedNft[], filter: GalleryFilter) =>
+    invoke<GalleryView>('nft_gallery_view', { items, filter })
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */

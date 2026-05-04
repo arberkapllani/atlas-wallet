@@ -17,6 +17,7 @@
   import TradesCard from '$lib/settings/TradesCard.svelte';
   import PayUriCard from '$lib/settings/PayUriCard.svelte';
   import DappRegistryCard from '$lib/settings/DappRegistryCard.svelte';
+  import NftGalleryCard from '$lib/settings/NftGalleryCard.svelte';
   import { goto } from '$app/navigation';
   import { wallet } from '$lib/stores/wallet';
 </script>
@@ -58,6 +59,8 @@
   <PayUriCard />
 
   <DappRegistryCard />
+
+  <NftGalleryCard />
 
   <Card title="Security">
     <div class="space-y-3 text-sm">
