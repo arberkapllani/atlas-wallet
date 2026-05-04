@@ -130,6 +130,25 @@ export const commands = {
 	 *  MoonPay handles KYC + bank/card payout.
 	 */
 	buildMoonpaySellUrl: (args: MoonPaySellArgs) => typedError<string, CmdError>(__TAURI_INVOKE("build_moonpay_sell_url", { args })),
+	// Build an N-of-M `wsh(sortedmulti)` descriptor wallet from a policy.
+	multisigBtcBuildDescriptor: (policy: MultisigPolicy) => typedError<MultisigWallet, CmdError>(__TAURI_INVOKE("multisig_btc_build_descriptor", { policy })),
+	/**
+	 *  Derive the receive (`change=false`) or change (`change=true`) address
+	 *  at `index` for a previously-built multisig wallet.
+	 */
+	multisigBtcDeriveAddress: (wallet: MultisigWallet, change: boolean, index: number) => typedError<string, CmdError>(__TAURI_INVOKE("multisig_btc_derive_address", { wallet, change, index })),
+	// Decode a base64 PSBT and return a UI-friendly summary.
+	multisigBtcPsbtSummary: (psbtB64: string) => typedError<PsbtSummary, CmdError>(__TAURI_INVOKE("multisig_btc_psbt_summary", { psbtB64 })),
+	/**
+	 *  Combine partially-signed PSBTs (one from each co-signer) into a
+	 *  single PSBT carrying every collected signature.
+	 */
+	multisigBtcPsbtCombine: (parts: string[]) => typedError<string, CmdError>(__TAURI_INVOKE("multisig_btc_psbt_combine", { parts })),
+	/**
+	 *  Finalise a fully-signed PSBT and return the raw broadcast-ready
+	 *  transaction hex.
+	 */
+	multisigBtcPsbtFinalize: (psbtB64: string) => typedError<string, CmdError>(__TAURI_INVOKE("multisig_btc_psbt_finalize", { psbtB64 })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -676,6 +695,51 @@ export type MoonPaySellArgs = {
 	redirect_url: string | null,
 };
 
+/**
+ *  `threshold`-of-`signers` policy. Atlas refuses to construct a wallet
+ *  with `threshold == 0`, `threshold > signers.len()`, or a signer set
+ *  containing fewer than two parties — those are footguns, not policies.
+ */
+export type MultisigPolicy = {
+	threshold: number,
+	signers: MultisigSigner[],
+	// `Mainnet` for production funds, `Testnet` for everything else.
+	network: NetworkChoice,
+};
+
+/**
+ *  A single signer in the multisig policy. `key_origin` ties the xpub
+ *  back to its master key fingerprint and derivation path so a hardware
+ *  wallet can later prove ownership before signing.
+ */
+export type MultisigSigner = {
+	// 8-character hex master fingerprint (e.g. `"d34db33f"`).
+	fingerprint: string,
+	/**
+	 *  Origin path — typically `m/48'/0'/0'/2'` for a BIP-48 P2WSH
+	 *  account on mainnet.
+	 */
+	origin: string,
+	// Account-level extended public key (`xpub.../zpub.../...`).
+	xpub: string,
+};
+
+/**
+ *  Compiled descriptor + the policy it came from. Atlas stores the
+ *  descriptor string verbatim so a recovery from another wallet (Sparrow,
+ *  Specter) is a simple paste.
+ */
+export type MultisigWallet = {
+	policy: MultisigPolicy,
+	/**
+	 *  `wsh(sortedmulti(...))` descriptor string with `/<0;1>/*` ranged
+	 *  suffix — the standard BIP-389 form for receive + change.
+	 */
+	descriptor: string,
+};
+
+export type NetworkChoice = "mainnet" | "testnet";
+
 // Result of a single `network_health` probe.
 export type NetworkHealth = {
 	// Chain id this report describes (`"btc"`, `"eth"`, …).
@@ -787,6 +851,42 @@ export type ProfileSummary = {
 	created_at: string,
 	// Number of watched accounts (0 for hot profiles).
 	watch_account_count: number,
+};
+
+export type PsbtInputSummary = {
+	// Number of partial signatures already collected for this input.
+	partial_sigs: number,
+	// Value of the spent output, when known.
+	value_sats: number | null,
+};
+
+export type PsbtOutputSummary = {
+	value_sats: number,
+	/**
+	 *  Best-effort decoded address (mainnet first, then testnet). `None`
+	 *  if the script doesn't map to a standard address.
+	 */
+	address: string | null,
+};
+
+/**
+ *  Lightweight summary of a PSBT for the UI: which inputs are signed
+ *  and how many signatures each carries, plus the per-output amount /
+ *  address. Avoids shipping the entire raw byte blob across IPC every
+ *  time the user clicks a row.
+ */
+export type PsbtSummary = {
+	/**
+	 *  Total input value in satoshis (best-effort: only known when the
+	 *  previous `witness_utxo`/`non_witness_utxo` is attached).
+	 */
+	total_input_sats: number | null,
+	// Total output value in satoshis.
+	total_output_sats: number,
+	// Implied fee (`inputs - outputs`) when input totals are known.
+	fee_sats: number | null,
+	inputs: PsbtInputSummary[],
+	outputs: PsbtOutputSummary[],
 };
 
 // 1inch v6 quote response, lifted into a stable shape.

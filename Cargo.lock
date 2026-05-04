@@ -277,6 +277,7 @@ dependencies = [
  "atlas-exchange-jupiter",
  "atlas-exchange-router",
  "atlas-exchange-thorchain",
+ "atlas-multisig-btc",
  "atlas-nft-registry",
  "atlas-onramp",
  "atlas-price-oracle",
@@ -396,6 +397,7 @@ name = "atlas-multisig-btc"
 version = "0.1.0"
 dependencies = [
  "bitcoin",
+ "hex",
  "miniscript",
  "serde",
  "specta",
@@ -587,6 +589,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1e499f9fc0407f50fe98af744ab44fa67d409f76b6772e1689ec8485eb0c0f66"
 dependencies = [
  "base58ck",
+ "base64 0.21.7",
  "bech32",
  "bitcoin-internals",
  "bitcoin-io",

@@ -9,3 +9,4 @@ miniscript = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 thiserror = { workspace = true }
 specta = { workspace = true }
+hex = { workspace = true }

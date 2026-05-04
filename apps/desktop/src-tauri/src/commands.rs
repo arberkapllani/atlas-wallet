@@ -1218,6 +1218,58 @@ pub async fn build_moonpay_sell_url(
     }
 }
 
+// ----- Multisig BTC ----------------------------------------------------------
+
+/// Build an N-of-M `wsh(sortedmulti)` descriptor wallet from a policy.
+#[tauri::command]
+#[specta::specta]
+pub async fn multisig_btc_build_descriptor(
+    policy: atlas_multisig_btc::MultisigPolicy,
+) -> CmdResult<atlas_multisig_btc::MultisigWallet> {
+    atlas_multisig_btc::build_descriptor(&policy).map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Derive the receive (`change=false`) or change (`change=true`) address
+/// at `index` for a previously-built multisig wallet.
+#[tauri::command]
+#[specta::specta]
+pub async fn multisig_btc_derive_address(
+    wallet: atlas_multisig_btc::MultisigWallet,
+    change: bool,
+    index: u32,
+) -> CmdResult<String> {
+    atlas_multisig_btc::derive_address(&wallet, change, index)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Decode a base64 PSBT and return a UI-friendly summary.
+#[tauri::command]
+#[specta::specta]
+pub async fn multisig_btc_psbt_summary(
+    psbt_b64: String,
+) -> CmdResult<atlas_multisig_btc::psbt::PsbtSummary> {
+    atlas_multisig_btc::psbt::summarise_psbt(&psbt_b64)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Combine partially-signed PSBTs (one from each co-signer) into a
+/// single PSBT carrying every collected signature.
+#[tauri::command]
+#[specta::specta]
+pub async fn multisig_btc_psbt_combine(parts: Vec<String>) -> CmdResult<String> {
+    atlas_multisig_btc::psbt::combine_psbts(&parts)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Finalise a fully-signed PSBT and return the raw broadcast-ready
+/// transaction hex.
+#[tauri::command]
+#[specta::specta]
+pub async fn multisig_btc_psbt_finalize(psbt_b64: String) -> CmdResult<String> {
+    atlas_multisig_btc::psbt::finalize_psbt(&psbt_b64)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

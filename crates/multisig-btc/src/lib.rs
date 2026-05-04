@@ -25,6 +25,8 @@ use miniscript::{
 };
 use serde::{Deserialize, Serialize};
 
+pub mod psbt;
+
 #[derive(Debug, thiserror::Error)]
 pub enum MultisigError {
     #[error("invalid input: {0}")]
