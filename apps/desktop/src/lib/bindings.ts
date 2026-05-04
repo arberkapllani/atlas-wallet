@@ -138,6 +138,13 @@ export const commands = {
 	 *  chain.
 	 */
 	thorchainQuote: (args: ThorchainQuoteArgs) => typedError<ThorchainQuote, CmdError>(__TAURI_INVOKE("thorchain_quote", { args })),
+	// Read-only ChangeNOW estimate.
+	changenowEstimate: (args: ChangeNowEstimateArgs) => typedError<Estimate, CmdError>(__TAURI_INVOKE("changenow_estimate", { args })),
+	/**
+	 *  Create a ChangeNOW exchange transaction. Returns the deposit
+	 *  address the wallet must send the source asset to.
+	 */
+	changenowCreate: (args: ChangeNowCreateArgs) => typedError<CreatedExchange, CmdError>(__TAURI_INVOKE("changenow_create", { args })),
 	listProfiles: () => typedError<ProfileSummary[], CmdError>(__TAURI_INVOKE("list_profiles")),
 	activeProfile: () => typedError<{
 	// Stable id (as string for JS).
@@ -297,6 +304,46 @@ export type ChainSummary = {
 	enabled_by_default: boolean,
 };
 
+export type ChangeNowCreateArgs = {
+	// Source ticker.
+	from_currency: string,
+	// Destination ticker.
+	to_currency: string,
+	// Optional source-network override.
+	from_network: string | null,
+	// Optional destination-network override.
+	to_network: string | null,
+	// Source amount (decimal string, display unit).
+	from_amount: string,
+	// User's destination address.
+	address: string,
+	// Optional memo / destination tag (XRP, XLM, ...).
+	extra_id: string | null,
+	// Optional refund address.
+	refund_address: string | null,
+	// "standard" or "fixed-rate".
+	flow: string,
+	// rateId from a fixed-rate estimate. Required for fixed-rate.
+	rate_id: string | null,
+	// ChangeNOW partner-program API key. Required.
+	api_key: string,
+};
+
+export type ChangeNowEstimateArgs = {
+	// Source ticker, lowercase (e.g. "btc").
+	from_currency: string,
+	// Destination ticker.
+	to_currency: string,
+	// Optional source-network override (USDT etc.).
+	from_network: string | null,
+	// Optional destination-network override.
+	to_network: string | null,
+	// Source amount as a decimal string in display units.
+	from_amount: string,
+	// "standard" (floating rate) or "fixed-rate".
+	flow: string,
+};
+
 export type CmdError = { kind: "NotInitialized"; message: string } | { kind: "Locked" } | 
 /**
  *  Active profile is hardware-backed; the frontend must route
@@ -328,6 +375,31 @@ export type CreateWatchOnlyArgs = {
 };
 
 /**
+ *  Created-exchange response: contains the deposit address the
+ *  wallet must send the source asset to.
+ */
+export type CreatedExchange = {
+	// ChangeNOW transaction id (used to poll status later).
+	id: string,
+	// Deposit address on the source chain.
+	payinAddress: string,
+	// Optional deposit memo / destination tag.
+	payinExtraId?: string | null,
+	// Echoed payout address.
+	payoutAddress: string,
+	// Echoed source ticker.
+	fromCurrency: string,
+	// Echoed destination ticker.
+	toCurrency: string,
+	// Source amount actually expected (decimal string, display).
+	fromAmount?: string | null,
+	// Estimated destination amount.
+	toAmount?: string | null,
+	// Echoed flow.
+	flow: string,
+};
+
+/**
  *  One user-imported token row. Mirrors `OwnedTokenMeta` minus the
  *  derived `id` / `source` (which are always `"custom"` here).
  */
@@ -349,6 +421,36 @@ export type CustomToken = {
 	standard: string,
 	// Optional logo URL.
 	logo_uri: string | null,
+};
+
+// Subset of the estimate response.
+export type Estimate = {
+	// Echoed source ticker.
+	fromCurrency: string,
+	// Echoed destination ticker.
+	toCurrency: string,
+	/**
+	 *  Estimated destination amount (decimal string, display
+	 *  unit). May be missing if amount is below the protocol
+	 *  minimum, in which case `min_amount` will be set.
+	 */
+	toAmount?: string | null,
+	// Echoed flow (`"standard"` / `"fixed-rate"`).
+	flow: string,
+	/**
+	 *  Indicative network fee (decimal string, destination
+	 *  asset, display unit).
+	 */
+	networkFee?: string | null,
+	// Minimum source amount accepted on this pair.
+	minAmount?: string | null,
+	// Maximum source amount accepted on this pair.
+	maxAmount?: string | null,
+	/**
+	 *  Quote / rate id (only for fixed-rate flow). Required when
+	 *  later creating a fixed-rate exchange.
+	 */
+	rateId?: string | null,
 };
 
 export type ExchangeConfigArgs = {

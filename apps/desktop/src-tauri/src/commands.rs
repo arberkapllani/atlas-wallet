@@ -1362,6 +1362,111 @@ pub async fn thorchain_quote(
 }
 
 // =============================================================================
+// ChangeNOW (non-custodial multi-chain swap aggregator).
+// =============================================================================
+//
+// Two-call flow:
+//   1. estimate     — open, no API key required.
+//   2. create       — requires an API key (partner program).
+// The created exchange returns a deposit address; the wallet
+// signs and broadcasts the deposit using the existing per-chain
+// code paths.
+
+#[derive(Debug, serde::Deserialize, specta::Type)]
+pub struct ChangeNowEstimateArgs {
+    /// Source ticker, lowercase (e.g. "btc").
+    pub from_currency: String,
+    /// Destination ticker.
+    pub to_currency: String,
+    /// Optional source-network override (USDT etc.).
+    pub from_network: Option<String>,
+    /// Optional destination-network override.
+    pub to_network: Option<String>,
+    /// Source amount as a decimal string in display units.
+    pub from_amount: String,
+    /// "standard" (floating rate) or "fixed-rate".
+    pub flow: String,
+}
+
+/// Read-only ChangeNOW estimate.
+#[tauri::command]
+#[specta::specta]
+pub async fn changenow_estimate(
+    args: ChangeNowEstimateArgs,
+) -> CmdResult<atlas_exchange_changenow::Estimate> {
+    let client = atlas_exchange_changenow::ChangeNowClient::new();
+    let req = atlas_exchange_changenow::EstimateRequest {
+        from_currency: args.from_currency,
+        to_currency: args.to_currency,
+        from_network: args.from_network,
+        to_network: args.to_network,
+        from_amount: args.from_amount,
+        flow: args.flow,
+    };
+    client
+        .estimate(&req)
+        .await
+        .map_err(|e| CmdError::Chain(e.to_string()))
+}
+
+#[derive(Debug, serde::Deserialize, specta::Type)]
+pub struct ChangeNowCreateArgs {
+    /// Source ticker.
+    pub from_currency: String,
+    /// Destination ticker.
+    pub to_currency: String,
+    /// Optional source-network override.
+    pub from_network: Option<String>,
+    /// Optional destination-network override.
+    pub to_network: Option<String>,
+    /// Source amount (decimal string, display unit).
+    pub from_amount: String,
+    /// User's destination address.
+    pub address: String,
+    /// Optional memo / destination tag (XRP, XLM, ...).
+    pub extra_id: Option<String>,
+    /// Optional refund address.
+    pub refund_address: Option<String>,
+    /// "standard" or "fixed-rate".
+    pub flow: String,
+    /// rateId from a fixed-rate estimate. Required for fixed-rate.
+    pub rate_id: Option<String>,
+    /// ChangeNOW partner-program API key. Required.
+    pub api_key: String,
+}
+
+/// Create a ChangeNOW exchange transaction. Returns the deposit
+/// address the wallet must send the source asset to.
+#[tauri::command]
+#[specta::specta]
+pub async fn changenow_create(
+    args: ChangeNowCreateArgs,
+) -> CmdResult<atlas_exchange_changenow::CreatedExchange> {
+    if args.api_key.is_empty() {
+        return Err(CmdError::InvalidInput(
+            "ChangeNOW api_key is required".into(),
+        ));
+    }
+    let client = atlas_exchange_changenow::ChangeNowClient::with_api_key(args.api_key);
+    let req = atlas_exchange_changenow::CreateExchangeRequest {
+        from_currency: args.from_currency,
+        to_currency: args.to_currency,
+        from_network: args.from_network,
+        to_network: args.to_network,
+        from_amount: args.from_amount,
+        address: args.address,
+        extra_id: args.extra_id,
+        refund_address: args.refund_address,
+        flow: args.flow,
+        rate_id: args.rate_id,
+    };
+    client
+        .create_exchange(&req)
+        .await
+        .map_err(|e| CmdError::Chain(e.to_string()))
+}
+
+// =============================================================================
 // Internal helpers
 // =============================================================================
 
