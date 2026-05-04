@@ -13,6 +13,24 @@
   let editing: string | null = null;
   let editName = '';
   let confirmDelete: ProfileSummary | null = null;
+  let copiedId: string | null = null;
+
+  function shortId(id: string): string {
+    if (id.length <= 13) return id;
+    return `${id.slice(0, 8)}…${id.slice(-4)}`;
+  }
+
+  async function copyId(id: string) {
+    try {
+      await navigator.clipboard.writeText(id);
+      copiedId = id;
+      setTimeout(() => {
+        if (copiedId === id) copiedId = null;
+      }, 1500);
+    } catch {
+      // Clipboard may be unavailable in some sandboxed contexts.
+    }
+  }
 
   // Add-wallet modal state.
   let addOpen = false;
@@ -181,6 +199,17 @@
                     {p.kind === 'hot' ? 'Hot wallet' : 'Watch-only'} · Created
                     {new Date(p.created_at).toLocaleDateString()}
                   </div>
+                  <button
+                    type="button"
+                    class="text-[11px] font-mono text-fg-subtle hover:text-fg flex items-center gap-1 mt-0.5"
+                    title={`Click to copy full ID: ${p.id}`}
+                    on:click={() => copyId(p.id)}
+                  >
+                    <span>ID: {shortId(p.id)}</span>
+                    <span class="text-fg-subtle">
+                      {copiedId === p.id ? '✓ copied' : '⧉'}
+                    </span>
+                  </button>
                 {/if}
               </div>
             </div>
