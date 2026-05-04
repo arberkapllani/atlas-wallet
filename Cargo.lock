@@ -392,6 +392,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-multisig-btc"
+version = "0.1.0"
+dependencies = [
+ "bitcoin",
+ "miniscript",
+ "serde",
+ "specta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "atlas-nft-registry"
 version = "0.1.0"
 dependencies = [
@@ -2646,6 +2657,16 @@ name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6877bb514081ee2a7ff5ef9de3281f14a4dd4bceac4c09388074a6b5df8a139a"
+
+[[package]]
+name = "miniscript"
+version = "12.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c14116d8342edd3626b0f8e84df16f4e6a76dc04799ba747493403236a1b8ac5"
+dependencies = [
+ "bech32",
+ "bitcoin",
+]
 
 [[package]]
 name = "miniz_oxide"
