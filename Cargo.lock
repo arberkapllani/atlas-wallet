@@ -158,6 +158,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-address-poisoning"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "specta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "atlas-approvals"
 version = "0.1.0"
 dependencies = [
@@ -306,6 +315,7 @@ version = "0.1.0"
 dependencies = [
  "aes-gcm",
  "atlas-aa-erc4337",
+ "atlas-address-poisoning",
  "atlas-approvals",
  "atlas-biometric",
  "atlas-calldata",

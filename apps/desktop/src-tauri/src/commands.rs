@@ -1563,6 +1563,21 @@ pub async fn phishing_analyze(
     atlas_phishing::analyze(&origin, &config).map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+// ---- Address-poisoning detector -------------------------------------
+
+/// Flag incoming transfers from addresses that visually mimic
+/// addresses the user has previously sent funds to.
+#[tauri::command]
+#[specta::specta]
+pub async fn poisoning_detect(
+    transfers: Vec<atlas_address_poisoning::IncomingTransfer>,
+    trusted: Vec<atlas_address_poisoning::TrustedCounterparty>,
+    config: atlas_address_poisoning::PoisonConfig,
+) -> CmdResult<Vec<atlas_address_poisoning::PoisonAlert>> {
+    atlas_address_poisoning::detect(&transfers, &trusted, &config)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

@@ -285,6 +285,11 @@ export const commands = {
 	calldataDecode: (data: string) => typedError<DecodedCall, CmdError>(__TAURI_INVOKE("calldata_decode", { data })),
 	// Analyse a dApp origin URL for phishing indicators.
 	phishingAnalyze: (origin: string, config: PhishingConfig) => typedError<PhishingReport, CmdError>(__TAURI_INVOKE("phishing_analyze", { origin, config })),
+	/**
+	 *  Flag incoming transfers from addresses that visually mimic
+	 *  addresses the user has previously sent funds to.
+	 */
+	poisoningDetect: (transfers: IncomingTransfer[], trusted: TrustedCounterparty[], config: PoisonConfig) => typedError<PoisonAlert[], CmdError>(__TAURI_INVOKE("poisoning_detect", { transfers, trusted, config })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -1041,6 +1046,17 @@ export type ImportWalletArgs = {
 	name?: string | null,
 };
 
+// One incoming transfer the user received.
+export type IncomingTransfer = {
+	txid: string,
+	from: string,
+	// Decimal-string amount in base units. Empty / "0" treated as zero.
+	amount: string,
+	// Unix seconds.
+	timestamp: number,
+	asset: string,
+};
+
 /**
  *  Subset of the Jupiter `/quote` response that Atlas consumes.
  *  Jupiter's actual schema is wider; we keep only the fields the
@@ -1317,6 +1333,39 @@ export type PhishingVerdict =
 "Suspicious" | 
 // Strong indicators (Punycode + typosquat / etc.) — block.
 "Phish";
+
+// One flagged transfer.
+export type PoisonAlert = {
+	transfer: IncomingTransfer,
+	// The trusted counterparty whose address is being mimicked.
+	mimicked: TrustedCounterparty,
+	// Number of leading hex characters that match.
+	matching_prefix: number,
+	// Number of trailing hex characters that match.
+	matching_suffix: number,
+	// True if amount ≤ `dust_threshold`.
+	is_dust: boolean,
+};
+
+// Knobs for the detector.
+export type PoisonConfig = {
+	/**
+	 *  Minimum number of leading hex characters that must match for
+	 *  a transfer to be flagged. Default: 6.
+	 */
+	min_prefix: number,
+	/**
+	 *  Minimum number of trailing hex characters that must match.
+	 *  Default: 6.
+	 */
+	min_suffix: number,
+	/**
+	 *  Decimal-string upper bound on "dust" amount (inclusive).
+	 *  Transfers <= this in base units are extra-suspect. Default
+	 *  `"1000000"` — 1e6 base units (≈ 1 USDC, ≈ 1e-12 ETH).
+	 */
+	dust_threshold: string,
+};
 
 // A single cached price observation.
 export type PricePoint = {
@@ -1734,6 +1783,17 @@ export type TokenSummary = {
 	decimals: number,
 	standard: string,
 	enabled_by_default: boolean,
+};
+
+// One row in the user's outbound history.
+export type TrustedCounterparty = {
+	// Address the user previously sent funds to.
+	address: string,
+	/**
+	 *  First time the user sent here (Unix seconds). Used to ensure
+	 *  the look-alike arrived *after* the legitimate transfer.
+	 */
+	first_seen: number,
 };
 
 // Display-shape transaction record.

@@ -1,0 +1,13 @@
+[package]
+name = "atlas-address-poisoning"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Detect address-poisoning attacks (look-alike dust transfers)"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+specta = { workspace = true }
+thiserror = { workspace = true }
