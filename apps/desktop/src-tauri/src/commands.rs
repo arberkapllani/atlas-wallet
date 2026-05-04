@@ -1710,6 +1710,101 @@ pub async fn pnl_compute(
     atlas_pnl::compute(&trades, &prices, method).map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+// ---- Persisted trade history (P&L source) ----------------------------
+
+/// List every recorded trade, oldest-first.
+#[tauri::command]
+#[specta::specta]
+pub async fn trades_list(state: State<'_, Arc<AppState>>) -> CmdResult<Vec<atlas_pnl::Trade>> {
+    let mut rows = state.trades.read().await.clone();
+    rows.sort_by_key(|a| a.ts);
+    Ok(rows)
+}
+
+/// Append a trade to the local history and persist to disk.
+#[tauri::command]
+#[specta::specta]
+pub async fn trades_add(
+    state: State<'_, Arc<AppState>>,
+    trade: atlas_pnl::Trade,
+) -> CmdResult<u32> {
+    {
+        let mut store = state.trades.write().await;
+        store.push(trade);
+    }
+    persist_trades(&state).await?;
+    Ok(state.trades.read().await.len() as u32)
+}
+
+/// Remove the trade at `index` (0-based, oldest-first ordering).
+/// Returns whether a trade was removed.
+#[tauri::command]
+#[specta::specta]
+pub async fn trades_remove(state: State<'_, Arc<AppState>>, index: u32) -> CmdResult<bool> {
+    let removed;
+    {
+        let mut store = state.trades.write().await;
+        let mut indexed: Vec<(usize, &atlas_pnl::Trade)> = store.iter().enumerate().collect();
+        indexed.sort_by_key(|a| a.1.ts);
+        let target = indexed.get(index as usize).map(|(i, _)| *i);
+        if let Some(i) = target {
+            store.remove(i);
+            removed = true;
+        } else {
+            removed = false;
+        }
+    }
+    if removed {
+        persist_trades(&state).await?;
+    }
+    Ok(removed)
+}
+
+/// Clear the entire trade history.
+#[tauri::command]
+#[specta::specta]
+pub async fn trades_clear(state: State<'_, Arc<AppState>>) -> CmdResult<()> {
+    {
+        let mut store = state.trades.write().await;
+        store.clear();
+    }
+    persist_trades(&state).await
+}
+
+/// Bulk-import a JSON array of `Trade` objects. Returns the number of
+/// rows added.
+#[tauri::command]
+#[specta::specta]
+pub async fn trades_import_json(state: State<'_, Arc<AppState>>, json: String) -> CmdResult<u32> {
+    let rows: Vec<atlas_pnl::Trade> = serde_json::from_str(&json)
+        .map_err(|e| CmdError::InvalidInput(format!("invalid trades json: {e}")))?;
+    let added = rows.len();
+    {
+        let mut store = state.trades.write().await;
+        store.extend(rows);
+    }
+    persist_trades(&state).await?;
+    Ok(added as u32)
+}
+
+/// Compute P&L over the persisted trade history.
+#[tauri::command]
+#[specta::specta]
+pub async fn trades_compute_pnl(
+    state: State<'_, Arc<AppState>>,
+    prices: std::collections::HashMap<String, f64>,
+    method: atlas_pnl::AccountingMethod,
+) -> CmdResult<atlas_pnl::PortfolioReport> {
+    let trades = state.trades.read().await.clone();
+    atlas_pnl::compute(&trades, &prices, method).map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+async fn persist_trades(state: &Arc<AppState>) -> CmdResult<()> {
+    let snapshot = state.trades.read().await.clone();
+    crate::state::save_json(&state.data_dir, "trades.json", &snapshot)
+        .map_err(|e| CmdError::InvalidInput(format!("persist trades: {e}")))
+}
+
 // ---- Payment URI parser/builder ------------------------------------
 
 /// Parse a BIP-21 / EIP-681 payment URI scanned from a QR code.

@@ -324,6 +324,24 @@ export const commands = {
 	blocklistImportJson: (json: string) => typedError<number, CmdError>(__TAURI_INVOKE("blocklist_import_json", { json })),
 	// Compute realized + unrealized P&L over a list of trades.
 	pnlCompute: (trades: Trade[], prices: { [key in string]: number }, method: AccountingMethod) => typedError<PortfolioReport, CmdError>(__TAURI_INVOKE("pnl_compute", { trades, prices, method })),
+	// List every recorded trade, oldest-first.
+	tradesList: () => typedError<Trade[], CmdError>(__TAURI_INVOKE("trades_list")),
+	// Append a trade to the local history and persist to disk.
+	tradesAdd: (trade: Trade) => typedError<number, CmdError>(__TAURI_INVOKE("trades_add", { trade })),
+	/**
+	 *  Remove the trade at `index` (0-based, oldest-first ordering).
+	 *  Returns whether a trade was removed.
+	 */
+	tradesRemove: (index: number) => typedError<boolean, CmdError>(__TAURI_INVOKE("trades_remove", { index })),
+	// Clear the entire trade history.
+	tradesClear: () => typedError<null, CmdError>(__TAURI_INVOKE("trades_clear")),
+	/**
+	 *  Bulk-import a JSON array of `Trade` objects. Returns the number of
+	 *  rows added.
+	 */
+	tradesImportJson: (json: string) => typedError<number, CmdError>(__TAURI_INVOKE("trades_import_json", { json })),
+	// Compute P&L over the persisted trade history.
+	tradesComputePnl: (prices: { [key in string]: number }, method: AccountingMethod) => typedError<PortfolioReport, CmdError>(__TAURI_INVOKE("trades_compute_pnl", { prices, method })),
 	// Parse a BIP-21 / EIP-681 payment URI scanned from a QR code.
 	payuriParse: (input: string) => typedError<PaymentIntent, CmdError>(__TAURI_INVOKE("payuri_parse", { input })),
 	/**

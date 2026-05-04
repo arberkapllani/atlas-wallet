@@ -51,7 +51,13 @@ export type {
   Eip712Report,
   Eip712Domain,
   Eip712Category,
-  SignatureRisk
+  SignatureRisk,
+  Trade,
+  TradeKind,
+  AccountingMethod,
+  RealizedEvent,
+  Position,
+  PortfolioReport
 } from './bindings';
 import type {
   Eip1559Suggestion,
@@ -88,7 +94,13 @@ import type {
   Eip712Report,
   Eip712Domain,
   Eip712Category,
-  SignatureRisk
+  SignatureRisk,
+  Trade,
+  TradeKind,
+  AccountingMethod,
+  RealizedEvent,
+  Position,
+  PortfolioReport
 } from './bindings';
 
 export interface ChainSummary {
@@ -479,7 +491,21 @@ export const api = {
   calldataDecode: (data: string) => invoke<DecodedCall>('calldata_decode', { data }),
 
   // atlas-eip712 typed-data inspector.
-  eip712Classify: (json: string) => invoke<Eip712Report>('eip712_classify', { json })
+  eip712Classify: (json: string) => invoke<Eip712Report>('eip712_classify', { json }),
+
+  // atlas-pnl + persisted trade history.
+  pnlCompute: (
+    trades: Trade[],
+    prices: Record<string, number>,
+    method: AccountingMethod
+  ) => invoke<PortfolioReport>('pnl_compute', { trades, prices, method }),
+  tradesList: () => invoke<Trade[]>('trades_list'),
+  tradesAdd: (trade: Trade) => invoke<number>('trades_add', { trade }),
+  tradesRemove: (index: number) => invoke<boolean>('trades_remove', { index }),
+  tradesClear: () => invoke<void>('trades_clear'),
+  tradesImportJson: (json: string) => invoke<number>('trades_import_json', { json }),
+  tradesComputePnl: (prices: Record<string, number>, method: AccountingMethod) =>
+    invoke<PortfolioReport>('trades_compute_pnl', { prices, method })
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */

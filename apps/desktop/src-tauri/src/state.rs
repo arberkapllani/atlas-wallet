@@ -181,6 +181,10 @@ pub struct AppState {
     /// over time and curated bulk imports land via
     /// `blocklist_import_json`.
     pub blocklist: RwLock<atlas_blocklist::Blocklist>,
+    /// User-recorded trade history feeding `atlas-pnl`. Persisted as
+    /// JSON in `data_dir/trades.json`. Manual entry today; future
+    /// phases may seed it from on-chain history.
+    pub trades: RwLock<Vec<atlas_pnl::Trade>>,
 }
 
 /// Bundle of policy + observed state for the spend-limit evaluator.
@@ -206,6 +210,7 @@ impl AppState {
         let spend = load_json_or_default::<SpendStore>(&data_dir, "spend.json");
         let blocklist =
             load_json_or_default::<atlas_blocklist::Blocklist>(&data_dir, "blocklist.json");
+        let trades = load_json_or_default::<Vec<atlas_pnl::Trade>>(&data_dir, "trades.json");
         Ok(Self {
             data_dir,
             profiles: RwLock::new(registry),
@@ -219,6 +224,7 @@ impl AppState {
             events: RwLock::new(atlas_eventlog::EventLog::default()),
             spend: RwLock::new(spend),
             blocklist: RwLock::new(blocklist),
+            trades: RwLock::new(trades),
         })
     }
 }
