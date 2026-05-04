@@ -68,7 +68,9 @@ export type {
   GalleryView,
   GalleryFilter,
   CollectionGroup,
-  OwnedNft
+  OwnedNft,
+  UserOperation,
+  UserOpHashes
 } from './bindings';
 import type {
   Eip1559Suggestion,
@@ -122,7 +124,9 @@ import type {
   GalleryView,
   GalleryFilter,
   CollectionGroup,
-  OwnedNft
+  OwnedNft,
+  UserOperation,
+  UserOpHashes
 } from './bindings';
 
 export interface ChainSummary {
@@ -538,7 +542,13 @@ export const api = {
 
   // atlas-nft-gallery aggregation over owned NFTs.
   nftGalleryView: (items: OwnedNft[], filter: GalleryFilter) =>
-    invoke<GalleryView>('nft_gallery_view', { items, filter })
+    invoke<GalleryView>('nft_gallery_view', { items, filter }),
+
+  // atlas-aa-erc4337 user-op hash + execute() calldata encoder.
+  aaUserOpHash: (entryPoint: string, chainId: number, op: UserOperation) =>
+    invoke<UserOpHashes>('aa_user_op_hash', { entryPoint, chainId, op }),
+  aaEncodeExecuteCalldata: (target: string, value: string, data: string) =>
+    invoke<string>('aa_encode_execute_calldata', { target, value, data })
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */
