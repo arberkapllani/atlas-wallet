@@ -328,6 +328,7 @@ dependencies = [
  "atlas-nft-gallery",
  "atlas-nft-registry",
  "atlas-onramp",
+ "atlas-phishing",
  "atlas-price-oracle",
  "atlas-profile",
  "atlas-settings",
@@ -499,6 +500,16 @@ dependencies = [
  "sha2",
  "specta",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "atlas-phishing"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "specta",
+ "thiserror 1.0.69",
+ "url",
 ]
 
 [[package]]

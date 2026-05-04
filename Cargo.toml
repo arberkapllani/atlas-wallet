@@ -35,6 +35,7 @@ members = [
     "crates/tx-history",
     "crates/approvals",
     "crates/calldata",
+    "crates/phishing",
     "apps/desktop/src-tauri",
 ]
 
@@ -123,6 +124,7 @@ atlas-staking = { path = "crates/staking" }
 atlas-tx-history = { path = "crates/tx-history" }
 atlas-approvals = { path = "crates/approvals" }
 atlas-calldata = { path = "crates/calldata" }
+atlas-phishing = { path = "crates/phishing" }
 
 # Misc
 uuid = { version = "1.10", features = ["v4", "serde"] }

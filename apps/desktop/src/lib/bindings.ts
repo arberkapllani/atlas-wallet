@@ -283,6 +283,8 @@ export const commands = {
 	approvalsSummarise: (rows: ApprovalRisk[]) => typedError<ApprovalSummary[], CmdError>(__TAURI_INVOKE("approvals_summarise", { rows })),
 	// Decode raw EVM calldata into a structured action description.
 	calldataDecode: (data: string) => typedError<DecodedCall, CmdError>(__TAURI_INVOKE("calldata_decode", { data })),
+	// Analyse a dApp origin URL for phishing indicators.
+	phishingAnalyze: (origin: string, config: PhishingConfig) => typedError<PhishingReport, CmdError>(__TAURI_INVOKE("phishing_analyze", { origin, config })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -1283,6 +1285,38 @@ export type OwnedTokenMeta = {
 	// `"static"`, `"remote"` (tokenlists.org), or `"custom"` (user-added).
 	source: string,
 };
+
+// Configuration for `analyze`.
+export type PhishingConfig = {
+	// Curated allowlist (etld+1, lower-case). Always returns Safe.
+	allowlist: string[],
+	// Hard blocklist (etld+1, lower-case). Always returns Phish.
+	blocklist: string[],
+	/**
+	 *  Targets to typosquat-check against. e.g. `["uniswap.org",
+	 *  "aave.com", "opensea.io"]`. Lower-case, no scheme.
+	 */
+	targets: string[],
+};
+
+// Result of one analysis.
+export type PhishingReport = {
+	host: string,
+	verdict: PhishingVerdict,
+	reasons: string[],
+	// Closest target from `targets` and the edit distance found.
+	closest_target: string | null,
+	closest_distance: number | null,
+};
+
+// Verdict tier for a single origin.
+export type PhishingVerdict = 
+// Origin is on the curated allowlist or shows no red flags.
+"Safe" | 
+// One or two soft signals; UI should warn but not block.
+"Suspicious" | 
+// Strong indicators (Punycode + typosquat / etc.) — block.
+"Phish";
 
 // A single cached price observation.
 export type PricePoint = {

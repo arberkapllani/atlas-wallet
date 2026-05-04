@@ -1551,6 +1551,18 @@ pub async fn calldata_decode(data: String) -> CmdResult<atlas_calldata::DecodedC
     atlas_calldata::decode(&data).map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+// ---- Phishing-domain check ------------------------------------------
+
+/// Analyse a dApp origin URL for phishing indicators.
+#[tauri::command]
+#[specta::specta]
+pub async fn phishing_analyze(
+    origin: String,
+    config: atlas_phishing::PhishingConfig,
+) -> CmdResult<atlas_phishing::PhishingReport> {
+    atlas_phishing::analyze(&origin, &config).map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]
