@@ -76,6 +76,7 @@ atlas-txnotes = { workspace = true }
 atlas-contacts = { workspace = true }
 atlas-eventlog = { workspace = true }
 atlas-spendlimits = { workspace = true }
+atlas-tor = { workspace = true }
 uuid = { workspace = true }
 
 specta = { workspace = true }

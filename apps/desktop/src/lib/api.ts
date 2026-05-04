@@ -73,7 +73,11 @@ export type {
   UserOpHashes,
   Share,
   WcUri,
-  BiometricStatus
+  BiometricStatus,
+  TorMode,
+  TorStatus,
+  TorConfig,
+  ProxyDecision
 } from './bindings';
 import type {
   Eip1559Suggestion,
@@ -132,7 +136,11 @@ import type {
   UserOpHashes,
   Share,
   WcUri,
-  BiometricStatus
+  BiometricStatus,
+  TorMode,
+  TorStatus,
+  TorConfig,
+  ProxyDecision
 } from './bindings';
 
 export interface ChainSummary {
@@ -566,7 +574,18 @@ export const api = {
   wcBuildUri: (uri: WcUri) => invoke<string>('wc_build_uri', { uri }),
 
   // atlas-biometric status + preference.
-  biometricStatusReport: () => invoke<BiometricStatus>('biometric_status')
+  biometricStatusReport: () => invoke<BiometricStatus>('biometric_status'),
+
+  // atlas-tor proxy posture + kill-switch.
+  torStatus: () => invoke<TorStatus>('tor_status'),
+  torGetMode: () => invoke<TorMode>('tor_get_mode'),
+  torSetMode: (mode: TorMode) => invoke<TorMode>('tor_set_mode', { mode }),
+  torGetConfig: () => invoke<TorConfig>('tor_get_config'),
+  torSetConfig: (config: TorConfig) => invoke<TorConfig>('tor_set_config', { config }),
+  torStart: () => invoke<TorStatus>('tor_start'),
+  torStop: () => invoke<null>('tor_stop'),
+  torNewCircuit: () => invoke<null>('tor_new_circuit'),
+  torEnforceDecision: () => invoke<ProxyDecision>('tor_enforce_decision')
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */

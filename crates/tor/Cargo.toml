@@ -1,0 +1,18 @@
+[package]
+name = "atlas-tor"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Tor proxy policy + kill-switch for outbound network requests"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+specta = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }

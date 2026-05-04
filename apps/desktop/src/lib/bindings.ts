@@ -594,6 +594,45 @@ export const commands = {
 	 *  transfers anything.
 	 */
 	nftListOwned: (chainId: string, address: string) => typedError<OwnedNft[], CmdError>(__TAURI_INVOKE("nft_list_owned", { chainId, address })),
+	// Cheap snapshot of the embedded Tor client's lifecycle.
+	torStatus: () => typedError<TorStatus, CmdError>(__TAURI_INVOKE("tor_status")),
+	// Persisted user-selected mode (Disabled / Preferred / Required).
+	torGetMode: () => typedError<TorMode, CmdError>(__TAURI_INVOKE("tor_get_mode")),
+	/**
+	 *  Update the Tor posture and persist it. Does not start or stop
+	 *  the provider — the host calls [`tor_start`] / [`tor_stop`]
+	 *  explicitly so the UI can show bootstrap progress.
+	 */
+	torSetMode: (mode: TorMode) => typedError<TorMode, CmdError>(__TAURI_INVOKE("tor_set_mode", { mode })),
+	// Current SOCKS listener address + bridges.
+	torGetConfig: () => typedError<TorConfig, CmdError>(__TAURI_INVOKE("tor_get_config")),
+	/**
+	 *  Replace the SOCKS / bridges configuration. Takes effect on the
+	 *  next [`tor_start`].
+	 */
+	torSetConfig: (config: TorConfig) => typedError<TorConfig, CmdError>(__TAURI_INVOKE("tor_set_config", { config })),
+	/**
+	 *  Start the embedded Tor client. Idempotent; surfaces any
+	 *  transport error verbatim.
+	 */
+	torStart: () => typedError<TorStatus, CmdError>(__TAURI_INVOKE("tor_start")),
+	/**
+	 *  Stop the embedded Tor client. With mode = Required this means
+	 *  the kill-switch will start blocking outbound requests.
+	 */
+	torStop: () => typedError<null, CmdError>(__TAURI_INVOKE("tor_stop")),
+	/**
+	 *  Force a brand-new circuit (analogous to "New Identity" in Tor
+	 *  Browser). Requires [`atlas_tor::TorStatus::Ready`].
+	 */
+	torNewCircuit: () => typedError<null, CmdError>(__TAURI_INVOKE("tor_new_circuit")),
+	/**
+	 *  Run the kill-switch policy against the current mode + status +
+	 *  config and return the decision. The frontend uses this to show
+	 *  the user what would happen on the next outbound request without
+	 *  actually issuing one.
+	 */
+	torEnforceDecision: () => typedError<ProxyDecision, CmdError>(__TAURI_INVOKE("tor_enforce_decision")),
 };
 
 /** Events */
@@ -1789,6 +1828,23 @@ export type ProfileSummary = {
 	watch_account_count: number,
 };
 
+// Decision returned by [`enforce`] for each outbound request.
+export type ProxyDecision = 
+/**
+ *  Send the request directly without a proxy. Only emitted when
+ *  the user has explicitly chosen [`TorMode::Disabled`] or
+ *  [`TorMode::Preferred`] with Tor unavailable.
+ */
+{ kind: "direct" } | 
+// Send the request through a SOCKS5 proxy at `addr`.
+{ kind: "socks5"; 
+// `host:port` of the SOCKS5 listener.
+addr: string } | 
+// Refuse the request. The kill-switch is active.
+{ kind: "block"; 
+// Human-readable reason the host can surface to the user.
+reason: string };
+
 export type PsbtInputSummary = {
 	// Number of partial signatures already collected for this input.
 	partial_sigs: number,
@@ -2232,6 +2288,74 @@ export type TokenSummary = {
 	standard: string,
 	enabled_by_default: boolean,
 };
+
+// Configuration handed to a [`TorProvider`] when starting.
+export type TorConfig = {
+	/**
+	 *  Loopback `host:port` the SOCKS5 listener binds to. Defaults
+	 *  to [`DEFAULT_SOCKS_ADDR`].
+	 */
+	socks_addr: string,
+	/**
+	 *  Optional bridge lines (`obfs4 ...`) for users in censored
+	 *  networks. Ignored by the stub provider.
+	 */
+	bridges: string[],
+};
+
+// User-selectable network-privacy posture.
+export type TorMode = 
+/**
+ *  Direct clearnet for every request. **Not recommended.**
+ *  Available for users who route Tor at the OS level (e.g. Whonix
+ *  gateway) and don't want a second hop, or for offline tests.
+ */
+"disabled" | 
+/**
+ *  Use Tor when bootstrapped, otherwise fall back to clearnet.
+ *  **Leaks IP** during bootstrap and on Tor failures.
+ */
+"preferred" | 
+/**
+ *  Use Tor when bootstrapped, otherwise **block the request**.
+ *  This is the kill-switch posture and the default for new
+ *  installs.
+ */
+"required";
+
+// Snapshot of the embedded Tor client's connection lifecycle.
+export type TorStatus = 
+/**
+ *  Tor is not running. Either the user disabled it or it has
+ *  been stopped. With [`TorMode::Required`] this means the
+ *  kill-switch will block all outbound requests.
+ */
+{ kind: "disabled" } | 
+/**
+ *  Tor is starting up and downloading directory information.
+ *  `progress` is 0..=100. With [`TorMode::Required`] requests
+ *  are blocked until bootstrap reaches 100.
+ */
+{ kind: "bootstrapping"; 
+// 0-100 inclusive.
+progress: number } | 
+/**
+ *  Tor has at least one usable circuit and accepts SOCKS
+ *  connections.
+ */
+{ kind: "ready"; 
+/**
+ *  Unix seconds since this Ready state began. Used by the
+ *  UI to show "connected for 2h 14m".
+ */
+since_unix: number } | 
+/**
+ *  Tor failed to start or lost connectivity. The host should
+ *  surface `reason` and offer the user a retry button.
+ */
+{ kind: "failed"; 
+// Human-readable failure cause.
+reason: string };
 
 // One trade entry.
 export type Trade = {

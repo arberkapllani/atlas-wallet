@@ -379,6 +379,7 @@ dependencies = [
  "atlas-spendlimits",
  "atlas-staking",
  "atlas-token-registry",
+ "atlas-tor",
  "atlas-tx-history",
  "atlas-txnotes",
  "atlas-wallet-core",
@@ -727,6 +728,17 @@ dependencies = [
  "serde_json",
  "specta",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "atlas-tor"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "serde",
+ "specta",
+ "thiserror 1.0.69",
+ "tokio",
 ]
 
 [[package]]

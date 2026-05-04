@@ -22,6 +22,7 @@
   import ShamirCard from '$lib/settings/ShamirCard.svelte';
   import WalletConnectCard from '$lib/settings/WalletConnectCard.svelte';
   import BiometricStatusCard from '$lib/settings/BiometricStatusCard.svelte';
+  import TorCard from '$lib/settings/TorCard.svelte';
   import { goto } from '$app/navigation';
   import { wallet } from '$lib/stores/wallet';
 </script>
@@ -33,6 +34,8 @@
   </header>
 
   <NetworkHealthCard />
+
+  <TorCard />
 
   <RpcEndpointsCard />
 

@@ -175,6 +175,15 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::address_book_remove,
             commands::nft_supported_chains,
             commands::nft_list_owned,
+            commands::tor_status,
+            commands::tor_get_mode,
+            commands::tor_set_mode,
+            commands::tor_get_config,
+            commands::tor_set_config,
+            commands::tor_start,
+            commands::tor_stop,
+            commands::tor_new_circuit,
+            commands::tor_enforce_decision,
         ])
         .events(tauri_specta::collect_events![
             events::WalletLockedEvent,

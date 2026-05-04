@@ -185,6 +185,25 @@ pub struct AppState {
     /// JSON in `data_dir/trades.json`. Manual entry today; future
     /// phases may seed it from on-chain history.
     pub trades: RwLock<Vec<atlas_pnl::Trade>>,
+    /// Tor proxy state + user-selected mode. Persisted as JSON in
+    /// `data_dir/tor.json`. The provider is the offline stub today;
+    /// real `arti-client` integration lands in a follow-up commit.
+    pub tor: TorState,
+}
+
+/// Bundle of the Tor provider, persisted mode, and current
+/// configuration. Held inline in [`AppState`] so commands can read
+/// status, change mode, and run the kill-switch policy without
+/// touching the broader settings store.
+pub struct TorState {
+    /// Backing provider. The trait object lets us swap the stub for
+    /// an `arti-client`-backed provider behind a feature flag
+    /// without churning call sites.
+    pub provider: Arc<dyn atlas_tor::TorProvider>,
+    /// Persisted user posture (`Disabled`/`Preferred`/`Required`).
+    pub mode: RwLock<atlas_tor::TorMode>,
+    /// SOCKS listener address + bridges. Persisted alongside mode.
+    pub config: RwLock<atlas_tor::TorConfig>,
 }
 
 /// Bundle of policy + observed state for the spend-limit evaluator.
@@ -192,6 +211,15 @@ pub struct AppState {
 pub struct SpendStore {
     pub policy: atlas_spendlimits::SpendPolicy,
     pub state: atlas_spendlimits::SpendState,
+}
+
+/// Persisted Tor preferences (mode + config). Loaded from
+/// `data_dir/tor.json` on startup; written by
+/// `commands::tor_set_mode` / `tor_set_config`.
+#[derive(Debug, Default, Clone, serde::Serialize, serde::Deserialize)]
+pub struct TorPersisted {
+    pub mode: atlas_tor::TorMode,
+    pub config: atlas_tor::TorConfig,
 }
 
 impl AppState {
@@ -211,6 +239,12 @@ impl AppState {
         let blocklist =
             load_json_or_default::<atlas_blocklist::Blocklist>(&data_dir, "blocklist.json");
         let trades = load_json_or_default::<Vec<atlas_pnl::Trade>>(&data_dir, "trades.json");
+        let tor_persisted = load_json_or_default::<TorPersisted>(&data_dir, "tor.json");
+        let tor = TorState {
+            provider: atlas_tor::default_provider(),
+            mode: RwLock::new(tor_persisted.mode),
+            config: RwLock::new(tor_persisted.config),
+        };
         Ok(Self {
             data_dir,
             profiles: RwLock::new(registry),
@@ -225,6 +259,7 @@ impl AppState {
             spend: RwLock::new(spend),
             blocklist: RwLock::new(blocklist),
             trades: RwLock::new(trades),
+            tor,
         })
     }
 }

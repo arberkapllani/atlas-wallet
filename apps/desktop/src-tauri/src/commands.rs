@@ -3431,3 +3431,134 @@ pub async fn nft_list_owned(
         .await
         .map_err(|e| CmdError::Wallet(e.to_string()))
 }
+
+// =============================================================================
+// Tor proxy + kill-switch
+// =============================================================================
+//
+// Atlas routes outbound network traffic through Tor by default
+// (mode = `Required`). The kill-switch — encoded in
+// [`atlas_tor::enforce`] — refuses to send a request when Tor is
+// unavailable rather than leaking the user's IP onto clearnet.
+//
+// These commands let the UI inspect the current status, change the
+// posture, and restart circuits. The actual proxy enforcement
+// happens inside each HTTP client wrapper that consults
+// [`atlas_tor::enforce`] before issuing a request.
+
+async fn persist_tor(state: &Arc<AppState>) -> Result<(), CmdError> {
+    let snapshot = crate::state::TorPersisted {
+        mode: *state.tor.mode.read().await,
+        config: state.tor.config.read().await.clone(),
+    };
+    crate::state::save_json(&state.data_dir, "tor.json", &snapshot)
+        .map_err(|e| CmdError::Io(e.to_string()))
+}
+
+/// Cheap snapshot of the embedded Tor client's lifecycle.
+#[tauri::command]
+#[specta::specta]
+pub async fn tor_status(state: State<'_, Arc<AppState>>) -> CmdResult<atlas_tor::TorStatus> {
+    Ok(state.tor.provider.status().await)
+}
+
+/// Persisted user-selected mode (Disabled / Preferred / Required).
+#[tauri::command]
+#[specta::specta]
+pub async fn tor_get_mode(state: State<'_, Arc<AppState>>) -> CmdResult<atlas_tor::TorMode> {
+    Ok(*state.tor.mode.read().await)
+}
+
+/// Update the Tor posture and persist it. Does not start or stop
+/// the provider — the host calls [`tor_start`] / [`tor_stop`]
+/// explicitly so the UI can show bootstrap progress.
+#[tauri::command]
+#[specta::specta]
+pub async fn tor_set_mode(
+    state: State<'_, Arc<AppState>>,
+    mode: atlas_tor::TorMode,
+) -> CmdResult<atlas_tor::TorMode> {
+    {
+        let mut m = state.tor.mode.write().await;
+        *m = mode;
+    }
+    persist_tor(&state).await?;
+    Ok(mode)
+}
+
+/// Current SOCKS listener address + bridges.
+#[tauri::command]
+#[specta::specta]
+pub async fn tor_get_config(state: State<'_, Arc<AppState>>) -> CmdResult<atlas_tor::TorConfig> {
+    Ok(state.tor.config.read().await.clone())
+}
+
+/// Replace the SOCKS / bridges configuration. Takes effect on the
+/// next [`tor_start`].
+#[tauri::command]
+#[specta::specta]
+pub async fn tor_set_config(
+    state: State<'_, Arc<AppState>>,
+    config: atlas_tor::TorConfig,
+) -> CmdResult<atlas_tor::TorConfig> {
+    if config.socks_addr.trim().is_empty() {
+        return Err(CmdError::InvalidInput("socks_addr required".into()));
+    }
+    {
+        let mut c = state.tor.config.write().await;
+        *c = config.clone();
+    }
+    persist_tor(&state).await?;
+    Ok(config)
+}
+
+/// Start the embedded Tor client. Idempotent; surfaces any
+/// transport error verbatim.
+#[tauri::command]
+#[specta::specta]
+pub async fn tor_start(state: State<'_, Arc<AppState>>) -> CmdResult<atlas_tor::TorStatus> {
+    let cfg = state.tor.config.read().await.clone();
+    state
+        .tor
+        .provider
+        .start(cfg)
+        .await
+        .map_err(|e| CmdError::Wallet(e.to_string()))
+}
+
+/// Stop the embedded Tor client. With mode = Required this means
+/// the kill-switch will start blocking outbound requests.
+#[tauri::command]
+#[specta::specta]
+pub async fn tor_stop(state: State<'_, Arc<AppState>>) -> CmdResult<()> {
+    state.tor.provider.stop().await;
+    Ok(())
+}
+
+/// Force a brand-new circuit (analogous to "New Identity" in Tor
+/// Browser). Requires [`atlas_tor::TorStatus::Ready`].
+#[tauri::command]
+#[specta::specta]
+pub async fn tor_new_circuit(state: State<'_, Arc<AppState>>) -> CmdResult<()> {
+    state
+        .tor
+        .provider
+        .new_circuit()
+        .await
+        .map_err(|e| CmdError::Wallet(e.to_string()))
+}
+
+/// Run the kill-switch policy against the current mode + status +
+/// config and return the decision. The frontend uses this to show
+/// the user what would happen on the next outbound request without
+/// actually issuing one.
+#[tauri::command]
+#[specta::specta]
+pub async fn tor_enforce_decision(
+    state: State<'_, Arc<AppState>>,
+) -> CmdResult<atlas_tor::ProxyDecision> {
+    let mode = *state.tor.mode.read().await;
+    let status = state.tor.provider.status().await;
+    let config = state.tor.config.read().await.clone();
+    Ok(atlas_tor::enforce(mode, &status, &config))
+}
