@@ -4,6 +4,7 @@
 //! any), the chain-provider registry, and the price oracle.
 
 use atlas_chain_bitcoin::BitcoinProvider;
+use atlas_chain_cardano::CardanoProvider;
 use atlas_chain_cosmos::CosmosProvider;
 use atlas_chain_evm::{EvmProvider, NETWORKS};
 use atlas_chain_solana::SolanaProvider;
@@ -35,6 +36,9 @@ pub fn default_endpoint(chain_id: &str) -> Option<&'static str> {
     if let Some(n) = atlas_chain_cosmos::network_by_id(chain_id) {
         return Some(n.lcd_url);
     }
+    if chain_id == "ada" {
+        return Some(atlas_chain_cardano::DEFAULT_API);
+    }
     NETWORKS
         .iter()
         .find(|n| n.id == chain_id)
@@ -52,6 +56,7 @@ pub fn all_chain_ids() -> Vec<&'static str> {
     for n in atlas_chain_cosmos::NETWORKS {
         ids.push(n.id);
     }
+    ids.push("ada");
     ids
 }
 
@@ -69,6 +74,9 @@ fn build_provider(chain_id: &str, rpc_url: &str) -> Option<Arc<dyn ChainProvider
     }
     if let Some(n) = atlas_chain_cosmos::network_by_id(chain_id) {
         return Some(Arc::new(CosmosProvider::with_lcd(n, rpc_url.to_string())));
+    }
+    if chain_id == "ada" {
+        return Some(Arc::new(CardanoProvider::with_api(rpc_url.to_string())));
     }
     NETWORKS
         .iter()

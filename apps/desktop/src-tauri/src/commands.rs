@@ -84,6 +84,16 @@ pub async fn list_chains(_state: State<'_, Arc<AppState>>) -> CmdResult<Vec<Chai
             enabled_by_default: n.id == "atom",
         });
     }
+    out.push(ChainSummary {
+        id: "ada".into(),
+        display_name: "Cardano".into(),
+        symbol: "ADA".into(),
+        decimals: 6,
+        family: "cardano".into(),
+        // Watch-only until Ledger HID lands; off by default to avoid
+        // surfacing an account the user can't actually send from yet.
+        enabled_by_default: false,
+    });
     Ok(out)
 }
 
@@ -935,6 +945,14 @@ async fn active_address_for_chain(state: &AppState, chain_id: &str) -> CmdResult
     };
     match active_kind {
         ProfileKind::Hot { .. } => {
+            // Cardano hot-wallet derivation requires Ed25519-BIP32
+            // (CIP-1852). Until P3.1 lands the Ledger HID path, we
+            // surface no derived address for ADA on hot profiles —
+            // users wanting to track ADA balances should add a
+            // watch-only account for it.
+            if chain_id == "ada" {
+                return Ok(None);
+            }
             let mnemonic = require_mnemonic(state).await?;
             let kind = chain_kind_for(chain_id);
             let acct = derive_account(&mnemonic, kind, 0)?;
