@@ -7,6 +7,7 @@ edition = "2021"
 bitcoin = { workspace = true }
 miniscript = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
 thiserror = { workspace = true }
 specta = { workspace = true }
 hex = { workspace = true }

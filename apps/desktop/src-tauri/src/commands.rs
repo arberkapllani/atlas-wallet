@@ -1270,6 +1270,29 @@ pub async fn multisig_btc_psbt_finalize(psbt_b64: String) -> CmdResult<String> {
         .map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+/// Build a shareable `atlas-msig://signer?...` invite URI for a
+/// co-signer. The receiving wallet decodes it and gets a ready-to-use
+/// `MultisigSigner` (xpub + origin + fingerprint + optional label).
+#[tauri::command]
+#[specta::specta]
+pub async fn multisig_btc_build_invite(
+    invite: atlas_multisig_btc::invite::CoSignerInvite,
+) -> CmdResult<String> {
+    atlas_multisig_btc::invite::build_invite_uri(&invite)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Parse a co-signer invite URI received from a partner. Rejects
+/// invites whose embedded xpub doesn't decode (cheap tamper check).
+#[tauri::command]
+#[specta::specta]
+pub async fn multisig_btc_parse_invite(
+    uri: String,
+) -> CmdResult<atlas_multisig_btc::invite::CoSignerInvite> {
+    atlas_multisig_btc::invite::parse_invite_uri(&uri)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 // ----- Multisig EVM (Safe) ---------------------------------------------------
 
 /// Compute the canonical EIP-712 `safeTxHash` and `domainSeparator` for

@@ -413,6 +413,7 @@ dependencies = [
  "hex",
  "miniscript",
  "serde",
+ "serde_json",
  "specta",
  "thiserror 1.0.69",
 ]

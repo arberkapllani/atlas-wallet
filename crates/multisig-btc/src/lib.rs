@@ -25,6 +25,7 @@ use miniscript::{
 };
 use serde::{Deserialize, Serialize};
 
+pub mod invite;
 pub mod psbt;
 
 #[derive(Debug, thiserror::Error)]

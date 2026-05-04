@@ -150,6 +150,17 @@ export const commands = {
 	 */
 	multisigBtcPsbtFinalize: (psbtB64: string) => typedError<string, CmdError>(__TAURI_INVOKE("multisig_btc_psbt_finalize", { psbtB64 })),
 	/**
+	 *  Build a shareable `atlas-msig://signer?...` invite URI for a
+	 *  co-signer. The receiving wallet decodes it and gets a ready-to-use
+	 *  `MultisigSigner` (xpub + origin + fingerprint + optional label).
+	 */
+	multisigBtcBuildInvite: (invite: CoSignerInvite) => typedError<string, CmdError>(__TAURI_INVOKE("multisig_btc_build_invite", { invite })),
+	/**
+	 *  Parse a co-signer invite URI received from a partner. Rejects
+	 *  invites whose embedded xpub doesn't decode (cheap tamper check).
+	 */
+	multisigBtcParseInvite: (uri: string) => typedError<CoSignerInvite, CmdError>(__TAURI_INVOKE("multisig_btc_parse_invite", { uri })),
+	/**
 	 *  Compute the canonical EIP-712 `safeTxHash` and `domainSeparator` for
 	 *  a Safe transaction. Co-signers verify these before signing so they
 	 *  know exactly which chain + Safe + payload their signature commits to.
@@ -433,6 +444,21 @@ export type CmdError = { kind: "NotInitialized"; message: string } | { kind: "Lo
  *  / `"trezor"`) so the UI can pick the right driver.
  */
 { kind: "HardwareSignatureRequired"; message: string } | { kind: "InvalidInput"; message: string } | { kind: "Wallet"; message: string } | { kind: "Chain"; message: string } | { kind: "Io"; message: string } | { kind: "Profile"; message: string };
+
+/**
+ *  Wire format Atlas exchanges with a co-signer wallet (Sparrow,
+ *  Specter, another Atlas instance).
+ */
+export type CoSignerInvite = {
+	// Wire-format version. Bump if the field set changes.
+	v: number,
+	// The co-signer's xpub + origin + fingerprint.
+	signer: MultisigSigner,
+	// Optional human label ("Alice's Coldcard").
+	label: string | null,
+	// Optional policy hint ("2-of-3", "treasury cold storage").
+	policy_hint: string | null,
+};
 
 export type CreateHardwareArgs = {
 	name: string,
