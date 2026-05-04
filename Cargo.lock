@@ -278,6 +278,7 @@ dependencies = [
  "atlas-exchange-router",
  "atlas-exchange-thorchain",
  "atlas-multisig-btc",
+ "atlas-multisig-evm",
  "atlas-nft-registry",
  "atlas-onramp",
  "atlas-price-oracle",
@@ -400,6 +401,17 @@ dependencies = [
  "hex",
  "miniscript",
  "serde",
+ "specta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "atlas-multisig-evm"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "serde",
+ "sha3",
  "specta",
  "thiserror 1.0.69",
 ]

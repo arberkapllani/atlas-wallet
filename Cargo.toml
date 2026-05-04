@@ -25,6 +25,7 @@ members = [
     "crates/exchange-router",
     "crates/onramp",
     "crates/multisig-btc",
+    "crates/multisig-evm",
     "apps/desktop/src-tauri",
 ]
 
@@ -103,6 +104,7 @@ atlas-exchange-changenow = { path = "crates/exchange-changenow" }
 atlas-exchange-router = { path = "crates/exchange-router" }
 atlas-onramp = { path = "crates/onramp" }
 atlas-multisig-btc = { path = "crates/multisig-btc" }
+atlas-multisig-evm = { path = "crates/multisig-evm" }
 
 # Misc
 uuid = { version = "1.10", features = ["v4", "serde"] }

@@ -1270,6 +1270,41 @@ pub async fn multisig_btc_psbt_finalize(psbt_b64: String) -> CmdResult<String> {
         .map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+// ----- Multisig EVM (Safe) ---------------------------------------------------
+
+/// Compute the canonical EIP-712 `safeTxHash` and `domainSeparator` for
+/// a Safe transaction. Co-signers verify these before signing so they
+/// know exactly which chain + Safe + payload their signature commits to.
+#[tauri::command]
+#[specta::specta]
+pub async fn multisig_evm_safe_tx_hash(
+    safe_address: String,
+    chain_id: u64,
+    tx: atlas_multisig_evm::SafeTx,
+) -> CmdResult<atlas_multisig_evm::SafeTxHashes> {
+    atlas_multisig_evm::safe_tx_hash(&safe_address, chain_id, &tx)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Pack collected `(signer, signature)` pairs into the contiguous bytes
+/// blob `Safe.execTransaction` expects. Signatures are sorted by signer
+/// address ascending — the order Safe v1.3+ requires.
+#[tauri::command]
+#[specta::specta]
+pub async fn multisig_evm_pack_signatures(sigs: Vec<(String, String)>) -> CmdResult<String> {
+    let parsed: Result<Vec<_>, _> = sigs
+        .into_iter()
+        .map(|(addr, hex_sig)| {
+            let s = hex_sig.trim().trim_start_matches("0x");
+            hex::decode(s)
+                .map(|bytes| (addr, bytes))
+                .map_err(|e| CmdError::InvalidInput(format!("signature hex: {e}")))
+        })
+        .collect();
+    let parsed = parsed?;
+    atlas_multisig_evm::pack_signatures(parsed).map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

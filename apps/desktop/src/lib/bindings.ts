@@ -149,6 +149,18 @@ export const commands = {
 	 *  transaction hex.
 	 */
 	multisigBtcPsbtFinalize: (psbtB64: string) => typedError<string, CmdError>(__TAURI_INVOKE("multisig_btc_psbt_finalize", { psbtB64 })),
+	/**
+	 *  Compute the canonical EIP-712 `safeTxHash` and `domainSeparator` for
+	 *  a Safe transaction. Co-signers verify these before signing so they
+	 *  know exactly which chain + Safe + payload their signature commits to.
+	 */
+	multisigEvmSafeTxHash: (safeAddress: string, chainId: number, tx: SafeTx) => typedError<SafeTxHashes, CmdError>(__TAURI_INVOKE("multisig_evm_safe_tx_hash", { safeAddress, chainId, tx })),
+	/**
+	 *  Pack collected `(signer, signature)` pairs into the contiguous bytes
+	 *  blob `Safe.execTransaction` expects. Signatures are sorted by signer
+	 *  address ascending — the order Safe v1.3+ requires.
+	 */
+	multisigEvmPackSignatures: (sigs: ([string, string])[]) => typedError<string, CmdError>(__TAURI_INVOKE("multisig_evm_pack_signatures", { sigs })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -772,6 +784,13 @@ export type NetworkStatus =
 "offline";
 
 /**
+ *  Safe `Operation` enum — `Call` is the default, `DelegateCall` is
+ *  reserved for module / library invocations and is *dangerous* on a
+ *  generic Safe.
+ */
+export type Operation = "call" | "delegatecall";
+
+/**
  *  One NFT a user owns. Mirrors the subset of Reservoir's
  *  `/users/{user}/tokens/v6` payload that the UI actually renders.
  */
@@ -1016,6 +1035,42 @@ export type RpcEndpoint = {
 	override_url: string | null,
 	// The URL providers are actually dialing right now.
 	effective_url: string | null,
+};
+
+/**
+ *  All ten fields the Safe contract hashes for EIP-712. `data` is hex
+ *  (`0x...`); everything else is decimal. Addresses are 20-byte hex.
+ */
+export type SafeTx = {
+	// Destination contract / EOA the Safe will call.
+	to: string,
+	// Wei value to send.
+	value: number,
+	// Hex-encoded calldata (`0x...`).
+	data: string,
+	operation: Operation,
+	// Gas the Safe forwards to the inner call.
+	safe_tx_gas: number,
+	// Refund-related gas baseline (typically `0`).
+	base_gas: number,
+	// Gas price in wei for the refund leg (typically `0`).
+	gas_price: number,
+	// ERC-20 token used to pay the refund, or `0x000…0` for ETH.
+	gas_token: string,
+	// Refund receiver, or `0x000…0` for `tx.origin`.
+	refund_receiver: string,
+	// Safe nonce — must equal `safe.nonce()` at execution time.
+	nonce: number,
+};
+
+/**
+ *  Convenience pair returned to the UI: the canonical `safeTxHash` plus
+ *  the `domainSeparator` used to derive it (so the UI can show the user
+ *  "this is the chain you think it is").
+ */
+export type SafeTxHashes = {
+	safe_tx_hash: string,
+	domain_separator: string,
 };
 
 export type SendNativeArgs = {
