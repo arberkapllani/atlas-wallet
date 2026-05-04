@@ -109,6 +109,21 @@ pub struct SettingsData {
     /// share of cross-chain swap fees. Absent = no affiliate.
     #[serde(default)]
     pub thorchain_affiliate: Option<String>,
+    /// MoonPay-issued public API key (`pk_live_...` or
+    /// `pk_test_...`). When set, Atlas can build Buy widget
+    /// URLs that pre-fill the user's wallet address.
+    #[serde(default)]
+    pub moonpay_api_key: Option<String>,
+    /// MoonPay partner secret (`sk_live_...`). When set, Atlas
+    /// HMAC-signs the widget URL so MoonPay attributes the
+    /// conversion to the partner. Optional.
+    #[serde(default)]
+    pub moonpay_secret_key: Option<String>,
+    /// `true` for live KYC + payments, `false` for the sandbox
+    /// host. Defaults to `false` so a misconfigured wallet
+    /// can't accidentally charge a real card.
+    #[serde(default)]
+    pub moonpay_production: bool,
 }
 
 fn default_swap_fee_bps() -> u32 {
@@ -137,6 +152,9 @@ impl Default for SettingsData {
             recovery_drill_interval_days: default_recovery_drill_interval_days(),
             swap_fee_bps: default_swap_fee_bps(),
             thorchain_affiliate: None,
+            moonpay_api_key: None,
+            moonpay_secret_key: None,
+            moonpay_production: false,
         }
     }
 }
@@ -420,6 +438,65 @@ impl Settings {
                 Some(s) if !s.trim().is_empty() => Some(s.trim().to_string()),
                 _ => None,
             };
+        }
+        self.persist()
+    }
+
+    /// MoonPay public API key (`pk_*`), if configured.
+    pub fn moonpay_api_key(&self) -> Option<String> {
+        self.inner
+            .read()
+            .expect("settings poisoned")
+            .moonpay_api_key
+            .clone()
+    }
+
+    /// MoonPay partner secret key (`sk_*`), if configured.
+    pub fn moonpay_secret_key(&self) -> Option<String> {
+        self.inner
+            .read()
+            .expect("settings poisoned")
+            .moonpay_secret_key
+            .clone()
+    }
+
+    /// `true` if Atlas should hit MoonPay's live host instead of the sandbox.
+    pub fn moonpay_production(&self) -> bool {
+        self.inner
+            .read()
+            .expect("settings poisoned")
+            .moonpay_production
+    }
+
+    /// Persist or clear the MoonPay public API key. Empty/whitespace clears it.
+    pub fn set_moonpay_api_key(&self, key: Option<&str>) -> Result<(), SettingsError> {
+        {
+            let mut g = self.inner.write().expect("settings poisoned");
+            g.moonpay_api_key = match key {
+                Some(s) if !s.trim().is_empty() => Some(s.trim().to_string()),
+                _ => None,
+            };
+        }
+        self.persist()
+    }
+
+    /// Persist or clear the MoonPay partner secret. Empty/whitespace clears it.
+    pub fn set_moonpay_secret_key(&self, key: Option<&str>) -> Result<(), SettingsError> {
+        {
+            let mut g = self.inner.write().expect("settings poisoned");
+            g.moonpay_secret_key = match key {
+                Some(s) if !s.trim().is_empty() => Some(s.trim().to_string()),
+                _ => None,
+            };
+        }
+        self.persist()
+    }
+
+    /// Toggle MoonPay live (`true`) vs. sandbox (`false`) mode.
+    pub fn set_moonpay_production(&self, production: bool) -> Result<(), SettingsError> {
+        {
+            let mut g = self.inner.write().expect("settings poisoned");
+            g.moonpay_production = production;
         }
         self.persist()
     }

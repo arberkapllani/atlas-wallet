@@ -116,6 +116,14 @@ export const commands = {
 	 *  unaffected.
 	 */
 	setFlashbotsProtect: (enabled: boolean) => typedError<boolean, CmdError>(__TAURI_INVOKE("set_flashbots_protect", { enabled })),
+	getMoonpayConfig: () => typedError<MoonPayConfig, CmdError>(__TAURI_INVOKE("get_moonpay_config")),
+	setMoonpayConfig: (args: MoonPayConfigInput) => typedError<MoonPayConfig, CmdError>(__TAURI_INVOKE("set_moonpay_config", { args })),
+	/**
+	 *  Build a (possibly signed) MoonPay Buy widget URL using the persisted
+	 *  configuration. The returned URL is intended to be opened in the system
+	 *  browser.
+	 */
+	buildMoonpayBuyUrl: (args: MoonPayBuyArgs) => typedError<string, CmdError>(__TAURI_INVOKE("build_moonpay_buy_url", { args })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -627,6 +635,31 @@ export type JupiterSwapArgs = {
 	 *  of Atlas's referral PDA on the output mint).
 	 */
 	fee_account: string | null,
+};
+
+export type MoonPayBuyArgs = {
+	currency_code: string,
+	wallet_address: string,
+	base_currency_amount: string | null,
+	base_currency_code: string | null,
+	redirect_url: string | null,
+};
+
+/**
+ *  MoonPay configuration surfaced to the UI. The secret key, when set,
+ *  is reported only as a boolean — it never crosses the IPC boundary.
+ */
+export type MoonPayConfig = {
+	api_key: string | null,
+	secret_key_set: boolean,
+	production: boolean,
+};
+
+export type MoonPayConfigInput = {
+	api_key: string | null,
+	// `Some("")` explicitly clears the stored secret. `None` leaves it as-is.
+	secret_key: string | null,
+	production: boolean,
 };
 
 // Result of a single `network_health` probe.

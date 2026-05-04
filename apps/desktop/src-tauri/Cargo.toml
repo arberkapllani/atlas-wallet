@@ -48,6 +48,7 @@ atlas-exchange-jupiter = { workspace = true }
 atlas-exchange-thorchain = { workspace = true }
 atlas-exchange-changenow = { workspace = true }
 atlas-exchange-router = { workspace = true }
+atlas-onramp = { workspace = true }
 uuid = { workspace = true }
 
 specta = { workspace = true }

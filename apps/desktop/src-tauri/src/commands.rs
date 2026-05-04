@@ -1066,6 +1066,113 @@ pub async fn set_flashbots_protect(
         .unwrap_or(false))
 }
 
+// =============================================================================
+// Fiat on-ramp (MoonPay)
+// =============================================================================
+
+/// MoonPay configuration surfaced to the UI. The secret key, when set,
+/// is reported only as a boolean — it never crosses the IPC boundary.
+#[derive(Debug, Serialize, specta::Type)]
+pub struct MoonPayConfig {
+    pub api_key: Option<String>,
+    pub secret_key_set: bool,
+    pub production: bool,
+}
+
+#[derive(Debug, Deserialize, specta::Type)]
+pub struct MoonPayConfigInput {
+    pub api_key: Option<String>,
+    /// `Some("")` explicitly clears the stored secret. `None` leaves it as-is.
+    pub secret_key: Option<String>,
+    pub production: bool,
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn get_moonpay_config(state: State<'_, Arc<AppState>>) -> CmdResult<MoonPayConfig> {
+    Ok(MoonPayConfig {
+        api_key: state.settings.moonpay_api_key(),
+        secret_key_set: state.settings.moonpay_secret_key().is_some(),
+        production: state.settings.moonpay_production(),
+    })
+}
+
+#[tauri::command]
+#[specta::specta]
+pub async fn set_moonpay_config(
+    state: State<'_, Arc<AppState>>,
+    args: MoonPayConfigInput,
+) -> CmdResult<MoonPayConfig> {
+    state
+        .settings
+        .set_moonpay_api_key(args.api_key.as_deref())
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    if let Some(secret) = &args.secret_key {
+        state
+            .settings
+            .set_moonpay_secret_key(if secret.is_empty() {
+                None
+            } else {
+                Some(secret.as_str())
+            })
+            .map_err(|e| CmdError::Io(e.to_string()))?;
+    }
+    state
+        .settings
+        .set_moonpay_production(args.production)
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    Ok(MoonPayConfig {
+        api_key: state.settings.moonpay_api_key(),
+        secret_key_set: state.settings.moonpay_secret_key().is_some(),
+        production: state.settings.moonpay_production(),
+    })
+}
+
+#[derive(Debug, Deserialize, specta::Type)]
+pub struct MoonPayBuyArgs {
+    pub currency_code: String,
+    pub wallet_address: String,
+    pub base_currency_amount: Option<String>,
+    pub base_currency_code: Option<String>,
+    pub redirect_url: Option<String>,
+}
+
+/// Build a (possibly signed) MoonPay Buy widget URL using the persisted
+/// configuration. The returned URL is intended to be opened in the system
+/// browser.
+#[tauri::command]
+#[specta::specta]
+pub async fn build_moonpay_buy_url(
+    state: State<'_, Arc<AppState>>,
+    args: MoonPayBuyArgs,
+) -> CmdResult<String> {
+    let api_key = state
+        .settings
+        .moonpay_api_key()
+        .ok_or_else(|| CmdError::InvalidInput("MoonPay API key not configured".into()))?;
+    let environment = if state.settings.moonpay_production() {
+        atlas_onramp::Environment::Production
+    } else {
+        atlas_onramp::Environment::Sandbox
+    };
+    let params = atlas_onramp::MoonPayBuyParams {
+        api_key,
+        currency_code: args.currency_code,
+        wallet_address: args.wallet_address,
+        base_currency_amount: args.base_currency_amount,
+        base_currency_code: args.base_currency_code,
+        environment,
+        redirect_url: args.redirect_url,
+    };
+    let url =
+        atlas_onramp::build_buy_url(&params).map_err(|e| CmdError::InvalidInput(e.to_string()))?;
+    if let Some(secret) = state.settings.moonpay_secret_key() {
+        atlas_onramp::sign_url(&url, &secret).map_err(|e| CmdError::InvalidInput(e.to_string()))
+    } else {
+        Ok(url)
+    }
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

@@ -278,6 +278,7 @@ dependencies = [
  "atlas-exchange-router",
  "atlas-exchange-thorchain",
  "atlas-nft-registry",
+ "atlas-onramp",
  "atlas-price-oracle",
  "atlas-profile",
  "atlas-settings",
@@ -397,6 +398,18 @@ dependencies = [
  "reqwest 0.12.28",
  "serde",
  "serde_json",
+ "specta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "atlas-onramp"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "hmac",
+ "serde",
+ "sha2",
  "specta",
  "thiserror 1.0.69",
 ]

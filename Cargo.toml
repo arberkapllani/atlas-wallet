@@ -23,6 +23,7 @@ members = [
     "crates/exchange-thorchain",
     "crates/exchange-changenow",
     "crates/exchange-router",
+    "crates/onramp",
     "apps/desktop/src-tauri",
 ]
 
@@ -98,6 +99,7 @@ atlas-exchange-jupiter = { path = "crates/exchange-jupiter" }
 atlas-exchange-thorchain = { path = "crates/exchange-thorchain" }
 atlas-exchange-changenow = { path = "crates/exchange-changenow" }
 atlas-exchange-router = { path = "crates/exchange-router" }
+atlas-onramp = { path = "crates/onramp" }
 
 # Misc
 uuid = { version = "1.10", features = ["v4", "serde"] }
