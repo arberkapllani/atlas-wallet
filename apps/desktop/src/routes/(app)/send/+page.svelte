@@ -41,6 +41,44 @@
   let result: { txid: string } | null = null;
   let scanOpen = false;
 
+  // ENS hint state. Atlas does not yet resolve ENS to an address (no
+  // mainnet RPC wired into the desktop app), but we surface the
+  // normalised form + namehash so the user can sanity-check that what
+  // they typed matches what they intended.
+  let ensHint:
+    | { kind: 'idle' }
+    | { kind: 'checking' }
+    | { kind: 'ens'; normalised: string; namehash: string }
+    | { kind: 'error'; message: string } = { kind: 'idle' };
+  let ensSeq = 0;
+
+  async function refreshEnsHint(value: string) {
+    const my = ++ensSeq;
+    const trimmed = value.trim();
+    if (trimmed === '') {
+      ensHint = { kind: 'idle' };
+      return;
+    }
+    try {
+      const looks = await api.ensLooksLikeEns(trimmed);
+      if (my !== ensSeq) return;
+      if (!looks) {
+        ensHint = { kind: 'idle' };
+        return;
+      }
+      ensHint = { kind: 'checking' };
+      const normalised = await api.ensNormalise(trimmed);
+      const namehash = await api.ensNamehash(normalised);
+      if (my !== ensSeq) return;
+      ensHint = { kind: 'ens', normalised, namehash };
+    } catch (e) {
+      if (my !== ensSeq) return;
+      ensHint = { kind: 'error', message: errorMessage(e) };
+    }
+  }
+
+  $: void refreshEnsHint(to);
+
   /** Map URI scheme to a chain id we know about. */
   const SCHEME_TO_CHAIN: Record<string, string> = {
     bitcoin: 'btc',
@@ -213,7 +251,24 @@
             Scan QR
           </button>
         </div>
-        <Input bind:value={to} placeholder="bc1q… / 0x… / T…" />
+        <Input bind:value={to} placeholder="bc1q… / 0x… / vitalik.eth" />
+        {#if ensHint.kind === 'checking'}
+          <p class="text-xs text-fg-subtle mt-1">Checking ENS name…</p>
+        {:else if ensHint.kind === 'ens'}
+          <div class="mt-1 text-xs text-fg-muted space-y-0.5">
+            <p>
+              Normalised: <span class="font-mono text-fg">{ensHint.normalised}</span>
+            </p>
+            <p class="break-all">
+              Namehash: <span class="font-mono">{ensHint.namehash}</span>
+            </p>
+            <p class="text-amber-400">
+              ENS resolution is not wired into Atlas yet — paste the resolved 0x address to send.
+            </p>
+          </div>
+        {:else if ensHint.kind === 'error'}
+          <p class="text-xs text-rose-400 mt-1">{ensHint.message}</p>
+        {/if}
       </div>
 
       <Input
