@@ -46,6 +46,7 @@ members = [
     "crates/txnotes",
     "crates/slippage",
     "crates/contacts",
+    "crates/eventlog",
     "apps/desktop/src-tauri",
 ]
 
@@ -145,6 +146,7 @@ atlas-fees = { path = "crates/fees" }
 atlas-txnotes = { path = "crates/txnotes" }
 atlas-slippage = { path = "crates/slippage" }
 atlas-contacts = { path = "crates/contacts" }
+atlas-eventlog = { path = "crates/eventlog" }
 
 # Misc
 uuid = { version = "1.10", features = ["v4", "serde"] }
