@@ -57,7 +57,10 @@ export type {
   AccountingMethod,
   RealizedEvent,
   Position,
-  PortfolioReport
+  PortfolioReport,
+  PaymentIntent,
+  BitcoinPayment,
+  EthereumPayment
 } from './bindings';
 import type {
   Eip1559Suggestion,
@@ -100,7 +103,10 @@ import type {
   AccountingMethod,
   RealizedEvent,
   Position,
-  PortfolioReport
+  PortfolioReport,
+  PaymentIntent,
+  BitcoinPayment,
+  EthereumPayment
 } from './bindings';
 
 export interface ChainSummary {
@@ -505,7 +511,10 @@ export const api = {
   tradesClear: () => invoke<void>('trades_clear'),
   tradesImportJson: (json: string) => invoke<number>('trades_import_json', { json }),
   tradesComputePnl: (prices: Record<string, number>, method: AccountingMethod) =>
-    invoke<PortfolioReport>('trades_compute_pnl', { prices, method })
+    invoke<PortfolioReport>('trades_compute_pnl', { prices, method }),
+
+  // atlas-payuri payment URI parser (BIP-21 / EIP-681).
+  payuriParse: (input: string) => invoke<PaymentIntent>('payuri_parse', { input })
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */
