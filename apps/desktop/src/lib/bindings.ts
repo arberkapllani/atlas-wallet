@@ -298,6 +298,15 @@ export const commands = {
 	pnlCompute: (trades: Trade[], prices: { [key in string]: number }, method: AccountingMethod) => typedError<PortfolioReport, CmdError>(__TAURI_INVOKE("pnl_compute", { trades, prices, method })),
 	// Parse a BIP-21 / EIP-681 payment URI scanned from a QR code.
 	payuriParse: (input: string) => typedError<PaymentIntent, CmdError>(__TAURI_INVOKE("payuri_parse", { input })),
+	/**
+	 *  Suggest Slow / Standard / Fast EIP-1559 fee tiers from a recent
+	 *  base-fee and a priority-fee history.
+	 */
+	feesEip1559Suggest: (baseFeePerGas: string, recentPriorityFees: string[]) => typedError<Eip1559Suggestions, CmdError>(__TAURI_INVOKE("fees_eip1559_suggest", { baseFeePerGas, recentPriorityFees })),
+	// Bump an EIP-1559 suggestion by >=10% for replacing a stuck tx.
+	feesBumpForReplacement: (suggestion: Eip1559Suggestion) => typedError<Eip1559Suggestion, CmdError>(__TAURI_INVOKE("fees_bump_for_replacement", { suggestion })),
+	// Total UTXO fee in sats given a sat/vB rate and a vsize estimate.
+	feesUtxoSats: (satPerVbyte: number, vsize: number) => typedError<number, CmdError>(__TAURI_INVOKE("fees_utxo_sats", { satPerVbyte, vsize })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -925,6 +934,20 @@ export type Delegation = {
 	unbonding: number,
 };
 
+// EIP-1559 fee suggestion (all in wei).
+export type Eip1559Suggestion = {
+	tier: FeeTier,
+	max_priority_fee_per_gas: number,
+	max_fee_per_gas: number,
+};
+
+// Output of `eip1559_suggest`.
+export type Eip1559Suggestions = {
+	slow: Eip1559Suggestion,
+	standard: Eip1559Suggestion,
+	fast: Eip1559Suggestion,
+};
+
 // What the signing request authorises.
 export type Eip712Category = 
 // ERC-2612 token spend approval.
@@ -1050,6 +1073,9 @@ export type FeeOption = {
 	// Implementation-defined hint payload (e.g. sat/vB or gas price), JSON-encoded as string for FFI simplicity.
 	raw_hint: string,
 };
+
+// Speed tier the user picked.
+export type FeeTier = "Slow" | "Standard" | "Fast";
 
 // Filter knobs passed in from the UI.
 export type GalleryFilter = {

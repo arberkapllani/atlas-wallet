@@ -356,6 +356,7 @@ dependencies = [
  "atlas-exchange-jupiter",
  "atlas-exchange-router",
  "atlas-exchange-thorchain",
+ "atlas-fees",
  "atlas-multisig-btc",
  "atlas-multisig-evm",
  "atlas-nft-gallery",

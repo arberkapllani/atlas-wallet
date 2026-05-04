@@ -1621,6 +1621,44 @@ pub async fn payuri_parse(input: String) -> CmdResult<atlas_payuri::PaymentInten
     atlas_payuri::parse(&input).map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+// ---- Fee estimator -------------------------------------------------
+
+/// Suggest Slow / Standard / Fast EIP-1559 fee tiers from a recent
+/// base-fee and a priority-fee history.
+#[tauri::command]
+#[specta::specta]
+pub async fn fees_eip1559_suggest(
+    base_fee_per_gas: String,
+    recent_priority_fees: Vec<String>,
+) -> CmdResult<atlas_fees::Eip1559Suggestions> {
+    let base = base_fee_per_gas
+        .parse::<u128>()
+        .map_err(|e| CmdError::InvalidInput(format!("base_fee: {e}")))?;
+    let history: Vec<u128> = recent_priority_fees
+        .iter()
+        .map(|s| s.parse::<u128>())
+        .collect::<Result<_, _>>()
+        .map_err(|e| CmdError::InvalidInput(format!("priority_fees: {e}")))?;
+    atlas_fees::eip1559_suggest(base, &history).map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Bump an EIP-1559 suggestion by >=10% for replacing a stuck tx.
+#[tauri::command]
+#[specta::specta]
+pub async fn fees_bump_for_replacement(
+    suggestion: atlas_fees::Eip1559Suggestion,
+) -> CmdResult<atlas_fees::Eip1559Suggestion> {
+    Ok(atlas_fees::bump_for_replacement(&suggestion))
+}
+
+/// Total UTXO fee in sats given a sat/vB rate and a vsize estimate.
+#[tauri::command]
+#[specta::specta]
+pub async fn fees_utxo_sats(sat_per_vbyte: u64, vsize: u64) -> CmdResult<u64> {
+    atlas_fees::utxo_fee_sats(sat_per_vbyte, vsize)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]
