@@ -1360,6 +1360,35 @@ pub async fn aa_encode_execute_calldata(
         .map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+// ---- Shamir Secret Sharing (SLIP-39 GF(256) core) -------------------
+
+/// Split a hex-encoded secret into `total` Shamir shares with the
+/// given recovery `threshold`. Uses OS RNG for the polynomial
+/// coefficients so the same secret produces fresh shares every call.
+#[tauri::command]
+#[specta::specta]
+pub async fn shamir_split(
+    secret_hex: String,
+    threshold: u8,
+    total: u8,
+) -> CmdResult<Vec<atlas_shamir::Share>> {
+    let secret =
+        hex::decode(secret_hex).map_err(|e| CmdError::InvalidInput(format!("secret_hex: {e}")))?;
+    let mut rng = rand::thread_rng();
+    atlas_shamir::split(&secret, threshold, total, &mut rng)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Recover a secret (hex-encoded) from at least `threshold` Shamir
+/// shares previously produced by `shamir_split`.
+#[tauri::command]
+#[specta::specta]
+pub async fn shamir_combine(shares: Vec<atlas_shamir::Share>) -> CmdResult<String> {
+    let bytes =
+        atlas_shamir::combine(&shares).map_err(|e| CmdError::InvalidInput(e.to_string()))?;
+    Ok(hex::encode(bytes))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

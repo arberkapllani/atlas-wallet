@@ -70,6 +70,8 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::multisig_evm_pack_signatures,
             commands::aa_user_op_hash,
             commands::aa_encode_execute_calldata,
+            commands::shamir_split,
+            commands::shamir_combine,
             commands::network_health,
             commands::network_health_all,
             commands::get_exchange_settings,

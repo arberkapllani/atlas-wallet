@@ -183,6 +183,17 @@ export const commands = {
 	 *  dispatcher used by virtually every ERC-4337 account implementation.
 	 */
 	aaEncodeExecuteCalldata: (target: string, value: string, data: string) => typedError<string, CmdError>(__TAURI_INVOKE("aa_encode_execute_calldata", { target, value, data })),
+	/**
+	 *  Split a hex-encoded secret into `total` Shamir shares with the
+	 *  given recovery `threshold`. Uses OS RNG for the polynomial
+	 *  coefficients so the same secret produces fresh shares every call.
+	 */
+	shamirSplit: (secretHex: string, threshold: number, total: number) => typedError<Share[], CmdError>(__TAURI_INVOKE("shamir_split", { secretHex, threshold, total })),
+	/**
+	 *  Recover a secret (hex-encoded) from at least `threshold` Shamir
+	 *  shares previously produced by `shamir_split`.
+	 */
+	shamirCombine: (shares: Share[]) => typedError<string, CmdError>(__TAURI_INVOKE("shamir_combine", { shares })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -1135,6 +1146,16 @@ export type SendTokenResult = {
 	txid: string,
 	// Network fee paid in the chain's native asset.
 	fee: Amount,
+};
+
+/**
+ *  One Shamir share. `x` is the evaluation point (1..=255, never 0)
+ *  and `y` is the per-byte polynomial value at `x`.
+ */
+export type Share = {
+	x: number,
+	// Hex-encoded ciphertext bytes; same length as the original secret.
+	y_hex: string,
 };
 
 /**
