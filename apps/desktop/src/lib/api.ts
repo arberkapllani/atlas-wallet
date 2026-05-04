@@ -46,7 +46,8 @@ export type {
   ApprovalRisk,
   ApprovalSummary,
   ApprovalConfig,
-  RiskLevel
+  RiskLevel,
+  DecodedCall
 } from './bindings';
 import type {
   Eip1559Suggestion,
@@ -78,7 +79,8 @@ import type {
   ApprovalRisk,
   ApprovalSummary,
   ApprovalConfig,
-  RiskLevel
+  RiskLevel,
+  DecodedCall
 } from './bindings';
 
 export interface ChainSummary {
@@ -463,7 +465,10 @@ export const api = {
   approvalsAnalyze: (approvals: Approval[], config: ApprovalConfig, now: number) =>
     invoke<ApprovalRisk[]>('approvals_analyze', { approvals, config, now }),
   approvalsSummarise: (rows: ApprovalRisk[]) =>
-    invoke<ApprovalSummary[]>('approvals_summarise', { rows })
+    invoke<ApprovalSummary[]>('approvals_summarise', { rows }),
+
+  // atlas-calldata EVM tx decoder.
+  calldataDecode: (data: string) => invoke<DecodedCall>('calldata_decode', { data })
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */
