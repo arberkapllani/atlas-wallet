@@ -56,6 +56,8 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::set_exchange_settings,
             commands::exchange_quote,
             commands::exchange_swap,
+            commands::jupiter_quote,
+            commands::jupiter_swap,
             commands::list_profiles,
             commands::active_profile,
             commands::active_signing_capability,

@@ -19,6 +19,7 @@ members = [
     "crates/hardware-trezor",
     "crates/biometric",
     "crates/exchange-1inch",
+    "crates/exchange-jupiter",
     "apps/desktop/src-tauri",
 ]
 
@@ -90,6 +91,7 @@ atlas-hardware-ledger = { path = "crates/hardware-ledger" }
 atlas-hardware-trezor = { path = "crates/hardware-trezor" }
 atlas-biometric = { path = "crates/biometric" }
 atlas-exchange-1inch = { path = "crates/exchange-1inch" }
+atlas-exchange-jupiter = { path = "crates/exchange-jupiter" }
 
 # Misc
 uuid = { version = "1.10", features = ["v4", "serde"] }

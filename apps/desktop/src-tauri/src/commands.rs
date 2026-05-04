@@ -1233,6 +1233,83 @@ fn decode_hex_payload(s: &str) -> CmdResult<Vec<u8>> {
 }
 
 // =============================================================================
+// Jupiter (Solana) — read-only quote + unsigned swap transaction.
+// =============================================================================
+//
+// Atlas signs Solana transactions itself, so the swap path is:
+//   1. Frontend asks for a quote.
+//   2. Frontend asks for a swap-tx.
+//   3. Atlas decodes the base-64 versioned transaction, signs
+//      with the active hot wallet's Solana key, broadcasts via
+//      the configured Solana RPC.
+//
+// Step 3 lives behind a follow-up task because it needs Solana
+// VersionedTransaction parsing in atlas-chain-solana. This commit
+// ships the read-only halves so the UI can show quotes and let
+// the user pick a route.
+
+#[derive(Debug, serde::Deserialize, specta::Type)]
+pub struct JupiterQuoteArgs {
+    /// SPL mint address of the input token (use the wrapped-SOL
+    /// mint for native SOL).
+    pub input_mint: String,
+    /// SPL mint address of the output token.
+    pub output_mint: String,
+    /// Amount in input-mint base units (string-encoded u64).
+    pub amount: String,
+    /// Slippage in basis points (100 = 1%). Capped at 5000.
+    pub slippage_bps: u32,
+}
+
+/// Fetch a Jupiter v6 quote for a Solana swap.
+#[tauri::command]
+#[specta::specta]
+pub async fn jupiter_quote(
+    args: JupiterQuoteArgs,
+) -> CmdResult<atlas_exchange_jupiter::JupiterQuote> {
+    let client = atlas_exchange_jupiter::JupiterClient::new();
+    let req = atlas_exchange_jupiter::QuoteRequest {
+        input_mint: args.input_mint,
+        output_mint: args.output_mint,
+        amount: args.amount,
+        slippage_bps: args.slippage_bps,
+    };
+    client
+        .quote(&req)
+        .await
+        .map_err(|e| CmdError::Chain(e.to_string()))
+}
+
+#[derive(Debug, serde::Deserialize, specta::Type)]
+pub struct JupiterSwapArgs {
+    /// Quote returned by `jupiter_quote`.
+    pub quote: atlas_exchange_jupiter::JupiterQuote,
+    /// Solana base-58 public key of the wallet paying for the
+    /// swap. The frontend pulls this from `get_address`.
+    pub user_public_key: String,
+    /// Wrap / unwrap SOL automatically when the input or output
+    /// is the wrapped-SOL mint. Almost always `true` for end
+    /// users.
+    pub wrap_and_unwrap_sol: bool,
+}
+
+/// Build an unsigned Jupiter swap transaction for the supplied
+/// quote. Returns a base-64 encoded versioned transaction the
+/// caller must sign with their Solana key and broadcast through
+/// `atlas-chain-solana`.
+#[tauri::command]
+#[specta::specta]
+pub async fn jupiter_swap(
+    args: JupiterSwapArgs,
+) -> CmdResult<atlas_exchange_jupiter::SwapTransaction> {
+    let client = atlas_exchange_jupiter::JupiterClient::new();
+    client
+        .swap(&args.quote, &args.user_public_key, args.wrap_and_unwrap_sol)
+        .await
+        .map_err(|e| CmdError::Chain(e.to_string()))
+}
+
+// =============================================================================
 // Internal helpers
 // =============================================================================
 

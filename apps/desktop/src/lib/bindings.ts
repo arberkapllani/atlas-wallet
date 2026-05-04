@@ -123,6 +123,15 @@ export const commands = {
 	 *  expected to land in the block immediately after the approval.
 	 */
 	exchangeSwap: (args: ExchangeSwapArgs) => typedError<ExchangeSwapResult, CmdError>(__TAURI_INVOKE("exchange_swap", { args })),
+	// Fetch a Jupiter v6 quote for a Solana swap.
+	jupiterQuote: (args: JupiterQuoteArgs) => typedError<JupiterQuote, CmdError>(__TAURI_INVOKE("jupiter_quote", { args })),
+	/**
+	 *  Build an unsigned Jupiter swap transaction for the supplied
+	 *  quote. Returns a base-64 encoded versioned transaction the
+	 *  caller must sign with their Solana key and broadcast through
+	 *  `atlas-chain-solana`.
+	 */
+	jupiterSwap: (args: JupiterSwapArgs) => typedError<SwapTransaction, CmdError>(__TAURI_INVOKE("jupiter_swap", { args })),
 	listProfiles: () => typedError<ProfileSummary[], CmdError>(__TAURI_INVOKE("list_profiles")),
 	activeProfile: () => typedError<{
 	// Stable id (as string for JS).
@@ -416,6 +425,70 @@ export type ImportWalletArgs = {
 	name?: string | null,
 };
 
+/**
+ *  Subset of the Jupiter `/quote` response that Atlas consumes.
+ *  Jupiter's actual schema is wider; we keep only the fields the
+ *  UI needs, so adding new ones doesn't ripple through the
+ *  frontend.
+ */
+export type JupiterQuote = {
+	// Echoed input mint.
+	inputMint: string,
+	// Echoed output mint.
+	outputMint: string,
+	// Echoed input amount in base units.
+	inAmount: string,
+	// Expected output amount in base units.
+	outAmount: string,
+	// Worst-case output amount after slippage, in base units.
+	otherAmountThreshold: string,
+	/**
+	 *  Total price impact across the route, as a string-encoded
+	 *  decimal in `[0, 1]` (e.g. `"0.0034"` for 0.34 %).
+	 */
+	priceImpactPct: string,
+	// Echoed slippage (Jupiter may round down).
+	slippageBps: number,
+	/**
+	 *  Raw route plan, kept opaque so we can pass it back to
+	 *  `/swap` verbatim. Jupiter's plan structure changes
+	 *  occasionally; treating it as `Value` insulates us. The
+	 *  frontend never inspects it, so we surface it as a JSON
+	 *  string in the typescript bindings.
+	 */
+	routePlan: string,
+};
+
+export type JupiterQuoteArgs = {
+	/**
+	 *  SPL mint address of the input token (use the wrapped-SOL
+	 *  mint for native SOL).
+	 */
+	input_mint: string,
+	// SPL mint address of the output token.
+	output_mint: string,
+	// Amount in input-mint base units (string-encoded u64).
+	amount: string,
+	// Slippage in basis points (100 = 1%). Capped at 5000.
+	slippage_bps: number,
+};
+
+export type JupiterSwapArgs = {
+	// Quote returned by `jupiter_quote`.
+	quote: JupiterQuote,
+	/**
+	 *  Solana base-58 public key of the wallet paying for the
+	 *  swap. The frontend pulls this from `get_address`.
+	 */
+	user_public_key: string,
+	/**
+	 *  Wrap / unwrap SOL automatically when the input or output
+	 *  is the wrapped-SOL mint. Almost always `true` for end
+	 *  users.
+	 */
+	wrap_and_unwrap_sol: boolean,
+};
+
 // Result of a single `network_health` probe.
 export type NetworkHealth = {
 	// Chain id this report describes (`"btc"`, `"eth"`, …).
@@ -611,6 +684,18 @@ export type SigningCapability =
 vendor: string } | 
 // Watch-only — cannot sign at all.
 { kind: "watch_only" };
+
+/**
+ *  Subset of the `/swap` response. The `swapTransaction` is a
+ *  base-64 encoded Solana versioned transaction the caller signs
+ *  and broadcasts itself.
+ */
+export type SwapTransaction = {
+	// Base-64 encoded versioned transaction.
+	swapTransaction: string,
+	// Last valid blockhash (for retries / expiry).
+	lastValidBlockHeight: number,
+};
 
 // Token contract standard.
 export type TokenStandard = 
