@@ -1305,6 +1305,38 @@ pub async fn multisig_evm_pack_signatures(sigs: Vec<(String, String)>) -> CmdRes
     atlas_multisig_evm::pack_signatures(parsed).map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+// ----- ERC-4337 Account Abstraction ------------------------------------------
+
+/// Compute the canonical EntryPoint v0.6 `userOpHash` a smart-account
+/// owner must sign before submitting to a bundler.
+#[tauri::command]
+#[specta::specta]
+pub async fn aa_user_op_hash(
+    entry_point: String,
+    chain_id: u64,
+    op: atlas_aa_erc4337::UserOperation,
+) -> CmdResult<atlas_aa_erc4337::UserOpHashes> {
+    atlas_aa_erc4337::user_op_hash(&entry_point, chain_id, &op)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Encode `(target, value, data)` as ABI calldata for a SimpleAccount's
+/// `execute(address,uint256,bytes)` entry — the canonical inner-call
+/// dispatcher used by virtually every ERC-4337 account implementation.
+#[tauri::command]
+#[specta::specta]
+pub async fn aa_encode_execute_calldata(
+    target: String,
+    value: String,
+    data: String,
+) -> CmdResult<String> {
+    let value_u128: u128 = value
+        .parse()
+        .map_err(|e| CmdError::InvalidInput(format!("value: {e}")))?;
+    atlas_aa_erc4337::encode_execute_calldata(&target, value_u128, &data)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

@@ -147,6 +147,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-aa-erc4337"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "serde",
+ "sha3",
+ "specta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "atlas-biometric"
 version = "0.1.0"
 dependencies = [
@@ -263,6 +274,7 @@ name = "atlas-desktop"
 version = "0.1.0"
 dependencies = [
  "aes-gcm",
+ "atlas-aa-erc4337",
  "atlas-biometric",
  "atlas-chain-bitcoin",
  "atlas-chain-cardano",

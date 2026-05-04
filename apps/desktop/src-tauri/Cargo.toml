@@ -51,6 +51,7 @@ atlas-exchange-router = { workspace = true }
 atlas-onramp = { workspace = true }
 atlas-multisig-btc = { workspace = true }
 atlas-multisig-evm = { workspace = true }
+atlas-aa-erc4337 = { workspace = true }
 uuid = { workspace = true }
 
 specta = { workspace = true }

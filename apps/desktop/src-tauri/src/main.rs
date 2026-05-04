@@ -66,6 +66,8 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::multisig_btc_psbt_finalize,
             commands::multisig_evm_safe_tx_hash,
             commands::multisig_evm_pack_signatures,
+            commands::aa_user_op_hash,
+            commands::aa_encode_execute_calldata,
             commands::network_health,
             commands::network_health_all,
             commands::get_exchange_settings,

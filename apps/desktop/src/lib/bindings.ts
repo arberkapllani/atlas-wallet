@@ -161,6 +161,17 @@ export const commands = {
 	 *  address ascending — the order Safe v1.3+ requires.
 	 */
 	multisigEvmPackSignatures: (sigs: ([string, string])[]) => typedError<string, CmdError>(__TAURI_INVOKE("multisig_evm_pack_signatures", { sigs })),
+	/**
+	 *  Compute the canonical EntryPoint v0.6 `userOpHash` a smart-account
+	 *  owner must sign before submitting to a bundler.
+	 */
+	aaUserOpHash: (entryPoint: string, chainId: number, op: UserOperation) => typedError<UserOpHashes, CmdError>(__TAURI_INVOKE("aa_user_op_hash", { entryPoint, chainId, op })),
+	/**
+	 *  Encode `(target, value, data)` as ABI calldata for a SimpleAccount's
+	 *  `execute(address,uint256,bytes)` entry — the canonical inner-call
+	 *  dispatcher used by virtually every ERC-4337 account implementation.
+	 */
+	aaEncodeExecuteCalldata: (target: string, value: string, data: string) => typedError<string, CmdError>(__TAURI_INVOKE("aa_encode_execute_calldata", { target, value, data })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -1278,6 +1289,39 @@ export type TxStatusChangedEvent = {
 	chain_id: string,
 	txid: string,
 	status: string,
+};
+
+/**
+ *  Result of `user_op_hash` — surfaces the `userOpHash` plus the inner
+ *  `packedHash` so a tester can check intermediate values.
+ */
+export type UserOpHashes = {
+	user_op_hash: string,
+	packed_hash: string,
+};
+
+/**
+ *  EntryPoint v0.6 UserOperation. All numeric fields are stored as
+ *  `u128` (more than enough — even pre-EIP-1559 max gas prices fit) and
+ *  `u64` for nonce.
+ */
+export type UserOperation = {
+	sender: string,
+	nonce: number,
+	// Hex (`0x...`) — empty (`"0x"`) once the account is already deployed.
+	init_code: string,
+	// Hex (`0x...`) — the inner call the account executes.
+	call_data: string,
+	call_gas_limit: number,
+	verification_gas_limit: number,
+	pre_verification_gas: number,
+	max_fee_per_gas: number,
+	max_priority_fee_per_gas: number,
+	/**
+	 *  Hex (`0x...`) — empty (`"0x"`) when there is no paymaster. When
+	 *  non-empty, the first 20 bytes are the paymaster contract.
+	 */
+	paymaster_and_data: string,
 };
 
 /**
