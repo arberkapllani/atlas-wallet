@@ -44,6 +44,7 @@ pub enum JupiterError {
 /// Quote request. Mints are the SPL token addresses (use
 /// `So11111111111111111111111111111111111111112` for wrapped SOL).
 #[derive(Debug, Clone, Serialize, specta::Type)]
+#[serde(rename_all = "camelCase")]
 pub struct QuoteRequest {
     /// Input mint address.
     pub input_mint: String,
@@ -54,6 +55,12 @@ pub struct QuoteRequest {
     pub amount: String,
     /// Slippage in basis points (100 = 1%).
     pub slippage_bps: u32,
+    /// Optional Atlas platform fee in basis points. When set,
+    /// Jupiter routes a corresponding share of the output to
+    /// the `fee_account` provided at swap time. Capped at 100
+    /// (1%) by Jupiter; we cap at 50 (0.5%) defensively.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub platform_fee_bps: Option<u32>,
 }
 
 /// Subset of the Jupiter `/quote` response that Atlas consumes.
@@ -97,6 +104,11 @@ pub struct SwapRequest<'a> {
     pub user_public_key: String,
     /// `true` to wrap / unwrap SOL automatically.
     pub wrap_and_unwrap_sol: bool,
+    /// Optional Atlas referral fee account (an SPL token account
+    /// owned by Atlas's referral PDA). Only applied when the
+    /// matching quote was fetched with `platform_fee_bps`.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub fee_account: Option<String>,
 }
 
 /// Subset of the `/swap` response. The `swapTransaction` is a
@@ -159,16 +171,27 @@ impl JupiterClient {
                 "slippage_bps must be <= 5000 (50%)".into(),
             ));
         }
+        if let Some(bps) = req.platform_fee_bps {
+            if bps > 50 {
+                return Err(JupiterError::InvalidInput(
+                    "platform_fee_bps must be <= 50 (0.5%)".into(),
+                ));
+            }
+        }
         let url = format!("{}/quote", self.base_url);
+        let mut q: Vec<(&str, String)> = vec![
+            ("inputMint", req.input_mint.clone()),
+            ("outputMint", req.output_mint.clone()),
+            ("amount", req.amount.clone()),
+            ("slippageBps", req.slippage_bps.to_string()),
+        ];
+        if let Some(bps) = req.platform_fee_bps {
+            q.push(("platformFeeBps", bps.to_string()));
+        }
         let res = self
             .http
             .get(&url)
-            .query(&[
-                ("inputMint", req.input_mint.as_str()),
-                ("outputMint", req.output_mint.as_str()),
-                ("amount", req.amount.as_str()),
-                ("slippageBps", &req.slippage_bps.to_string()),
-            ])
+            .query(&q)
             .send()
             .await
             .map_err(|e| JupiterError::Network(e.to_string()))?;
@@ -182,11 +205,25 @@ impl JupiterClient {
         user_public_key: &str,
         wrap_and_unwrap_sol: bool,
     ) -> Result<SwapTransaction, JupiterError> {
+        self.swap_with_fee(quote, user_public_key, wrap_and_unwrap_sol, None)
+            .await
+    }
+
+    /// Build a swap transaction; supplies an optional fee
+    /// account for Atlas's referral share.
+    pub async fn swap_with_fee(
+        &self,
+        quote: &JupiterQuote,
+        user_public_key: &str,
+        wrap_and_unwrap_sol: bool,
+        fee_account: Option<String>,
+    ) -> Result<SwapTransaction, JupiterError> {
         let url = format!("{}/swap", self.base_url);
         let body = SwapRequest {
             quote_response: quote,
             user_public_key: user_public_key.to_string(),
             wrap_and_unwrap_sol,
+            fee_account,
         };
         let res = self
             .http
@@ -229,6 +266,7 @@ mod tests {
             output_mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v".into(),
             amount: "0".into(),
             slippage_bps: 50,
+            platform_fee_bps: None,
         };
         let err = c.quote(&req).await.unwrap_err();
         assert!(matches!(err, JupiterError::InvalidInput(_)));
@@ -243,6 +281,7 @@ mod tests {
             output_mint: mint.into(),
             amount: "1000000".into(),
             slippage_bps: 50,
+            platform_fee_bps: None,
         };
         let err = c.quote(&req).await.unwrap_err();
         assert!(matches!(err, JupiterError::InvalidInput(_)));
@@ -256,6 +295,7 @@ mod tests {
             output_mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v".into(),
             amount: "1000000".into(),
             slippage_bps: 5_001,
+            platform_fee_bps: None,
         };
         let err = c.quote(&req).await.unwrap_err();
         assert!(matches!(err, JupiterError::InvalidInput(_)));

@@ -73,6 +73,28 @@ pub struct RoutingRequest {
     /// address at swap-tx build time.
     #[serde(default)]
     pub destination_address: Option<String>,
+    /// Optional Atlas platform-fee configuration. When set, the
+    /// router forwards the matching affiliate / platform-fee
+    /// parameter to each provider.
+    #[serde(default)]
+    pub fee: Option<SwapFee>,
+}
+
+/// Atlas-side fee configuration. Each provider has a different
+/// affiliate mechanism; the wallet stores the union and the
+/// router cherry-picks per provider.
+#[derive(Debug, Clone, Default, Serialize, Deserialize, specta::Type)]
+pub struct SwapFee {
+    /// Jupiter platform-fee in basis points (max 50 = 0.5 %).
+    /// Requires a fee_account passed at swap-tx build time.
+    #[serde(default)]
+    pub jupiter_platform_fee_bps: Option<u32>,
+    /// THORChain affiliate THORName.
+    #[serde(default)]
+    pub thorchain_affiliate: Option<String>,
+    /// THORChain affiliate basis points (max 1000 = 10 %).
+    #[serde(default)]
+    pub thorchain_affiliate_bps: Option<u32>,
 }
 
 /// One routed quote.
@@ -265,6 +287,7 @@ async fn quote_jupiter(req: &RoutingRequest) -> RoutedQuote {
         output_mint: mint_out,
         amount: amount_base,
         slippage_bps: req.slippage_bps.min(5_000),
+        platform_fee_bps: req.fee.as_ref().and_then(|f| f.jupiter_platform_fee_bps),
     };
     match client.quote(&r).await {
         Ok(q) => RoutedQuote {
@@ -292,13 +315,17 @@ async fn quote_thorchain(req: &RoutingRequest) -> RoutedQuote {
         None => return failed("thorchain", true, "invalid amount"),
     };
     let client = atlas_exchange_thorchain::ThorchainClient::new();
+    let (affiliate, affiliate_bps) = match &req.fee {
+        Some(f) => (f.thorchain_affiliate.clone(), f.thorchain_affiliate_bps),
+        None => (None, None),
+    };
     let r = atlas_exchange_thorchain::ThorchainQuoteRequest {
         from_asset,
         to_asset,
         amount: amount_1e8,
         destination: dest,
-        affiliate: None,
-        affiliate_bps: None,
+        affiliate,
+        affiliate_bps,
         min_amount_out: None,
     };
     match client.quote(&r).await {

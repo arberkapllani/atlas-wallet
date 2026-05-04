@@ -99,6 +99,20 @@ pub struct SettingsData {
     /// seed. `0` disables the reminder. Default 90 days.
     #[serde(default = "default_recovery_drill_interval_days")]
     pub recovery_drill_interval_days: u32,
+    /// Atlas's default swap-fee basis points across providers.
+    /// `25` = 0.25 %. The actual per-provider parameter is
+    /// derived in atlas-exchange-router (Jupiter platform fee,
+    /// THORChain affiliate, ...). Default 25.
+    #[serde(default = "default_swap_fee_bps")]
+    pub swap_fee_bps: u32,
+    /// THORChain affiliate THORName Atlas uses to receive its
+    /// share of cross-chain swap fees. Absent = no affiliate.
+    #[serde(default)]
+    pub thorchain_affiliate: Option<String>,
+}
+
+fn default_swap_fee_bps() -> u32 {
+    25
 }
 
 fn default_recovery_drill_interval_days() -> u32 {
@@ -121,6 +135,8 @@ impl Default for SettingsData {
             biometric_unlock_enabled: false,
             last_recovery_drill_at: None,
             recovery_drill_interval_days: default_recovery_drill_interval_days(),
+            swap_fee_bps: default_swap_fee_bps(),
+            thorchain_affiliate: None,
         }
     }
 }
@@ -370,6 +386,42 @@ impl Settings {
             None => true,
             Some(last) => now_unix_seconds.saturating_sub(last) >= interval_secs,
         }
+    }
+
+    /// Atlas's default swap-fee in basis points.
+    pub fn swap_fee_bps(&self) -> u32 {
+        self.inner.read().expect("settings poisoned").swap_fee_bps
+    }
+
+    /// Persist Atlas's swap-fee bps. Clamped to `[0, 100]`
+    /// (1 % maximum).
+    pub fn set_swap_fee_bps(&self, bps: u32) -> Result<(), SettingsError> {
+        {
+            let mut g = self.inner.write().expect("settings poisoned");
+            g.swap_fee_bps = bps.min(100);
+        }
+        self.persist()
+    }
+
+    /// THORChain affiliate THORName configured for Atlas.
+    pub fn thorchain_affiliate(&self) -> Option<String> {
+        self.inner
+            .read()
+            .expect("settings poisoned")
+            .thorchain_affiliate
+            .clone()
+    }
+
+    /// Persist (or clear) the THORChain affiliate THORName.
+    pub fn set_thorchain_affiliate(&self, name: Option<&str>) -> Result<(), SettingsError> {
+        {
+            let mut g = self.inner.write().expect("settings poisoned");
+            g.thorchain_affiliate = match name {
+                Some(s) if !s.trim().is_empty() => Some(s.trim().to_string()),
+                _ => None,
+            };
+        }
+        self.persist()
     }
 
     /// Persist (or clear) the 1inch base URL. Empty/whitespace clears it.

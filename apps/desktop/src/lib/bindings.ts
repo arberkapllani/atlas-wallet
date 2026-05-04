@@ -97,6 +97,12 @@ export const commands = {
 	 *  user types them back).
 	 */
 	recordRecoveryDrillCompleted: () => typedError<null, CmdError>(__TAURI_INVOKE("record_recovery_drill_completed")),
+	// Read the current swap-fee configuration.
+	getSwapFeeConfig: () => typedError<SwapFeeConfig, CmdError>(__TAURI_INVOKE("get_swap_fee_config")),
+	// Update Atlas's swap-fee bps. Clamped to `[0, 100]` (1 %).
+	setSwapFeeBps: (bps: number) => typedError<number, CmdError>(__TAURI_INVOKE("set_swap_fee_bps", { bps })),
+	// Persist (or clear) the THORChain affiliate THORName.
+	setThorchainAffiliate: (name: string | null) => typedError<string | null, CmdError>(__TAURI_INVOKE("set_thorchain_affiliate", { name })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -585,6 +591,8 @@ export type JupiterQuoteArgs = {
 	amount: string,
 	// Slippage in basis points (100 = 1%). Capped at 5000.
 	slippage_bps: number,
+	// Optional Atlas platform fee in basis points (max 50).
+	platform_fee_bps: number | null,
 };
 
 export type JupiterSwapArgs = {
@@ -601,6 +609,11 @@ export type JupiterSwapArgs = {
 	 *  users.
 	 */
 	wrap_and_unwrap_sol: boolean,
+	/**
+	 *  Optional Atlas referral fee account (SPL token account
+	 *  of Atlas's referral PDA on the output mint).
+	 */
+	fee_account: string | null,
 };
 
 // Result of a single `network_health` probe.
@@ -827,6 +840,12 @@ export type RoutingRequest = {
 	 *  address at swap-tx build time.
 	 */
 	destination_address?: string | null,
+	/**
+	 *  Optional Atlas platform-fee configuration. When set, the
+	 *  router forwards the matching affiliate / platform-fee
+	 *  parameter to each provider.
+	 */
+	fee?: SwapFee | null,
 };
 
 export type RpcEndpoint = {
@@ -882,6 +901,35 @@ export type SigningCapability =
 vendor: string } | 
 // Watch-only — cannot sign at all.
 { kind: "watch_only" };
+
+/**
+ *  Atlas-side fee configuration. Each provider has a different
+ *  affiliate mechanism; the wallet stores the union and the
+ *  router cherry-picks per provider.
+ */
+export type SwapFee = {
+	/**
+	 *  Jupiter platform-fee in basis points (max 50 = 0.5 %).
+	 *  Requires a fee_account passed at swap-tx build time.
+	 */
+	jupiter_platform_fee_bps?: number | null,
+	// THORChain affiliate THORName.
+	thorchain_affiliate?: string | null,
+	// THORChain affiliate basis points (max 1000 = 10 %).
+	thorchain_affiliate_bps?: number | null,
+};
+
+/**
+ *  Atlas-wide swap-fee configuration. Surfaced to the UI so
+ *  users can see exactly what cut Atlas takes (currently 0.25 %
+ *  by default, capped at 1 %).
+ */
+export type SwapFeeConfig = {
+	// Atlas's default fee in basis points (25 = 0.25 %).
+	fee_bps: number,
+	// THORChain affiliate THORName, when configured.
+	thorchain_affiliate: string | null,
+};
 
 /**
  *  Subset of the `/swap` response. The `swapTransaction` is a

@@ -963,6 +963,52 @@ pub async fn record_recovery_drill_completed(state: State<'_, Arc<AppState>>) ->
     Ok(())
 }
 
+/// Atlas-wide swap-fee configuration. Surfaced to the UI so
+/// users can see exactly what cut Atlas takes (currently 0.25 %
+/// by default, capped at 1 %).
+#[derive(Debug, serde::Serialize, specta::Type)]
+pub struct SwapFeeConfig {
+    /// Atlas's default fee in basis points (25 = 0.25 %).
+    pub fee_bps: u32,
+    /// THORChain affiliate THORName, when configured.
+    pub thorchain_affiliate: Option<String>,
+}
+
+/// Read the current swap-fee configuration.
+#[tauri::command]
+#[specta::specta]
+pub async fn get_swap_fee_config(state: State<'_, Arc<AppState>>) -> CmdResult<SwapFeeConfig> {
+    Ok(SwapFeeConfig {
+        fee_bps: state.settings.swap_fee_bps(),
+        thorchain_affiliate: state.settings.thorchain_affiliate(),
+    })
+}
+
+/// Update Atlas's swap-fee bps. Clamped to `[0, 100]` (1 %).
+#[tauri::command]
+#[specta::specta]
+pub async fn set_swap_fee_bps(state: State<'_, Arc<AppState>>, bps: u32) -> CmdResult<u32> {
+    state
+        .settings
+        .set_swap_fee_bps(bps)
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    Ok(state.settings.swap_fee_bps())
+}
+
+/// Persist (or clear) the THORChain affiliate THORName.
+#[tauri::command]
+#[specta::specta]
+pub async fn set_thorchain_affiliate(
+    state: State<'_, Arc<AppState>>,
+    name: Option<String>,
+) -> CmdResult<Option<String>> {
+    state
+        .settings
+        .set_thorchain_affiliate(name.as_deref())
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    Ok(state.settings.thorchain_affiliate())
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]
@@ -1259,6 +1305,8 @@ pub struct JupiterQuoteArgs {
     pub amount: String,
     /// Slippage in basis points (100 = 1%). Capped at 5000.
     pub slippage_bps: u32,
+    /// Optional Atlas platform fee in basis points (max 50).
+    pub platform_fee_bps: Option<u32>,
 }
 
 /// Fetch a Jupiter v6 quote for a Solana swap.
@@ -1273,6 +1321,7 @@ pub async fn jupiter_quote(
         output_mint: args.output_mint,
         amount: args.amount,
         slippage_bps: args.slippage_bps,
+        platform_fee_bps: args.platform_fee_bps,
     };
     client
         .quote(&req)
@@ -1291,6 +1340,9 @@ pub struct JupiterSwapArgs {
     /// is the wrapped-SOL mint. Almost always `true` for end
     /// users.
     pub wrap_and_unwrap_sol: bool,
+    /// Optional Atlas referral fee account (SPL token account
+    /// of Atlas's referral PDA on the output mint).
+    pub fee_account: Option<String>,
 }
 
 /// Build an unsigned Jupiter swap transaction for the supplied
@@ -1304,7 +1356,12 @@ pub async fn jupiter_swap(
 ) -> CmdResult<atlas_exchange_jupiter::SwapTransaction> {
     let client = atlas_exchange_jupiter::JupiterClient::new();
     client
-        .swap(&args.quote, &args.user_public_key, args.wrap_and_unwrap_sol)
+        .swap_with_fee(
+            &args.quote,
+            &args.user_public_key,
+            args.wrap_and_unwrap_sol,
+            args.fee_account,
+        )
         .await
         .map_err(|e| CmdError::Chain(e.to_string()))
 }
@@ -1487,9 +1544,25 @@ pub struct RouteQuotesArgs {
 #[tauri::command]
 #[specta::specta]
 pub async fn route_quotes(
+    state: State<'_, Arc<AppState>>,
     args: RouteQuotesArgs,
 ) -> CmdResult<Vec<atlas_exchange_router::RoutedQuote>> {
-    Ok(atlas_exchange_router::route(&args.request).await)
+    let mut req = args.request;
+    // If the caller didn't supply an explicit fee config, inject
+    // Atlas's defaults from settings so every routed quote
+    // already includes Atlas's affiliate / platform-fee share.
+    if req.fee.is_none() {
+        let bps = state.settings.swap_fee_bps();
+        let thor_aff = state.settings.thorchain_affiliate();
+        if bps > 0 || thor_aff.is_some() {
+            req.fee = Some(atlas_exchange_router::SwapFee {
+                jupiter_platform_fee_bps: if bps > 0 { Some(bps.min(50)) } else { None },
+                thorchain_affiliate: thor_aff,
+                thorchain_affiliate_bps: if bps > 0 { Some(bps.min(1_000)) } else { None },
+            });
+        }
+    }
+    Ok(atlas_exchange_router::route(&req).await)
 }
 
 // =============================================================================
