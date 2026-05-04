@@ -110,6 +110,13 @@ export const commands = {
 	deleteProfile: (id: string) => typedError<null, CmdError>(__TAURI_INVOKE("delete_profile", { id })),
 	createWatchOnlyProfile: (args: CreateWatchOnlyArgs) => typedError<ProfileSummary, CmdError>(__TAURI_INVOKE("create_watch_only_profile", { args })),
 	/**
+	 *  Create a hardware-backed profile. Accounts are expected to have
+	 *  already been derived from the device by the caller (via the
+	 *  hardware-ledger / hardware-trezor crate); this command is the
+	 *  pure persistence half.
+	 */
+	createHardwareProfile: (args: CreateHardwareArgs) => typedError<ProfileSummary, CmdError>(__TAURI_INVOKE("create_hardware_profile", { args })),
+	/**
 	 *  Return the most-recent cached transactions. Pass chain_id = "" to query
 	 *  across every chain.
 	 */
@@ -225,6 +232,12 @@ export type ChainSummary = {
 
 export type CmdError = { kind: "NotInitialized"; message: string } | { kind: "Locked" } | { kind: "InvalidInput"; message: string } | { kind: "Wallet"; message: string } | { kind: "Chain"; message: string } | { kind: "Io"; message: string } | { kind: "Profile"; message: string };
 
+export type CreateHardwareArgs = {
+	name: string,
+	vendor: HardwareVendor,
+	accounts: HwAccount[],
+};
+
 export type CreateWalletArgs = {
 	password: string,
 	word_count: number,
@@ -305,6 +318,36 @@ export type FeeOption = {
 	eta_seconds: number,
 	// Implementation-defined hint payload (e.g. sat/vB or gas price), JSON-encoded as string for FFI simplicity.
 	raw_hint: string,
+};
+
+/**
+ *  Recognised hardware-wallet vendors. Stored verbatim in the
+ *  profile blob so the registry survives Atlas upgrades that add
+ *  or remove vendors.
+ */
+export type HardwareVendor = 
+// Ledger Nano S / S+ / X.
+"ledger" | 
+// Trezor One / Model T / Safe 3 / Safe 5.
+"trezor";
+
+/**
+ *  One account exported from a hardware wallet. The `xpub` is
+ *  optional because some chain apps return an address but not a
+ *  chain code (Solana, Cosmos). When we have an xpub we can derive
+ *  further child addresses without reconnecting the device.
+ */
+export type HwAccount = {
+	// Chain identifier this account belongs to.
+	chain_id: string,
+	// Public address shown to the user.
+	address: string,
+	// BIP-32 derivation path string (`"m/44'/60'/0'/0/0"`).
+	derivation_path: string,
+	// Extended public key, if the device returned one.
+	xpub?: string | null,
+	// Optional human label.
+	label?: string | null,
 };
 
 export type ImportWalletArgs = {

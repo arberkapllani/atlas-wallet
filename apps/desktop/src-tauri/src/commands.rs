@@ -10,7 +10,7 @@ use crate::events::{TxRecordedEvent, TxStatusChangedEvent, WalletLockedEvent};
 use crate::state::AppState;
 use atlas_chain_evm::networks as evm_networks;
 use atlas_chain_traits::{Amount, ChainProvider, FeeOption, TxRequest};
-use atlas_profile::{ProfileKind, ProfileSummary, WatchAccount};
+use atlas_profile::{HardwareVendor, HwAccount, ProfileKind, ProfileSummary, WatchAccount};
 use atlas_wallet_core::{
     derive::{derive_account, ChainKind},
     EncryptedVault, KdfParams, Mnemonic, MnemonicLength,
@@ -351,6 +351,31 @@ pub async fn create_watch_only_profile(
     let p = reg.create_watch_only(&args.name, args.accounts)?;
     let summary = ProfileSummary::from(p);
     // Switching profiles invalidates the unlocked seed.
+    drop(reg);
+    *state.mnemonic.write().await = None;
+    Ok(summary)
+}
+
+#[derive(Debug, Deserialize, specta::Type)]
+pub struct CreateHardwareArgs {
+    pub name: String,
+    pub vendor: HardwareVendor,
+    pub accounts: Vec<HwAccount>,
+}
+
+/// Create a hardware-backed profile. Accounts are expected to have
+/// already been derived from the device by the caller (via the
+/// hardware-ledger / hardware-trezor crate); this command is the
+/// pure persistence half.
+#[tauri::command]
+#[specta::specta]
+pub async fn create_hardware_profile(
+    state: State<'_, Arc<AppState>>,
+    args: CreateHardwareArgs,
+) -> CmdResult<ProfileSummary> {
+    let mut reg = state.profiles.write().await;
+    let p = reg.create_hardware(&args.name, args.vendor, args.accounts)?;
+    let summary = ProfileSummary::from(p);
     drop(reg);
     *state.mnemonic.write().await = None;
     Ok(summary)
@@ -1069,6 +1094,9 @@ async fn active_hot_vault_path(state: &AppState) -> CmdResult<std::path::PathBuf
         ProfileKind::WatchOnly { .. } => Err(CmdError::InvalidInput(
             "active profile is watch-only".into(),
         )),
+        ProfileKind::Hardware { .. } => Err(CmdError::InvalidInput(
+            "active profile is hardware-backed; signing requires the device".into(),
+        )),
     }
 }
 
@@ -1105,6 +1133,10 @@ async fn active_address_for_chain(state: &AppState, chain_id: &str) -> CmdResult
             Ok(Some(acct.address().to_string()))
         }
         ProfileKind::WatchOnly { accounts } => Ok(accounts
+            .into_iter()
+            .find(|a| a.chain_id == chain_id)
+            .map(|a| a.address)),
+        ProfileKind::Hardware { accounts, .. } => Ok(accounts
             .into_iter()
             .find(|a| a.chain_id == chain_id)
             .map(|a| a.address)),

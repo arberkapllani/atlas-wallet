@@ -1,7 +1,7 @@
 //! On-disk profile registry.
 
 use crate::error::{ProfileError, ProfileResult};
-use crate::types::{Profile, ProfileKind, WatchAccount};
+use crate::types::{HardwareVendor, HwAccount, Profile, ProfileKind, WatchAccount};
 use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 use time::format_description::well_known::Rfc3339;
@@ -223,6 +223,52 @@ impl ProfileRegistry {
         Ok(self.file.profiles.last().unwrap())
     }
 
+    /// Create a hardware-backed profile. The accounts are derived
+    /// once via the device (using the hardware-ledger or
+    /// hardware-trezor crate) and persisted as plaintext (xpubs +
+    /// addresses) — no private keys ever leave the device.
+    pub fn create_hardware(
+        &mut self,
+        name: &str,
+        vendor: HardwareVendor,
+        accounts: Vec<HwAccount>,
+    ) -> ProfileResult<&Profile> {
+        validate_name(name)?;
+        if self.file.profiles.iter().any(|p| p.name == name) {
+            return Err(ProfileError::NameTaken(name.into()));
+        }
+        if accounts.is_empty() {
+            return Err(ProfileError::Invalid(
+                "hardware profile needs at least one account".into(),
+            ));
+        }
+        for a in &accounts {
+            if a.address.trim().is_empty() {
+                return Err(ProfileError::Invalid("empty address".into()));
+            }
+            if a.chain_id.trim().is_empty() {
+                return Err(ProfileError::Invalid("empty chain_id".into()));
+            }
+            if a.derivation_path.trim().is_empty() {
+                return Err(ProfileError::Invalid("empty derivation_path".into()));
+            }
+        }
+        let id = Uuid::new_v4();
+        let now = OffsetDateTime::now_utc()
+            .format(&Rfc3339)
+            .unwrap_or_else(|_| "1970-01-01T00:00:00Z".into());
+        let profile = Profile {
+            id,
+            name: name.to_string(),
+            kind: ProfileKind::Hardware { vendor, accounts },
+            created_at: now,
+        };
+        self.file.profiles.push(profile);
+        self.file.active = Some(id);
+        self.save()?;
+        Ok(self.file.profiles.last().unwrap())
+    }
+
     /// Rename a profile. Fails if the new name is already taken by another.
     pub fn rename(&mut self, id: Uuid, new_name: &str) -> ProfileResult<()> {
         validate_name(new_name)?;
@@ -338,6 +384,53 @@ mod tests {
             ProfileKind::WatchOnly { accounts: a } => assert_eq!(a, &accounts),
             _ => panic!("wrong kind"),
         }
+    }
+
+    #[test]
+    fn hardware_profile_round_trip() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut reg = ProfileRegistry::load_or_init(dir.path()).unwrap();
+        let accounts = vec![HwAccount {
+            chain_id: "eth".into(),
+            address: "0xabc1230000000000000000000000000000000000".into(),
+            derivation_path: "m/44'/60'/0'/0/0".into(),
+            xpub: None,
+            label: Some("Ledger 1".into()),
+        }];
+        let p = reg
+            .create_hardware("Ledger Main", HardwareVendor::Ledger, accounts.clone())
+            .unwrap();
+        assert!(!p.kind.is_signing_capable());
+        assert!(p.kind.can_sign());
+        match &p.kind {
+            ProfileKind::Hardware {
+                vendor,
+                accounts: a,
+            } => {
+                assert_eq!(vendor, &HardwareVendor::Ledger);
+                assert_eq!(a, &accounts);
+            }
+            _ => panic!("wrong kind"),
+        }
+
+        // Persists across reload.
+        let reg2 = ProfileRegistry::load_or_init(dir.path()).unwrap();
+        assert_eq!(reg2.profiles().len(), 1);
+        match &reg2.profiles()[0].kind {
+            ProfileKind::Hardware { vendor, .. } => {
+                assert_eq!(vendor, &HardwareVendor::Ledger);
+            }
+            _ => panic!("kind not preserved"),
+        }
+    }
+
+    #[test]
+    fn hardware_profile_rejects_empty_accounts() {
+        let (_dir, mut reg) = fresh();
+        let err = reg
+            .create_hardware("HW", HardwareVendor::Trezor, vec![])
+            .unwrap_err();
+        assert!(matches!(err, ProfileError::Invalid(_)));
     }
 
     #[test]

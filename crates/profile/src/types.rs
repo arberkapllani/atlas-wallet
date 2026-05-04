@@ -16,6 +16,38 @@ pub struct WatchAccount {
     pub label: Option<String>,
 }
 
+/// Recognised hardware-wallet vendors. Stored verbatim in the
+/// profile blob so the registry survives Atlas upgrades that add
+/// or remove vendors.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+#[serde(rename_all = "snake_case")]
+pub enum HardwareVendor {
+    /// Ledger Nano S / S+ / X.
+    Ledger,
+    /// Trezor One / Model T / Safe 3 / Safe 5.
+    Trezor,
+}
+
+/// One account exported from a hardware wallet. The `xpub` is
+/// optional because some chain apps return an address but not a
+/// chain code (Solana, Cosmos). When we have an xpub we can derive
+/// further child addresses without reconnecting the device.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
+pub struct HwAccount {
+    /// Chain identifier this account belongs to.
+    pub chain_id: String,
+    /// Public address shown to the user.
+    pub address: String,
+    /// BIP-32 derivation path string (`"m/44'/60'/0'/0/0"`).
+    pub derivation_path: String,
+    /// Extended public key, if the device returned one.
+    #[serde(default)]
+    pub xpub: Option<String>,
+    /// Optional human label.
+    #[serde(default)]
+    pub label: Option<String>,
+}
+
 /// What kind of profile this is.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, specta::Type)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -31,12 +63,28 @@ pub enum ProfileKind {
         /// Public addresses being watched.
         accounts: Vec<WatchAccount>,
     },
+    /// Hardware-backed wallet — accounts come from a Ledger or
+    /// Trezor. Atlas never holds private keys for these; signing
+    /// requires the device to be connected.
+    Hardware {
+        /// Vendor of the hardware device.
+        vendor: HardwareVendor,
+        /// Imported accounts.
+        accounts: Vec<HwAccount>,
+    },
 }
 
 impl ProfileKind {
-    /// `true` if this profile can sign transactions.
+    /// `true` if this profile can sign transactions in-process
+    /// (i.e. without a hardware device round trip).
     pub fn is_signing_capable(&self) -> bool {
         matches!(self, ProfileKind::Hot { .. })
+    }
+
+    /// `true` if this profile can sign at all (hot in-memory **or**
+    /// via an attached hardware device).
+    pub fn can_sign(&self) -> bool {
+        matches!(self, ProfileKind::Hot { .. } | ProfileKind::Hardware { .. })
     }
 }
 
@@ -75,6 +123,7 @@ impl From<&Profile> for ProfileSummary {
         let (kind, watch_account_count) = match &p.kind {
             ProfileKind::Hot { .. } => ("hot", 0),
             ProfileKind::WatchOnly { accounts } => ("watch_only", accounts.len()),
+            ProfileKind::Hardware { accounts, .. } => ("hardware", accounts.len()),
         };
         Self {
             id: p.id.to_string(),

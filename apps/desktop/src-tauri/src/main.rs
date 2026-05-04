@@ -55,6 +55,7 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::rename_profile,
             commands::delete_profile,
             commands::create_watch_only_profile,
+            commands::create_hardware_profile,
             commands::tx_history_list,
             commands::tx_history_set_status,
             commands::tx_history_record,
