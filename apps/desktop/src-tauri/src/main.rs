@@ -61,6 +61,8 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::address_book_put,
             commands::address_book_list,
             commands::address_book_remove,
+            commands::nft_supported_chains,
+            commands::nft_list_owned,
         ])
         .events(tauri_specta::collect_events![
             events::WalletLockedEvent,

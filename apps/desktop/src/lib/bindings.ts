@@ -142,6 +142,14 @@ export const commands = {
 	 *  (chain_id, address) are stored as plaintext.
 	 */
 	addressBookRemove: (chainId: string, address: string) => typedError<boolean, CmdError>(__TAURI_INVOKE("address_book_remove", { chainId, address })),
+	// Atlas EVM chain ids for which the NFT viewer can fetch data.
+	nftSupportedChains: () => typedError<string[], CmdError>(__TAURI_INVOKE("nft_supported_chains")),
+	/**
+	 *  Fetch NFTs that `address` owns on `chain_id`. `chain_id` must be
+	 *  one of [`nft_supported_chains`]. Read-only — never signs or
+	 *  transfers anything.
+	 */
+	nftListOwned: (chainId: string, address: string) => typedError<OwnedNft[], CmdError>(__TAURI_INVOKE("nft_list_owned", { chainId, address })),
 };
 
 /** Events */
@@ -336,6 +344,33 @@ export type NetworkStatus =
 "lagging" | 
 // All samples failed.
 "offline";
+
+/**
+ *  One NFT a user owns. Mirrors the subset of Reservoir's
+ *  `/users/{user}/tokens/v6` payload that the UI actually renders.
+ */
+export type OwnedNft = {
+	// Atlas chain id this NFT lives on.
+	chain_id: string,
+	// EVM contract address (checksum or lowercase).
+	contract: string,
+	// Token id as a decimal string (NFTs are u256).
+	token_id: string,
+	// Optional human-readable name (`"BAYC #1234"`).
+	name: string | null,
+	// Collection display name.
+	collection: string | null,
+	/**
+	 *  Best-effort image URI (already gateway-rewritten by
+	 *  Reservoir when possible).
+	 */
+	image: string | null,
+	/**
+	 *  Most recent floor-ask price in USD. Watch-only — no
+	 *  guarantee the NFT can actually be sold for this.
+	 */
+	floor_usd: number | null,
+};
 
 /**
  *  Owned counterpart of [`TokenMeta`] used for tokens fetched at runtime

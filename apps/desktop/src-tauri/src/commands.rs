@@ -1492,3 +1492,37 @@ pub async fn address_book_remove(
         .map_err(|e| CmdError::Io(e.to_string()))?;
     Ok(n > 0)
 }
+
+// =============================================================================
+// NFT viewer (watch-only, Reservoir API)
+// =============================================================================
+
+/// Atlas EVM chain ids for which the NFT viewer can fetch data.
+#[tauri::command]
+#[specta::specta]
+pub async fn nft_supported_chains() -> CmdResult<Vec<String>> {
+    Ok(atlas_nft_registry::SUPPORTED_CHAINS
+        .iter()
+        .map(|s| (*s).to_string())
+        .collect())
+}
+
+/// Fetch NFTs that `address` owns on `chain_id`. `chain_id` must be
+/// one of [`nft_supported_chains`]. Read-only — never signs or
+/// transfers anything.
+#[tauri::command]
+#[specta::specta]
+pub async fn nft_list_owned(
+    chain_id: String,
+    address: String,
+) -> CmdResult<Vec<atlas_nft_registry::OwnedNft>> {
+    if address.trim().is_empty() {
+        return Err(CmdError::InvalidInput("address required".into()));
+    }
+    if !is_valid_evm_address(address.trim()) {
+        return Err(CmdError::InvalidInput("expected EVM address".into()));
+    }
+    atlas_nft_registry::fetch_owned_nfts(&chain_id, address.trim(), None)
+        .await
+        .map_err(|e| CmdError::Wallet(e.to_string()))
+}
