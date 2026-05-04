@@ -1,0 +1,13 @@
+[package]
+name = "atlas-approvals"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "ERC-20/721/1155 approval risk analysis"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+specta = { workspace = true }
+thiserror = { workspace = true }

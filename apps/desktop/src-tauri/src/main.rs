@@ -84,6 +84,8 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::tx_history_summarise,
             commands::tx_history_export_csv,
             commands::price_oracle_aggregate,
+            commands::approvals_analyze,
+            commands::approvals_summarise,
             commands::network_health,
             commands::network_health_all,
             commands::get_exchange_settings,

@@ -1519,6 +1519,29 @@ pub async fn price_oracle_aggregate(
         .map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+// ---- Token approval risk dashboard ----------------------------------
+
+/// Score every approval against the (curated) config and return rows
+/// sorted Critical first.
+#[tauri::command]
+#[specta::specta]
+pub async fn approvals_analyze(
+    approvals: Vec<atlas_approvals::Approval>,
+    config: atlas_approvals::ApprovalConfig,
+    now: i64,
+) -> CmdResult<Vec<atlas_approvals::ApprovalRisk>> {
+    Ok(atlas_approvals::analyze(&approvals, &config, now))
+}
+
+/// Aggregate per-chain risk counts for the dashboard header.
+#[tauri::command]
+#[specta::specta]
+pub async fn approvals_summarise(
+    rows: Vec<atlas_approvals::ApprovalRisk>,
+) -> CmdResult<Vec<atlas_approvals::ApprovalSummary>> {
+    Ok(atlas_approvals::summarise(&rows))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

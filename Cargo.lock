@@ -158,6 +158,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-approvals"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "specta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "atlas-biometric"
 version = "0.1.0"
 dependencies = [
@@ -287,6 +296,7 @@ version = "0.1.0"
 dependencies = [
  "aes-gcm",
  "atlas-aa-erc4337",
+ "atlas-approvals",
  "atlas-biometric",
  "atlas-chain-bitcoin",
  "atlas-chain-cardano",

@@ -33,6 +33,7 @@ members = [
     "crates/nft-gallery",
     "crates/staking",
     "crates/tx-history",
+    "crates/approvals",
     "apps/desktop/src-tauri",
 ]
 
@@ -119,6 +120,7 @@ atlas-dapp-registry = { path = "crates/dapp-registry" }
 atlas-nft-gallery = { path = "crates/nft-gallery" }
 atlas-staking = { path = "crates/staking" }
 atlas-tx-history = { path = "crates/tx-history" }
+atlas-approvals = { path = "crates/approvals" }
 
 # Misc
 uuid = { version = "1.10", features = ["v4", "serde"] }

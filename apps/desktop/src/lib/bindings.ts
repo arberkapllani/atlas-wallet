@@ -274,6 +274,13 @@ export const commands = {
 	 *  other Tauri commands) so this command itself does no I/O.
 	 */
 	priceOracleAggregate: (quotes: SourceQuote[], maxDeviationBps: number) => typedError<AggregatedPrice, CmdError>(__TAURI_INVOKE("price_oracle_aggregate", { quotes, maxDeviationBps })),
+	/**
+	 *  Score every approval against the (curated) config and return rows
+	 *  sorted Critical first.
+	 */
+	approvalsAnalyze: (approvals: Approval[], config: ApprovalConfig, now: number) => typedError<ApprovalRisk[], CmdError>(__TAURI_INVOKE("approvals_analyze", { approvals, config, now })),
+	// Aggregate per-chain risk counts for the dashboard header.
+	approvalsSummarise: (rows: ApprovalRisk[]) => typedError<ApprovalSummary[], CmdError>(__TAURI_INVOKE("approvals_summarise", { rows })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -454,6 +461,84 @@ export type Amount = {
 	value: number,
 	// Asset this amount denominates.
 	asset: Asset,
+};
+
+// One outstanding approval as seen on-chain.
+export type Approval = {
+	chain_id: string,
+	token_address: string,
+	token_symbol: string,
+	// Decimal places (use 0 for ERC-721 / `ForAll`).
+	token_decimals: number,
+	spender_address: string,
+	// Optional curated label — `None` if the spender is unknown.
+	spender_label: string | null,
+	/**
+	 *  Decimal-string allowance in base units. For `ForAll` this is
+	 *  the literal string `"unlimited"`. For ERC-721 single-token
+	 *  approvals this is the token id.
+	 */
+	allowance: string,
+	kind: ApprovalKind,
+	// Unix seconds — when the approval was first observed.
+	first_seen: number,
+	/**
+	 *  Unix seconds — when the spender last moved tokens via this
+	 *  approval. `None` if never used.
+	 */
+	last_used: number | null,
+};
+
+// Tunables. Defaults are conservative.
+export type ApprovalConfig = {
+	// Spenders flagged as known-malicious (lower-cased addresses).
+	blocklist: string[],
+	/**
+	 *  Spenders that are well-known dApps (lower-cased addresses).
+	 *  These cap their risk at `High` (unlimited) or `Medium` (finite).
+	 */
+	allowlist: string[],
+	/**
+	 *  "Unlimited" allowance threshold in base units. Approvals above
+	 *  this are considered effectively unlimited even if numerically
+	 *  finite. Default: `2^200` ≈ 1.6e60.
+	 */
+	unlimited_threshold: string,
+	/**
+	 *  Approvals last used (or first-seen) longer than this many
+	 *  seconds ago are considered stale and bumped one tier up.
+	 */
+	stale_after_secs: number,
+};
+
+// Asset standard for an approval.
+export type ApprovalKind = 
+// `approve(spender, amount)` on an ERC-20.
+"Erc20" | 
+// `approve(spender, tokenId)` on an ERC-721.
+"Erc721" | 
+// `setApprovalForAll(spender, true)` (works for both 721 and 1155).
+"ForAll";
+
+/**
+ *  One row in the revoke queue. Keeps the original `Approval` plus
+ *  the computed risk tier and a short human-readable rationale.
+ */
+export type ApprovalRisk = {
+	approval: Approval,
+	level: RiskLevel,
+	reasons: string[],
+};
+
+// Per-chain summary for the dashboard header.
+export type ApprovalSummary = {
+	chain_id: string,
+	total: number,
+	critical: number,
+	high: number,
+	medium: number,
+	low: number,
+	unique_spenders: number,
 };
 
 // A cryptocurrency asset (native or token).
@@ -1258,6 +1343,17 @@ export type RecoveryDrillStatus = {
 	// Unix seconds of the last completed drill, or `None`.
 	last_at: number | null,
 };
+
+// Computed risk tier — UI surfaces these as colored badges.
+export type RiskLevel = 
+// Low-impact (small fixed allowance, well-known spender).
+"Low" | 
+// Worth reviewing (e.g. moderate allowance, recent first-seen).
+"Medium" | 
+// Likely needs revocation (unlimited allowance to a single dApp).
+"High" | 
+// Almost certainly malicious / unknown spender with broad reach.
+"Critical";
 
 export type RouteQuotesArgs = {
 	// Routing request — see atlas_exchange_router::RoutingRequest.
