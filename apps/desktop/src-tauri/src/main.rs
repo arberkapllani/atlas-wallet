@@ -61,6 +61,7 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::thorchain_quote,
             commands::changenow_estimate,
             commands::changenow_create,
+            commands::route_quotes,
             commands::list_profiles,
             commands::active_profile,
             commands::active_signing_capability,

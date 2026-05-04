@@ -145,6 +145,12 @@ export const commands = {
 	 *  address the wallet must send the source asset to.
 	 */
 	changenowCreate: (args: ChangeNowCreateArgs) => typedError<CreatedExchange, CmdError>(__TAURI_INVOKE("changenow_create", { args })),
+	/**
+	 *  Return ranked quotes from every applicable provider. Failures
+	 *  are surfaced as entries with `out_amount = None` and an
+	 *  `error` message; they sort to the bottom.
+	 */
+	routeQuotes: (args: RouteQuotesArgs) => typedError<RoutedQuote[], CmdError>(__TAURI_INVOKE("route_quotes", { args })),
 	listProfiles: () => typedError<ProfileSummary[], CmdError>(__TAURI_INVOKE("list_profiles")),
 	activeProfile: () => typedError<{
 	// Stable id (as string for JS).
@@ -737,6 +743,90 @@ export type RecoveryDrillStatus = {
 	interval_days: number,
 	// Unix seconds of the last completed drill, or `None`.
 	last_at: number | null,
+};
+
+export type RouteQuotesArgs = {
+	// Routing request — see atlas_exchange_router::RoutingRequest.
+	request: RoutingRequest,
+};
+
+// One routed quote.
+export type RoutedQuote = {
+	/**
+	 *  Provider name (`"oneinch"`, `"jupiter"`, `"thorchain"`,
+	 *  `"changenow"`).
+	 */
+	provider: string,
+	/**
+	 *  Estimated output amount in display units (decimal string).
+	 *  `None` when the provider rejected the quote.
+	 */
+	out_amount: string | null,
+	/**
+	 *  Whether this is a same-chain or cross-chain route. Useful
+	 *  for the UI to surface "you'll wait ~10 min" warnings on
+	 *  cross-chain routes.
+	 */
+	cross_chain: boolean,
+	// Provider error message, when the quote failed.
+	error?: string | null,
+	/**
+	 *  Provider-specific opaque payload; passed back verbatim
+	 *  when the user picks this route. Surfaced as a JSON string
+	 *  in TS bindings.
+	 */
+	raw?: string | null,
+};
+
+/**
+ *  RoutingAsset reference. Atlas-wallet identifies assets by an
+ *  `(chain, ticker)` pair plus an optional contract address for
+ *  EVM tokens / Solana SPL mints.
+ */
+export type RoutingAsset = {
+	/**
+	 *  Chain id in Atlas's internal scheme (e.g. `"bitcoin"`,
+	 *  `"ethereum"`, `"solana"`, `"bsc"`). Lowercase ASCII.
+	 */
+	chain: string,
+	/**
+	 *  Display ticker, lowercase (e.g. `"btc"`, `"eth"`,
+	 *  `"usdc"`).
+	 */
+	ticker: string,
+	/**
+	 *  Optional contract / mint address. Only meaningful for
+	 *  non-native tokens.
+	 */
+	contract?: string | null,
+	/**
+	 *  Decimal precision (display-unit -> base-units multiplier
+	 *  is `10^decimals`).
+	 */
+	decimals: number,
+};
+
+/**
+ *  Routing request. Amount is given in the *display* unit
+ *  (e.g. "0.05" BTC, "10.0" USDC) so the UI doesn't have to
+ *  multiply by `10^decimals` four different ways.
+ */
+export type RoutingRequest = {
+	// Source RoutingAsset.
+	from: RoutingAsset,
+	// Destination RoutingAsset.
+	to: RoutingAsset,
+	// Source amount as a decimal string in display units.
+	amount: string,
+	// Slippage tolerance in basis points. Capped per provider.
+	slippage_bps: number,
+	/**
+	 *  User's destination address on the `to.chain`. Required for
+	 *  cross-chain providers (THORChain, ChangeNOW); optional for
+	 *  same-chain ones (1inch, Jupiter) which embed the user's
+	 *  address at swap-tx build time.
+	 */
+	destination_address?: string | null,
 };
 
 export type RpcEndpoint = {

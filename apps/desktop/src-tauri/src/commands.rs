@@ -1467,6 +1467,32 @@ pub async fn changenow_create(
 }
 
 // =============================================================================
+// Multi-source quote routing.
+// =============================================================================
+//
+// Dispatches a single normalized swap intent to every applicable
+// provider in parallel and returns the ranked list. The frontend
+// picks one route and then calls the provider-specific
+// build/sign endpoint with the route's `raw` payload.
+
+#[derive(Debug, serde::Deserialize, specta::Type)]
+pub struct RouteQuotesArgs {
+    /// Routing request — see atlas_exchange_router::RoutingRequest.
+    pub request: atlas_exchange_router::RoutingRequest,
+}
+
+/// Return ranked quotes from every applicable provider. Failures
+/// are surfaced as entries with `out_amount = None` and an
+/// `error` message; they sort to the bottom.
+#[tauri::command]
+#[specta::specta]
+pub async fn route_quotes(
+    args: RouteQuotesArgs,
+) -> CmdResult<Vec<atlas_exchange_router::RoutedQuote>> {
+    Ok(atlas_exchange_router::route(&args.request).await)
+}
+
+// =============================================================================
 // Internal helpers
 // =============================================================================
 

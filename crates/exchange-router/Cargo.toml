@@ -1,0 +1,20 @@
+[package]
+name = "atlas-exchange-router"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+specta = { workspace = true }
+tokio = { workspace = true, features = ["macros"] }
+futures = { workspace = true }
+atlas-exchange-1inch = { workspace = true }
+atlas-exchange-jupiter = { workspace = true }
+atlas-exchange-thorchain = { workspace = true }
+atlas-exchange-changenow = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt"] }
