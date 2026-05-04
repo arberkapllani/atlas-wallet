@@ -57,6 +57,7 @@ atlas-walletconnect = { workspace = true }
 atlas-dapp-registry = { workspace = true }
 atlas-nft-gallery = { workspace = true }
 atlas-staking = { workspace = true }
+atlas-tx-history = { workspace = true }
 uuid = { workspace = true }
 
 specta = { workspace = true }

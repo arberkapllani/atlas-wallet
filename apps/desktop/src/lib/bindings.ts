@@ -256,6 +256,18 @@ export const commands = {
 	 *  frequency (saves the UI from hard-coding magic numbers).
 	 */
 	stakingAprToApy: (chain: StakingChain, apr: number) => typedError<number, CmdError>(__TAURI_INVOKE("staking_apr_to_apy", { chain, apr })),
+	/**
+	 *  Apply UI filters (chain / direction / status / date / asset /
+	 *  query) and return rows newest-first.
+	 */
+	txHistoryFilter: (rows: Tx[], filter: HistoryFilter) => typedError<Tx[], CmdError>(__TAURI_INVOKE("tx_history_filter", { rows, filter })),
+	/**
+	 *  Aggregate a (typically already-filtered) row set into per-asset
+	 *  and per-chain totals plus first/last timestamps.
+	 */
+	txHistorySummarise: (rows: Tx[]) => typedError<HistorySummary, CmdError>(__TAURI_INVOKE("tx_history_summarise", { rows })),
+	// Render a row set as RFC-4180-style CSV, ready for download.
+	txHistoryExportCsv: (rows: Tx[]) => typedError<string, CmdError>(__TAURI_INVOKE("tx_history_export_csv", { rows })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -435,6 +447,19 @@ export type Asset = {
 	logo: string | null,
 };
 
+// Per-asset summary row.
+export type AssetTotals = {
+	asset: string,
+	// Sum of `amount` across send rows.
+	sent: string,
+	// Sum of `amount` across receive rows.
+	received: string,
+	// `received - sent` (may be negative; signed decimal string).
+	net: string,
+	send_count: number,
+	receive_count: number,
+};
+
 /**
  *  Emitted when a balance refresh observes a different value than what the
  *  frontend last queried. Reserved for the upcoming background watcher —
@@ -481,6 +506,16 @@ export type ChainSummary = {
 	decimals: number,
 	family: string,
 	enabled_by_default: boolean,
+};
+
+// Per-chain summary row.
+export type ChainTotals = {
+	chain_id: string,
+	tx_count: number,
+	send_count: number,
+	receive_count: number,
+	pending_count: number,
+	failed_count: number,
 };
 
 export type ChangeNowCreateArgs = {
@@ -811,6 +846,37 @@ export type HardwareVendor =
 "ledger" | 
 // Trezor One / Model T / Safe 3 / Safe 5.
 "trezor";
+
+// Filter knobs from the UI.
+export type HistoryFilter = {
+	// If non-empty, only txs on these chains are kept.
+	chains: string[],
+	// If set, only txs with this direction (`"send"` / `"receive"`).
+	direction: string | null,
+	// If non-empty, only txs in these statuses.
+	statuses: string[],
+	// Inclusive lower bound on timestamp.
+	since: number | null,
+	// Inclusive upper bound on timestamp.
+	until: number | null,
+	/**
+	 *  Free-text query, matched (case-insensitively) against txid,
+	 *  counterparty, asset, and memo.
+	 */
+	query: string | null,
+	// If set, only txs for this asset ticker (case-insensitive).
+	asset: string | null,
+};
+
+// Result of running `summarise`.
+export type HistorySummary = {
+	total_count: number,
+	by_asset: AssetTotals[],
+	by_chain: ChainTotals[],
+	// First and last txs (by timestamp) in the filtered range.
+	first_timestamp: number | null,
+	last_timestamp: number | null,
+};
 
 /**
  *  One account exported from a hardware wallet. The `xpub` is
@@ -1480,6 +1546,25 @@ export type TokenSummary = {
 	decimals: number,
 	standard: string,
 	enabled_by_default: boolean,
+};
+
+// Display-shape transaction record.
+export type Tx = {
+	txid: string,
+	chain_id: string,
+	// `"send"` or `"receive"`.
+	direction: string,
+	counterparty: string,
+	// Decimal-string amount in base units.
+	amount: string,
+	asset: string,
+	// Decimal-string fee in the chain's native asset base units.
+	fee: string,
+	// Unix seconds.
+	timestamp: number,
+	// `"pending"`, `"confirmed"`, or `"failed"`.
+	status: string,
+	memo: string | null,
 };
 
 // One on-chain transaction the user (or Atlas itself) initiated.

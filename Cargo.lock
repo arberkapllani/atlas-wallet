@@ -313,6 +313,7 @@ dependencies = [
  "atlas-shamir",
  "atlas-staking",
  "atlas-token-registry",
+ "atlas-tx-history",
  "atlas-wallet-core",
  "atlas-walletconnect",
  "hex",
@@ -543,6 +544,15 @@ dependencies = [
  "reqwest 0.12.28",
  "serde",
  "serde_json",
+ "specta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "atlas-tx-history"
+version = "0.1.0"
+dependencies = [
+ "serde",
  "specta",
  "thiserror 1.0.69",
 ]

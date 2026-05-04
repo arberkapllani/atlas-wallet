@@ -1474,6 +1474,36 @@ pub async fn staking_apr_to_apy(chain: atlas_staking::StakingChain, apr: f64) ->
     ))
 }
 
+// ---- Rich tx history ------------------------------------------------
+
+/// Apply UI filters (chain / direction / status / date / asset /
+/// query) and return rows newest-first.
+#[tauri::command]
+#[specta::specta]
+pub async fn tx_history_filter(
+    rows: Vec<atlas_tx_history::Tx>,
+    filter: atlas_tx_history::HistoryFilter,
+) -> CmdResult<Vec<atlas_tx_history::Tx>> {
+    Ok(atlas_tx_history::filter_history(&rows, &filter))
+}
+
+/// Aggregate a (typically already-filtered) row set into per-asset
+/// and per-chain totals plus first/last timestamps.
+#[tauri::command]
+#[specta::specta]
+pub async fn tx_history_summarise(
+    rows: Vec<atlas_tx_history::Tx>,
+) -> CmdResult<atlas_tx_history::HistorySummary> {
+    Ok(atlas_tx_history::summarise(&rows))
+}
+
+/// Render a row set as RFC-4180-style CSV, ready for download.
+#[tauri::command]
+#[specta::specta]
+pub async fn tx_history_export_csv(rows: Vec<atlas_tx_history::Tx>) -> CmdResult<String> {
+    Ok(atlas_tx_history::export_csv(&rows))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]
