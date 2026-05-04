@@ -395,6 +395,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-diversification"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "specta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "atlas-eip712"
 version = "0.1.0"
 dependencies = [
