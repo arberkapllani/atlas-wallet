@@ -1578,6 +1578,15 @@ pub async fn poisoning_detect(
         .map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+// ---- EIP-712 typed-data inspector -----------------------------------
+
+/// Classify an EIP-712 typed-data signing request before the user signs.
+#[tauri::command]
+#[specta::specta]
+pub async fn eip712_classify(json: String) -> CmdResult<atlas_eip712::Eip712Report> {
+    atlas_eip712::classify(&json).map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

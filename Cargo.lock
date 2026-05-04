@@ -328,6 +328,7 @@ dependencies = [
  "atlas-chain-tron",
  "atlas-chain-utxo",
  "atlas-dapp-registry",
+ "atlas-eip712",
  "atlas-exchange-1inch",
  "atlas-exchange-changenow",
  "atlas-exchange-jupiter",
@@ -367,6 +368,16 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "uuid",
+]
+
+[[package]]
+name = "atlas-eip712"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "specta",
+ "thiserror 1.0.69",
 ]
 
 [[package]]

@@ -290,6 +290,8 @@ export const commands = {
 	 *  addresses the user has previously sent funds to.
 	 */
 	poisoningDetect: (transfers: IncomingTransfer[], trusted: TrustedCounterparty[], config: PoisonConfig) => typedError<PoisonAlert[], CmdError>(__TAURI_INVOKE("poisoning_detect", { transfers, trusted, config })),
+	// Classify an EIP-712 typed-data signing request before the user signs.
+	eip712Classify: (json: string) => typedError<Eip712Report, CmdError>(__TAURI_INVOKE("eip712_classify", { json })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -870,6 +872,36 @@ export type Delegation = {
 	pending_rewards: number,
 	// Pending unbonding amount in base units (still locked).
 	unbonding: number,
+};
+
+// What the signing request authorises.
+export type Eip712Category = 
+// ERC-2612 token spend approval.
+"Permit" | 
+// Uniswap Permit2 single / batch approval.
+"Permit2" | 
+// OpenSea Seaport order signature (NFT listing).
+"SeaportOrder" | 
+// Gnosis Safe multisig transaction.
+"SafeTx" | 
+// Anything else.
+"Generic";
+
+// EIP-712 domain separator fields, only the parts we surface.
+export type Eip712Domain = {
+	name: string | null,
+	version: string | null,
+	chain_id: number | null,
+	verifying_contract: string | null,
+};
+
+// Inspector output.
+export type Eip712Report = {
+	primary_type: string,
+	domain: Eip712Domain,
+	category: Eip712Category,
+	risk: SignatureRisk,
+	findings: string[],
 };
 
 // Subset of the estimate response.
@@ -1639,6 +1671,12 @@ export type Share = {
 	// Hex-encoded ciphertext bytes; same length as the original secret.
 	y_hex: string,
 };
+
+/**
+ *  Coarse risk classification, mirrors `atlas-approvals` but kept
+ *  distinct so type names don't collide in the TypeScript bindings.
+ */
+export type SignatureRisk = "Critical" | "High" | "Medium" | "Low";
 
 /**
  *  How the active profile signs transactions. Used by the Send
