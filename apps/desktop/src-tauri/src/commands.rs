@@ -857,6 +857,68 @@ pub async fn set_biometric_unlock_enabled(
     Ok(state.settings.biometric_unlock_enabled())
 }
 
+/// Snapshot of the recovery-drill reminder state. Frontend uses
+/// this to decide whether to show the "verify your seed" banner.
+#[derive(Debug, serde::Serialize, specta::Type)]
+pub struct RecoveryDrillStatus {
+    /// `true` if a drill is currently due.
+    pub due: bool,
+    /// Reminder interval in days. `0` = disabled.
+    pub interval_days: u32,
+    /// Unix seconds of the last completed drill, or `None`.
+    pub last_at: Option<i64>,
+}
+
+/// Current recovery-drill status (due / interval / last).
+#[tauri::command]
+#[specta::specta]
+pub async fn recovery_drill_status(
+    state: State<'_, Arc<AppState>>,
+) -> CmdResult<RecoveryDrillStatus> {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+    Ok(RecoveryDrillStatus {
+        due: state.settings.recovery_drill_is_due(now),
+        interval_days: state.settings.recovery_drill_interval_days(),
+        last_at: state.settings.last_recovery_drill_at(),
+    })
+}
+
+/// Update the recovery-drill reminder interval. Pass `0` to
+/// disable the reminder. Values above 365 days are clamped.
+#[tauri::command]
+#[specta::specta]
+pub async fn set_recovery_drill_interval_days(
+    state: State<'_, Arc<AppState>>,
+    days: u32,
+) -> CmdResult<u32> {
+    state
+        .settings
+        .set_recovery_drill_interval_days(days)
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    Ok(state.settings.recovery_drill_interval_days())
+}
+
+/// Record that the user just successfully verified their seed
+/// phrase. The frontend is responsible for actually performing
+/// the verification (showing a few random words and checking the
+/// user types them back).
+#[tauri::command]
+#[specta::specta]
+pub async fn record_recovery_drill_completed(state: State<'_, Arc<AppState>>) -> CmdResult<()> {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+    state
+        .settings
+        .mark_recovery_drill_completed(now)
+        .map_err(|e| CmdError::Io(e.to_string()))?;
+    Ok(())
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

@@ -90,6 +90,19 @@ pub struct SettingsData {
     /// *previously-unlocked* seed cached in memory.
     #[serde(default)]
     pub biometric_unlock_enabled: bool,
+    /// Unix timestamp (seconds) of the last successful recovery
+    /// drill (user verified they still have their seed phrase).
+    /// Absent = never performed.
+    #[serde(default)]
+    pub last_recovery_drill_at: Option<i64>,
+    /// How often Atlas should remind the user to verify their
+    /// seed. `0` disables the reminder. Default 90 days.
+    #[serde(default = "default_recovery_drill_interval_days")]
+    pub recovery_drill_interval_days: u32,
+}
+
+fn default_recovery_drill_interval_days() -> u32 {
+    90
 }
 
 fn default_auto_lock_minutes() -> u32 {
@@ -106,6 +119,8 @@ impl Default for SettingsData {
             auto_lock_minutes: default_auto_lock_minutes(),
             anti_phishing_phrase: None,
             biometric_unlock_enabled: false,
+            last_recovery_drill_at: None,
+            recovery_drill_interval_days: default_recovery_drill_interval_days(),
         }
     }
 }
@@ -301,6 +316,62 @@ impl Settings {
         self.persist()
     }
 
+    /// Unix timestamp (seconds) of the last successful recovery
+    /// drill, or `None` if the user has never performed one.
+    pub fn last_recovery_drill_at(&self) -> Option<i64> {
+        self.inner
+            .read()
+            .expect("settings poisoned")
+            .last_recovery_drill_at
+    }
+
+    /// Recovery-drill reminder interval (days). `0` disables.
+    pub fn recovery_drill_interval_days(&self) -> u32 {
+        self.inner
+            .read()
+            .expect("settings poisoned")
+            .recovery_drill_interval_days
+    }
+
+    /// Set the recovery-drill reminder interval. `0` disables.
+    /// Values above 365 days are clamped to keep the prompt
+    /// meaningful (a once-a-year drill is the floor).
+    pub fn set_recovery_drill_interval_days(&self, days: u32) -> Result<(), SettingsError> {
+        let clamped = days.min(365);
+        {
+            let mut g = self.inner.write().expect("settings poisoned");
+            g.recovery_drill_interval_days = clamped;
+        }
+        self.persist()
+    }
+
+    /// Record that the user just verified their seed. Caller is
+    /// responsible for actually checking the user typed the
+    /// phrase correctly — this just stamps the success.
+    pub fn mark_recovery_drill_completed(&self, at_unix_seconds: i64) -> Result<(), SettingsError> {
+        {
+            let mut g = self.inner.write().expect("settings poisoned");
+            g.last_recovery_drill_at = Some(at_unix_seconds);
+        }
+        self.persist()
+    }
+
+    /// `true` if a drill is currently due. A drill is due when the
+    /// interval is non-zero AND
+    /// (`last_recovery_drill_at` is None OR
+    ///  `now - last_recovery_drill_at >= interval_days * 86400`).
+    pub fn recovery_drill_is_due(&self, now_unix_seconds: i64) -> bool {
+        let g = self.inner.read().expect("settings poisoned");
+        if g.recovery_drill_interval_days == 0 {
+            return false;
+        }
+        let interval_secs = i64::from(g.recovery_drill_interval_days) * 86_400;
+        match g.last_recovery_drill_at {
+            None => true,
+            Some(last) => now_unix_seconds.saturating_sub(last) >= interval_secs,
+        }
+    }
+
     /// Persist (or clear) the 1inch base URL. Empty/whitespace clears it.
     pub fn set_oneinch_base_url(&self, url: Option<&str>) -> Result<(), SettingsError> {
         {
@@ -413,5 +484,22 @@ mod tests {
         // Length limit enforced.
         let too_long = "x".repeat(201);
         assert!(s.set_anti_phishing_phrase(Some(&too_long)).is_err());
+    }
+
+    #[test]
+    fn recovery_drill_due_initially_then_marked_completed() {
+        let dir = tempfile::tempdir().unwrap();
+        let s = Settings::load_or_init(dir.path()).unwrap();
+        // Default 90-day interval, never performed → due.
+        let now = 1_700_000_000_i64;
+        assert!(s.recovery_drill_is_due(now));
+        s.mark_recovery_drill_completed(now).unwrap();
+        // Just completed → not due.
+        assert!(!s.recovery_drill_is_due(now + 60));
+        // 91 days later → due again.
+        assert!(s.recovery_drill_is_due(now + 91 * 86_400));
+        // Disabling the interval suppresses the reminder.
+        s.set_recovery_drill_interval_days(0).unwrap();
+        assert!(!s.recovery_drill_is_due(now + 365 * 86_400));
     }
 }

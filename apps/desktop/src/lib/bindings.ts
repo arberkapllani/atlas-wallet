@@ -83,6 +83,20 @@ export const commands = {
 	 *  records the preference.
 	 */
 	setBiometricUnlockEnabled: (enabled: boolean) => typedError<boolean, CmdError>(__TAURI_INVOKE("set_biometric_unlock_enabled", { enabled })),
+	// Current recovery-drill status (due / interval / last).
+	recoveryDrillStatus: () => typedError<RecoveryDrillStatus, CmdError>(__TAURI_INVOKE("recovery_drill_status")),
+	/**
+	 *  Update the recovery-drill reminder interval. Pass `0` to
+	 *  disable the reminder. Values above 365 days are clamped.
+	 */
+	setRecoveryDrillIntervalDays: (days: number) => typedError<number, CmdError>(__TAURI_INVOKE("set_recovery_drill_interval_days", { days })),
+	/**
+	 *  Record that the user just successfully verified their seed
+	 *  phrase. The frontend is responsible for actually performing
+	 *  the verification (showing a few random words and checking the
+	 *  user types them back).
+	 */
+	recordRecoveryDrillCompleted: () => typedError<null, CmdError>(__TAURI_INVOKE("record_recovery_drill_completed")),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -515,6 +529,19 @@ export type Quote = {
 	estimated_gas: number,
 	// Optional names of protocols routed through.
 	protocols: string[],
+};
+
+/**
+ *  Snapshot of the recovery-drill reminder state. Frontend uses
+ *  this to decide whether to show the "verify your seed" banner.
+ */
+export type RecoveryDrillStatus = {
+	// `true` if a drill is currently due.
+	due: boolean,
+	// Reminder interval in days. `0` = disabled.
+	interval_days: number,
+	// Unix seconds of the last completed drill, or `None`.
+	last_at: number | null,
 };
 
 export type RpcEndpoint = {
