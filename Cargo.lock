@@ -270,6 +270,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-dapp-registry"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "serde",
+ "sha2",
+ "specta",
+ "thiserror 1.0.69",
+ "url",
+]
+
+[[package]]
 name = "atlas-desktop"
 version = "0.1.0"
 dependencies = [
@@ -284,6 +296,7 @@ dependencies = [
  "atlas-chain-traits",
  "atlas-chain-tron",
  "atlas-chain-utxo",
+ "atlas-dapp-registry",
  "atlas-exchange-1inch",
  "atlas-exchange-changenow",
  "atlas-exchange-jupiter",

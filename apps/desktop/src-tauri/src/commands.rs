@@ -1405,6 +1405,25 @@ pub async fn wc_build_uri(uri: atlas_walletconnect::WcUri) -> CmdResult<String> 
     atlas_walletconnect::build_wc_uri(&uri).map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+// ---- In-app dApp browser registry -----------------------------------
+
+/// Evaluate a candidate URL against the curated dApp registry. Used by
+/// the in-app browser before rendering a third-party origin.
+#[tauri::command]
+#[specta::specta]
+pub async fn dapp_assess_origin(url: String) -> CmdResult<atlas_dapp_registry::DappAssessment> {
+    let reg = atlas_dapp_registry::DappRegistry::with_defaults();
+    reg.assess(&url)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Return the built-in curated dApp list (UI directory / search).
+#[tauri::command]
+#[specta::specta]
+pub async fn dapp_list_curated() -> CmdResult<Vec<atlas_dapp_registry::DappEntry>> {
+    Ok(atlas_dapp_registry::DappRegistry::with_defaults().entries)
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

@@ -74,6 +74,8 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::shamir_combine,
             commands::wc_parse_uri,
             commands::wc_build_uri,
+            commands::dapp_assess_origin,
+            commands::dapp_list_curated,
             commands::network_health,
             commands::network_health_all,
             commands::get_exchange_settings,

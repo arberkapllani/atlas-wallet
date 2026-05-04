@@ -54,6 +54,7 @@ atlas-multisig-evm = { workspace = true }
 atlas-aa-erc4337 = { workspace = true }
 atlas-shamir = { workspace = true }
 atlas-walletconnect = { workspace = true }
+atlas-dapp-registry = { workspace = true }
 uuid = { workspace = true }
 
 specta = { workspace = true }

@@ -198,6 +198,13 @@ export const commands = {
 	wcParseUri: (uri: string) => typedError<WcUri, CmdError>(__TAURI_INVOKE("wc_parse_uri", { uri })),
 	// Re-emit a `wc:` v2 URI from a parsed `WcUri`.
 	wcBuildUri: (uri: WcUri) => typedError<string, CmdError>(__TAURI_INVOKE("wc_build_uri", { uri })),
+	/**
+	 *  Evaluate a candidate URL against the curated dApp registry. Used by
+	 *  the in-app browser before rendering a third-party origin.
+	 */
+	dappAssessOrigin: (url: string) => typedError<DappAssessment, CmdError>(__TAURI_INVOKE("dapp_assess_origin", { url })),
+	// Return the built-in curated dApp list (UI directory / search).
+	dappListCurated: () => typedError<DappEntry[], CmdError>(__TAURI_INVOKE("dapp_list_curated")),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -544,6 +551,47 @@ export type CustomToken = {
 	// Optional logo URL.
 	logo_uri: string | null,
 };
+
+// Outcome of evaluating a candidate URL.
+export type DappAssessment = {
+	// The normalised origin (`scheme://host[:port]`) that was checked.
+	origin: string,
+	risk: DappRisk,
+	// Matched curated entry, if any.
+	entry: DappEntry | null,
+	// Human-readable warnings shown in the consent UI.
+	warnings: string[],
+	/**
+	 *  Stable per-origin fingerprint useful as a cache key in the UI
+	 *  (first 16 hex chars of `sha256(origin)`).
+	 */
+	fingerprint: string,
+};
+
+// Category tag used purely for UI grouping.
+export type DappCategory = "defi" | "nft" | "bridge" | "game" | "social" | "other";
+
+// One curated dApp.
+export type DappEntry = {
+	name: string,
+	/**
+	 *  Canonical homepage origin, e.g. `https://app.uniswap.org`.
+	 *  Stored already-normalised (no trailing slash, lowercased host).
+	 */
+	origin: string,
+	category: DappCategory,
+	// Optional comma-separated tags ("amm", "lending", ...).
+	tags: string[],
+};
+
+// Risk verdict returned to the UI.
+export type DappRisk = 
+// Origin matches a curated, audited entry.
+"verified" | 
+// Origin is unknown to the registry — proceed with caution.
+"unknown" | 
+// Origin is on the blocklist (phishing / known scam).
+"blocked";
 
 // Subset of the estimate response.
 export type Estimate = {
