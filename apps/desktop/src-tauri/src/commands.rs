@@ -1173,6 +1173,51 @@ pub async fn build_moonpay_buy_url(
     }
 }
 
+#[derive(Debug, Deserialize, specta::Type)]
+pub struct MoonPaySellArgs {
+    pub base_currency_code: String,
+    pub refund_wallet_address: String,
+    pub base_currency_amount: Option<String>,
+    pub quote_currency_code: Option<String>,
+    pub redirect_url: Option<String>,
+}
+
+/// Build a (possibly signed) MoonPay Sell widget URL using the persisted
+/// configuration. The user lands on MoonPay, sells crypto for fiat, and
+/// MoonPay handles KYC + bank/card payout.
+#[tauri::command]
+#[specta::specta]
+pub async fn build_moonpay_sell_url(
+    state: State<'_, Arc<AppState>>,
+    args: MoonPaySellArgs,
+) -> CmdResult<String> {
+    let api_key = state
+        .settings
+        .moonpay_api_key()
+        .ok_or_else(|| CmdError::InvalidInput("MoonPay API key not configured".into()))?;
+    let environment = if state.settings.moonpay_production() {
+        atlas_onramp::Environment::Production
+    } else {
+        atlas_onramp::Environment::Sandbox
+    };
+    let params = atlas_onramp::MoonPaySellParams {
+        api_key,
+        base_currency_code: args.base_currency_code,
+        refund_wallet_address: args.refund_wallet_address,
+        base_currency_amount: args.base_currency_amount,
+        quote_currency_code: args.quote_currency_code,
+        environment,
+        redirect_url: args.redirect_url,
+    };
+    let url =
+        atlas_onramp::build_sell_url(&params).map_err(|e| CmdError::InvalidInput(e.to_string()))?;
+    if let Some(secret) = state.settings.moonpay_secret_key() {
+        atlas_onramp::sign_url(&url, &secret).map_err(|e| CmdError::InvalidInput(e.to_string()))
+    } else {
+        Ok(url)
+    }
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

@@ -124,6 +124,12 @@ export const commands = {
 	 *  browser.
 	 */
 	buildMoonpayBuyUrl: (args: MoonPayBuyArgs) => typedError<string, CmdError>(__TAURI_INVOKE("build_moonpay_buy_url", { args })),
+	/**
+	 *  Build a (possibly signed) MoonPay Sell widget URL using the persisted
+	 *  configuration. The user lands on MoonPay, sells crypto for fiat, and
+	 *  MoonPay handles KYC + bank/card payout.
+	 */
+	buildMoonpaySellUrl: (args: MoonPaySellArgs) => typedError<string, CmdError>(__TAURI_INVOKE("build_moonpay_sell_url", { args })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -660,6 +666,14 @@ export type MoonPayConfigInput = {
 	// `Some("")` explicitly clears the stored secret. `None` leaves it as-is.
 	secret_key: string | null,
 	production: boolean,
+};
+
+export type MoonPaySellArgs = {
+	base_currency_code: string,
+	refund_wallet_address: string,
+	base_currency_amount: string | null,
+	quote_currency_code: string | null,
+	redirect_url: string | null,
 };
 
 // Result of a single `network_health` probe.

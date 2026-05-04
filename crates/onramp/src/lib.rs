@@ -35,6 +35,13 @@ impl Environment {
             Environment::Production => "buy.moonpay.com",
         }
     }
+
+    fn sell_host(self) -> &'static str {
+        match self {
+            Environment::Sandbox => "sell-sandbox.moonpay.com",
+            Environment::Production => "sell.moonpay.com",
+        }
+    }
 }
 
 /// Configuration for building a MoonPay Buy URL.
@@ -100,6 +107,77 @@ pub fn build_buy_url(p: &MoonPayBuyParams) -> Result<String> {
         .join("&");
 
     Ok(format!("https://{}?{}", p.environment.host(), qs))
+}
+
+/// Parameters for MoonPay's hosted Sell widget. The user lands on
+/// MoonPay, sells crypto for fiat (KYC + payout flow), and receives the
+/// proceeds via bank transfer / card refund. Atlas only collects the
+/// `refund_wallet_address` so failed payouts come back to the user.
+#[derive(Debug, Clone, Serialize, Deserialize, specta::Type)]
+pub struct MoonPaySellParams {
+    pub api_key: String,
+    /// Lower-case crypto code being sold (`btc`, `eth`, `usdc`, ...).
+    pub base_currency_code: String,
+    /// Wallet address MoonPay refunds the crypto to if the sell fails.
+    pub refund_wallet_address: String,
+    /// Crypto amount to sell (decimal string).
+    pub base_currency_amount: Option<String>,
+    /// Fiat ISO code the user wants paid out in (`usd`, `eur`, ...).
+    pub quote_currency_code: Option<String>,
+    pub environment: Environment,
+    pub redirect_url: Option<String>,
+}
+
+/// Build the unsigned Sell widget URL.
+pub fn build_sell_url(p: &MoonPaySellParams) -> Result<String> {
+    if p.api_key.trim().is_empty() {
+        return Err(OnrampError::InvalidInput("api_key required".into()));
+    }
+    if p.refund_wallet_address.trim().is_empty() {
+        return Err(OnrampError::InvalidInput(
+            "refund_wallet_address required".into(),
+        ));
+    }
+    if p.base_currency_code.trim().is_empty() {
+        return Err(OnrampError::InvalidInput(
+            "base_currency_code required".into(),
+        ));
+    }
+
+    let mut q: Vec<(&str, String)> = vec![
+        ("apiKey", p.api_key.trim().to_string()),
+        (
+            "baseCurrencyCode",
+            p.base_currency_code.trim().to_lowercase(),
+        ),
+        (
+            "refundWalletAddress",
+            p.refund_wallet_address.trim().to_string(),
+        ),
+    ];
+    if let Some(a) = &p.base_currency_amount {
+        if !a.trim().is_empty() {
+            q.push(("baseCurrencyAmount", a.trim().to_string()));
+        }
+    }
+    if let Some(c) = &p.quote_currency_code {
+        if !c.trim().is_empty() {
+            q.push(("quoteCurrencyCode", c.trim().to_lowercase()));
+        }
+    }
+    if let Some(r) = &p.redirect_url {
+        if !r.trim().is_empty() {
+            q.push(("redirectURL", r.trim().to_string()));
+        }
+    }
+
+    let qs = q
+        .into_iter()
+        .map(|(k, v)| format!("{}={}", k, urlencode(&v)))
+        .collect::<Vec<_>>()
+        .join("&");
+
+    Ok(format!("https://{}?{}", p.environment.sell_host(), qs))
 }
 
 /// Sign a built URL with the partner secret key (HMAC-SHA256 over the
@@ -263,5 +341,52 @@ mod tests {
         assert_eq!(base64_encode(b"fo"), "Zm8=");
         assert_eq!(base64_encode(b"foo"), "Zm9v");
         assert_eq!(base64_encode(b"foob"), "Zm9vYg==");
+    }
+
+    fn sp() -> MoonPaySellParams {
+        MoonPaySellParams {
+            api_key: "pk_test_abc".into(),
+            base_currency_code: "ETH".into(),
+            refund_wallet_address: "0x1234567890abcdef1234567890abcdef12345678".into(),
+            base_currency_amount: Some("0.5".into()),
+            quote_currency_code: Some("USD".into()),
+            environment: Environment::Sandbox,
+            redirect_url: None,
+        }
+    }
+
+    #[test]
+    fn sell_url_uses_sandbox_host_and_lowercases_codes() {
+        let url = build_sell_url(&sp()).unwrap();
+        assert!(url.starts_with("https://sell-sandbox.moonpay.com?"));
+        assert!(url.contains("baseCurrencyCode=eth"));
+        assert!(url.contains("quoteCurrencyCode=usd"));
+        assert!(url.contains("refundWalletAddress=0x1234567890abcdef1234567890abcdef12345678"));
+        assert!(url.contains("baseCurrencyAmount=0.5"));
+    }
+
+    #[test]
+    fn sell_production_host_when_requested() {
+        let mut params = sp();
+        params.environment = Environment::Production;
+        let url = build_sell_url(&params).unwrap();
+        assert!(url.starts_with("https://sell.moonpay.com?"));
+    }
+
+    #[test]
+    fn sell_missing_refund_address_rejected() {
+        let mut params = sp();
+        params.refund_wallet_address = "  ".into();
+        assert!(matches!(
+            build_sell_url(&params),
+            Err(OnrampError::InvalidInput(_))
+        ));
+    }
+
+    #[test]
+    fn sell_signature_round_trips() {
+        let url = build_sell_url(&sp()).unwrap();
+        let signed = sign_url(&url, "sk_test_secret").unwrap();
+        assert!(signed.contains("&signature="));
     }
 }
