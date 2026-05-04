@@ -292,8 +292,23 @@ export const commands = {
 	poisoningDetect: (transfers: IncomingTransfer[], trusted: TrustedCounterparty[], config: PoisonConfig) => typedError<PoisonAlert[], CmdError>(__TAURI_INVOKE("poisoning_detect", { transfers, trusted, config })),
 	// Classify an EIP-712 typed-data signing request before the user signs.
 	eip712Classify: (json: string) => typedError<Eip712Report, CmdError>(__TAURI_INVOKE("eip712_classify", { json })),
-	// Look up an address against an in-memory blocklist.
-	blocklistAssess: (address: string, list: Blocklist) => typedError<BlocklistVerdict, CmdError>(__TAURI_INVOKE("blocklist_assess", { address, list })),
+	/**
+	 *  Check an address against the user's blocklist. Always returns a
+	 *  verdict; an unparseable address is reported as `Clean` so we never
+	 *  throw on user input.
+	 */
+	blocklistCheck: (address: string) => typedError<BlocklistVerdict, CmdError>(__TAURI_INVOKE("blocklist_check", { address })),
+	// Sorted snapshot of every entry currently in the blocklist.
+	blocklistList: () => typedError<BlocklistEntry[], CmdError>(__TAURI_INVOKE("blocklist_list")),
+	// Add (or overwrite) one entry. Returns the normalised key.
+	blocklistAdd: (entry: BlocklistEntry) => typedError<string, CmdError>(__TAURI_INVOKE("blocklist_add", { entry })),
+	// Remove one entry. Returns true if it was present.
+	blocklistRemove: (address: string) => typedError<boolean, CmdError>(__TAURI_INVOKE("blocklist_remove", { address })),
+	/**
+	 *  Bulk-merge a JSON array of entries (e.g. from a curated feed).
+	 *  Returns the number of entries written.
+	 */
+	blocklistImportJson: (json: string) => typedError<number, CmdError>(__TAURI_INVOKE("blocklist_import_json", { json })),
 	// Compute realized + unrealized P&L over a list of trades.
 	pnlCompute: (trades: Trade[], prices: { [key in string]: number }, method: AccountingMethod) => typedError<PortfolioReport, CmdError>(__TAURI_INVOKE("pnl_compute", { trades, prices, method })),
 	// Parse a BIP-21 / EIP-681 payment URI scanned from a QR code.
@@ -739,11 +754,6 @@ export type BitcoinPayment = {
 	amount_btc: string | null,
 	label: string | null,
 	message: string | null,
-};
-
-// In-memory, hash-keyed blocklist.
-export type Blocklist = {
-	entries: { [key in string]: BlocklistEntry },
 };
 
 // What kind of bad-actor an entry is.

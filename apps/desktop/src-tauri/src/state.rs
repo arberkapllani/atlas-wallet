@@ -176,6 +176,11 @@ pub struct AppState {
     pub events: RwLock<atlas_eventlog::EventLog>,
     /// Per-profile spend-limit policy + state. Persisted as JSON.
     pub spend: RwLock<SpendStore>,
+    /// Malicious-address blocklist. Persisted as JSON in
+    /// `data_dir/blocklist.json`. Seeded empty; the user grows it
+    /// over time and curated bulk imports land via
+    /// `blocklist_import_json`.
+    pub blocklist: RwLock<atlas_blocklist::Blocklist>,
 }
 
 /// Bundle of policy + observed state for the spend-limit evaluator.
@@ -199,6 +204,8 @@ impl AppState {
         let contacts =
             load_json_or_default::<atlas_contacts::ContactBook>(&data_dir, "contacts.json");
         let spend = load_json_or_default::<SpendStore>(&data_dir, "spend.json");
+        let blocklist =
+            load_json_or_default::<atlas_blocklist::Blocklist>(&data_dir, "blocklist.json");
         Ok(Self {
             data_dir,
             profiles: RwLock::new(registry),
@@ -211,6 +218,7 @@ impl AppState {
             contacts: RwLock::new(contacts),
             events: RwLock::new(atlas_eventlog::EventLog::default()),
             spend: RwLock::new(spend),
+            blocklist: RwLock::new(blocklist),
         })
     }
 }

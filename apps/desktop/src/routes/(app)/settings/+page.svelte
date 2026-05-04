@@ -9,6 +9,7 @@
   import ContactsCard from '$lib/settings/ContactsCard.svelte';
   import SpendLimitsCard from '$lib/settings/SpendLimitsCard.svelte';
   import EventLogCard from '$lib/settings/EventLogCard.svelte';
+  import BlocklistCard from '$lib/settings/BlocklistCard.svelte';
   import { goto } from '$app/navigation';
   import { wallet } from '$lib/stores/wallet';
 </script>
@@ -34,6 +35,8 @@
   <SpendLimitsCard />
 
   <EventLogCard />
+
+  <BlocklistCard />
 
   <Card title="Security">
     <div class="space-y-3 text-sm">

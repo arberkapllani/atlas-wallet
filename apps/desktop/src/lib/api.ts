@@ -33,7 +33,10 @@ export type {
   SpendState,
   LimitEvaluation,
   LimitDecision,
-  ReasonCode
+  ReasonCode,
+  BlocklistEntry,
+  BlocklistCategory,
+  BlocklistVerdict
 } from './bindings';
 import type {
   Eip1559Suggestion,
@@ -53,7 +56,9 @@ import type {
   EventCategory,
   SpendPolicy,
   SpendState,
-  LimitEvaluation
+  LimitEvaluation,
+  BlocklistEntry,
+  BlocklistVerdict
 } from './bindings';
 
 export interface ChainSummary {
@@ -411,7 +416,18 @@ export const api = {
     invoke<LimitEvaluation>('spend_evaluate', { nowUnix, attemptUsd }),
   spendCommit: (nextState: SpendState) =>
     invoke<void>('spend_commit', { nextState }),
-  spendReset: () => invoke<void>('spend_reset')
+  spendReset: () => invoke<void>('spend_reset'),
+
+  // atlas-blocklist (malicious-address registry, persisted to data_dir/blocklist.json).
+  blocklistCheck: (address: string) =>
+    invoke<BlocklistVerdict>('blocklist_check', { address }),
+  blocklistList: () => invoke<BlocklistEntry[]>('blocklist_list'),
+  blocklistAdd: (entry: BlocklistEntry) =>
+    invoke<string>('blocklist_add', { entry }),
+  blocklistRemove: (address: string) =>
+    invoke<boolean>('blocklist_remove', { address }),
+  blocklistImportJson: (json: string) =>
+    invoke<number>('blocklist_import_json', { json })
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */

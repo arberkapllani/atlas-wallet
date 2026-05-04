@@ -52,6 +52,29 @@
     | { kind: 'error'; message: string } = { kind: 'idle' };
   let ensSeq = 0;
 
+  // Blocklist verdict for the current recipient. Refreshed reactively
+  // alongside the ENS hint so a single edit drives both lookups.
+  let blocklistHit: import('$lib/api').BlocklistEntry | null = null;
+  let blocklistSeq = 0;
+
+  async function refreshBlocklist(value: string) {
+    const my = ++blocklistSeq;
+    const trimmed = value.trim();
+    if (trimmed === '') {
+      blocklistHit = null;
+      return;
+    }
+    try {
+      const verdict = await api.blocklistCheck(trimmed);
+      if (my !== blocklistSeq) return;
+      blocklistHit = verdict.kind === 'Listed' ? verdict.data : null;
+    } catch {
+      if (my !== blocklistSeq) return;
+      blocklistHit = null;
+    }
+  }
+  $: void refreshBlocklist(to);
+
   async function refreshEnsHint(value: string) {
     const my = ++ensSeq;
     const trimmed = value.trim();
@@ -252,6 +275,20 @@
           </button>
         </div>
         <Input bind:value={to} placeholder="bc1q… / 0x… / vitalik.eth" />
+        {#if blocklistHit}
+          <div class="mt-2 rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-xs space-y-0.5">
+            <p class="text-rose-300 font-semibold">
+              Blocked: {blocklistHit.category}
+              <span class="text-rose-300/80 font-normal">(source: {blocklistHit.source})</span>
+            </p>
+            {#if blocklistHit.note}
+              <p class="text-rose-200/90">{blocklistHit.note}</p>
+            {/if}
+            <p class="text-rose-200/80">
+              This address is on your local blocklist. Atlas will not let you send to it.
+            </p>
+          </div>
+        {/if}
         {#if ensHint.kind === 'checking'}
           <p class="text-xs text-fg-subtle mt-1">Checking ENS name…</p>
         {:else if ensHint.kind === 'ens'}
@@ -315,7 +352,7 @@
       <Button
         fullWidth
         loading={busy}
-        disabled={!selected || !to || !amount}
+        disabled={!selected || !to || !amount || blocklistHit !== null}
         on:click={send}
       >
         Review &amp; send

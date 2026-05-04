@@ -1589,14 +1589,77 @@ pub async fn eip712_classify(json: String) -> CmdResult<atlas_eip712::Eip712Repo
 
 // ---- Malicious-address blocklist -----------------------------------
 
-/// Look up an address against an in-memory blocklist.
+/// Check an address against the user's blocklist. Always returns a
+/// verdict; an unparseable address is reported as `Clean` so we never
+/// throw on user input.
 #[tauri::command]
 #[specta::specta]
-pub async fn blocklist_assess(
+pub async fn blocklist_check(
+    state: State<'_, Arc<AppState>>,
     address: String,
-    list: atlas_blocklist::Blocklist,
 ) -> CmdResult<atlas_blocklist::BlocklistVerdict> {
-    Ok(atlas_blocklist::assess(&address, &list))
+    Ok(state.blocklist.read().await.check(&address))
+}
+
+/// Sorted snapshot of every entry currently in the blocklist.
+#[tauri::command]
+#[specta::specta]
+pub async fn blocklist_list(
+    state: State<'_, Arc<AppState>>,
+) -> CmdResult<Vec<atlas_blocklist::BlocklistEntry>> {
+    Ok(state.blocklist.read().await.sorted())
+}
+
+/// Add (or overwrite) one entry. Returns the normalised key.
+#[tauri::command]
+#[specta::specta]
+pub async fn blocklist_add(
+    state: State<'_, Arc<AppState>>,
+    entry: atlas_blocklist::BlocklistEntry,
+) -> CmdResult<String> {
+    let key = state
+        .blocklist
+        .write()
+        .await
+        .add(entry)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))?;
+    persist_blocklist(&state).await?;
+    Ok(key)
+}
+
+/// Remove one entry. Returns true if it was present.
+#[tauri::command]
+#[specta::specta]
+pub async fn blocklist_remove(state: State<'_, Arc<AppState>>, address: String) -> CmdResult<bool> {
+    let removed = state.blocklist.write().await.remove(&address);
+    if removed {
+        persist_blocklist(&state).await?;
+    }
+    Ok(removed)
+}
+
+/// Bulk-merge a JSON array of entries (e.g. from a curated feed).
+/// Returns the number of entries written.
+#[tauri::command]
+#[specta::specta]
+pub async fn blocklist_import_json(
+    state: State<'_, Arc<AppState>>,
+    json: String,
+) -> CmdResult<u32> {
+    let added = state
+        .blocklist
+        .write()
+        .await
+        .merge_json(&json)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))?;
+    persist_blocklist(&state).await?;
+    Ok(added as u32)
+}
+
+async fn persist_blocklist(state: &Arc<AppState>) -> CmdResult<()> {
+    let snapshot = state.blocklist.read().await.clone();
+    crate::state::save_json(&state.data_dir, "blocklist.json", &snapshot)
+        .map_err(|e| CmdError::InvalidInput(format!("persist blocklist: {e}")))
 }
 
 // ---- Portfolio P&L ---------------------------------------------------
