@@ -6,6 +6,7 @@
   import ExchangeSettingsCard from '$lib/settings/ExchangeSettingsCard.svelte';
   import SwapFeeCard from '$lib/settings/SwapFeeCard.svelte';
   import AutoLockCard from '$lib/settings/AutoLockCard.svelte';
+  import ContactsCard from '$lib/settings/ContactsCard.svelte';
   import { goto } from '$app/navigation';
   import { wallet } from '$lib/stores/wallet';
 </script>
@@ -25,6 +26,8 @@
   <SwapFeeCard />
 
   <AutoLockCard />
+
+  <ContactsCard />
 
   <Card title="Security">
     <div class="space-y-3 text-sm">
