@@ -1682,6 +1682,38 @@ pub async fn ens_namehash(name: String) -> CmdResult<String> {
     atlas_ens::namehash_hex(&name).map_err(|e| CmdError::InvalidInput(e.to_string()))
 }
 
+// ---- gas-cost USD estimator ---------------------------------------
+
+/// USD-denominated gas cost for an EVM tx.
+///
+/// `effective_gas_price_wei` is passed as a decimal string because
+/// Tauri's specta layer can't round-trip u128 directly.
+/// `native_price_usd_micro` is the native-token price scaled by 1e6
+/// (e.g. $1234.567890 → 1_234_567_890).
+#[tauri::command]
+#[specta::specta]
+pub async fn gascost_estimate(
+    gas_used: u64,
+    effective_gas_price_wei: String,
+    native_price_usd_micro: u64,
+) -> CmdResult<atlas_gascost::GasCost> {
+    let price: u128 = effective_gas_price_wei
+        .parse()
+        .map_err(|_| CmdError::InvalidInput("effective_gas_price_wei not a u128".into()))?;
+    atlas_gascost::estimate(gas_used, price, native_price_usd_micro)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Format a wei amount as a fixed-decimal native-token string.
+#[tauri::command]
+#[specta::specta]
+pub async fn gascost_format_eth(wei: String, decimals: u32) -> CmdResult<String> {
+    let wei: u128 = wei
+        .parse()
+        .map_err(|_| CmdError::InvalidInput("wei not a u128".into()))?;
+    Ok(atlas_gascost::format_eth(wei, decimals))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

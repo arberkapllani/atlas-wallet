@@ -313,6 +313,17 @@ export const commands = {
 	ensNormalise: (name: string) => typedError<string, CmdError>(__TAURI_INVOKE("ens_normalise", { name })),
 	// Compute the EIP-137 namehash of an ENS name as a 0x-prefixed hex string.
 	ensNamehash: (name: string) => typedError<string, CmdError>(__TAURI_INVOKE("ens_namehash", { name })),
+	/**
+	 *  USD-denominated gas cost for an EVM tx.
+	 * 
+	 *  `effective_gas_price_wei` is passed as a decimal string because
+	 *  Tauri's specta layer can't round-trip u128 directly.
+	 *  `native_price_usd_micro` is the native-token price scaled by 1e6
+	 *  (e.g. $1234.567890 → 1_234_567_890).
+	 */
+	gascostEstimate: (gasUsed: number, effectiveGasPriceWei: string, nativePriceUsdMicro: number) => typedError<GasCost, CmdError>(__TAURI_INVOKE("gascost_estimate", { gasUsed, effectiveGasPriceWei, nativePriceUsdMicro })),
+	// Format a wei amount as a fixed-decimal native-token string.
+	gascostFormatEth: (wei: string, decimals: number) => typedError<string, CmdError>(__TAURI_INVOKE("gascost_format_eth", { wei, decimals })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -1114,6 +1125,18 @@ export type GalleryView = {
 	total_collections: number,
 	total_items: number,
 	total_value_usd: number,
+};
+
+export type GasCost = {
+	/**
+	 *  Total wei the network will charge:
+	 *  `gas_used * effective_gas_price_wei`.
+	 */
+	wei: number,
+	// `wei` formatted as a native-token amount, e.g. "0.001234".
+	native_amount: string,
+	// USD value to 4 decimals, e.g. "2.4321".
+	usd: string,
 };
 
 /**

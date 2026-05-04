@@ -68,6 +68,7 @@ atlas-pnl = { workspace = true }
 atlas-payuri = { workspace = true }
 atlas-fees = { workspace = true }
 atlas-ens = { workspace = true }
+atlas-gascost = { workspace = true }
 uuid = { workspace = true }
 
 specta = { workspace = true }
