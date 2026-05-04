@@ -40,7 +40,13 @@ export type {
   MimicMatch,
   PhishingReport,
   PhishingVerdict,
-  PhishingConfig
+  PhishingConfig,
+  Approval,
+  ApprovalKind,
+  ApprovalRisk,
+  ApprovalSummary,
+  ApprovalConfig,
+  RiskLevel
 } from './bindings';
 import type {
   Eip1559Suggestion,
@@ -66,7 +72,13 @@ import type {
   MimicMatch,
   PhishingReport,
   PhishingVerdict,
-  PhishingConfig
+  PhishingConfig,
+  Approval,
+  ApprovalKind,
+  ApprovalRisk,
+  ApprovalSummary,
+  ApprovalConfig,
+  RiskLevel
 } from './bindings';
 
 export interface ChainSummary {
@@ -445,7 +457,13 @@ export const api = {
   phishingAnalyzeDefault: (origin: string) =>
     invoke<PhishingReport>('phishing_analyze_default', { origin }),
   phishingAnalyze: (origin: string, config: PhishingConfig) =>
-    invoke<PhishingReport>('phishing_analyze', { origin, config })
+    invoke<PhishingReport>('phishing_analyze', { origin, config }),
+
+  // atlas-approvals risk dashboard.
+  approvalsAnalyze: (approvals: Approval[], config: ApprovalConfig, now: number) =>
+    invoke<ApprovalRisk[]>('approvals_analyze', { approvals, config, now }),
+  approvalsSummarise: (rows: ApprovalRisk[]) =>
+    invoke<ApprovalSummary[]>('approvals_summarise', { rows })
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */

@@ -11,6 +11,7 @@
   import EventLogCard from '$lib/settings/EventLogCard.svelte';
   import BlocklistCard from '$lib/settings/BlocklistCard.svelte';
   import UrlSafetyCard from '$lib/settings/UrlSafetyCard.svelte';
+  import ApprovalsCard from '$lib/settings/ApprovalsCard.svelte';
   import { goto } from '$app/navigation';
   import { wallet } from '$lib/stores/wallet';
 </script>
@@ -40,6 +41,8 @@
   <BlocklistCard />
 
   <UrlSafetyCard />
+
+  <ApprovalsCard />
 
   <Card title="Security">
     <div class="space-y-3 text-sm">
