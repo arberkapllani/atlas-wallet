@@ -28,6 +28,7 @@ members = [
     "crates/multisig-evm",
     "crates/aa-erc4337",
     "crates/shamir",
+    "crates/walletconnect",
     "apps/desktop/src-tauri",
 ]
 
@@ -109,6 +110,7 @@ atlas-multisig-btc = { path = "crates/multisig-btc" }
 atlas-multisig-evm = { path = "crates/multisig-evm" }
 atlas-aa-erc4337 = { path = "crates/aa-erc4337" }
 atlas-shamir = { path = "crates/shamir" }
+atlas-walletconnect = { path = "crates/walletconnect" }
 
 # Misc
 uuid = { version = "1.10", features = ["v4", "serde"] }

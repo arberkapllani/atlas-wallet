@@ -1,0 +1,11 @@
+[package]
+name = "atlas-walletconnect"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+specta = { workspace = true }
+thiserror = { workspace = true }
+url = { workspace = true }
+hex = { workspace = true }

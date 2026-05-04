@@ -1389,6 +1389,22 @@ pub async fn shamir_combine(shares: Vec<atlas_shamir::Share>) -> CmdResult<Strin
     Ok(hex::encode(bytes))
 }
 
+// ---- WalletConnect v2 -------------------------------------------------
+
+/// Parse a `wc:` v2 pairing URI into its components.
+#[tauri::command]
+#[specta::specta]
+pub async fn wc_parse_uri(uri: String) -> CmdResult<atlas_walletconnect::WcUri> {
+    atlas_walletconnect::parse_wc_uri(&uri).map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Re-emit a `wc:` v2 URI from a parsed `WcUri`.
+#[tauri::command]
+#[specta::specta]
+pub async fn wc_build_uri(uri: atlas_walletconnect::WcUri) -> CmdResult<String> {
+    atlas_walletconnect::build_wc_uri(&uri).map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
 /// Probe a single chain's effective endpoint and return latency / status.
 #[tauri::command]
 #[specta::specta]

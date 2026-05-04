@@ -194,6 +194,10 @@ export const commands = {
 	 *  shares previously produced by `shamir_split`.
 	 */
 	shamirCombine: (shares: Share[]) => typedError<string, CmdError>(__TAURI_INVOKE("shamir_combine", { shares })),
+	// Parse a `wc:` v2 pairing URI into its components.
+	wcParseUri: (uri: string) => typedError<WcUri, CmdError>(__TAURI_INVOKE("wc_parse_uri", { uri })),
+	// Re-emit a `wc:` v2 URI from a parsed `WcUri`.
+	wcBuildUri: (uri: WcUri) => typedError<string, CmdError>(__TAURI_INVOKE("wc_build_uri", { uri })),
 	// Probe a single chain's effective endpoint and return latency / status.
 	networkHealth: (chainId: string) => typedError<NetworkHealth, CmdError>(__TAURI_INVOKE("network_health", { chainId })),
 	// Probe every supported chain in parallel.
@@ -1389,6 +1393,22 @@ export type WatchAccount = {
 	address: string,
 	// Optional human label.
 	label?: string | null,
+};
+
+// Parsed `wc:` v2 URI.
+export type WcUri = {
+	// 32-byte hex topic (the pairing topic).
+	topic: string,
+	// Relay protocol (typically `"irn"`).
+	relay_protocol: string,
+	// Optional relay data (forwarded to the relay).
+	relay_data: string | null,
+	// 32-byte symmetric key, hex-encoded.
+	sym_key: string,
+	// Optional expiry timestamp (seconds since epoch).
+	expiry_timestamp: number | null,
+	// Optional methods list as advertised by the dapp.
+	methods: string[],
 };
 
 /* Tauri Specta runtime */

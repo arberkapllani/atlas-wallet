@@ -72,6 +72,8 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::aa_encode_execute_calldata,
             commands::shamir_split,
             commands::shamir_combine,
+            commands::wc_parse_uri,
+            commands::wc_build_uri,
             commands::network_health,
             commands::network_health_all,
             commands::get_exchange_settings,
