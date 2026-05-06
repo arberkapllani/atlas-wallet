@@ -1,7 +1,7 @@
 <script lang="ts">
   import { wallet } from '$lib/stores/wallet';
   import { prices, COINGECKO_IDS } from '$lib/stores/prices';
-  import { formatFiat } from '$lib/stores/currency';
+  import { formatFiatStore } from '$lib/stores/currency';
   import { formatAmount, type Amount } from '$lib/api';
   import Button from '$lib/ui/Button.svelte';
   import Card from '$lib/ui/Card.svelte';
@@ -44,7 +44,7 @@
   <Card>
     <div class="text-fg-subtle text-xs uppercase tracking-wider">Total balance</div>
     <div class="mt-2 text-4xl font-bold tracking-tight">
-      {formatFiat(total)}
+      {$formatFiatStore(total)}
     </div>
   </Card>
 
@@ -66,7 +66,7 @@
             </div>
             <div class="text-xs text-fg-muted flex items-center gap-2 justify-end">
               {#if fiat != null}
-                {formatFiat(fiat)}
+                {$formatFiatStore(fiat)}
               {:else}
                 <span>—</span>
               {/if}

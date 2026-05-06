@@ -13,7 +13,7 @@
     fiatCurrency,
     loadFiatCurrency,
     setFiatCurrency,
-    formatFiat
+    formatFiatStore
   } from '$lib/stores/currency';
   import type { FiatCurrency } from '$lib/api';
   import { api } from '$lib/api';
@@ -233,7 +233,7 @@
       <div class="flex items-baseline gap-3">
         <span class="text-xs uppercase tracking-wider text-fg-subtle">Total balance</span>
         <span class="text-base font-bold tracking-tight">
-          {formatFiat(totalFiat)}
+          {$formatFiatStore(totalFiat)}
         </span>
       </div>
       <div class="flex items-center gap-2">

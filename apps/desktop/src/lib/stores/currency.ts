@@ -35,7 +35,11 @@ export async function setFiatCurrency(c: FiatCurrency): Promise<void> {
   fiatCurrency.set(c);
 }
 
-/** Format a number using the locale that pairs with the selected currency. */
+/**
+ * Format a number using the locale that pairs with the selected currency.
+ * Plain (non-reactive) helper. Prefer `$formatFiat(value)` in Svelte
+ * templates so they re-render when the user picks a different currency.
+ */
 export function formatFiat(value: number, currency?: FiatCurrency): string {
   const c = currency ?? get(fiatCurrency);
   return new Intl.NumberFormat(LOCALES[c], {
@@ -44,3 +48,19 @@ export function formatFiat(value: number, currency?: FiatCurrency): string {
     maximumFractionDigits: 2
   }).format(value);
 }
+
+/**
+ * Reactive formatter store. In a Svelte template use:
+ *   {$formatFiatStore(value)}
+ * and the rendered string will update whenever the user changes currency.
+ */
+export const formatFiatStore = derived(
+  fiatCurrency,
+  ($c) =>
+    (value: number): string =>
+      new Intl.NumberFormat(LOCALES[$c], {
+        style: 'currency',
+        currency: $c.toUpperCase(),
+        maximumFractionDigits: 2
+      }).format(value)
+);
