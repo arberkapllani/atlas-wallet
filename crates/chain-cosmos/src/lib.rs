@@ -107,10 +107,10 @@ impl CosmosProvider {
     /// Build a provider for `network` against a user-supplied LCD URL.
     pub fn with_lcd(network: &'static CosmosNetwork, lcd_url: String) -> Self {
         Self {
-            http: reqwest::Client::builder()
+            http: atlas_net::http_client_builder()
                 .user_agent("Atlas/0.1")
                 .build()
-                .unwrap_or_else(|_| reqwest::Client::new()),
+                .unwrap_or_else(|_| atlas_net::http_client()),
             lcd_url,
             network,
             asset: Asset {

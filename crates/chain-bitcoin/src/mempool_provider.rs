@@ -19,10 +19,10 @@ impl BitcoinProvider {
     pub fn new(base_url: impl Into<String>) -> Self {
         Self {
             base_url: base_url.into(),
-            http: reqwest::Client::builder()
+            http: atlas_net::http_client_builder()
                 .user_agent("Atlas/0.1")
                 .build()
-                .unwrap_or_else(|_| reqwest::Client::new()),
+                .unwrap_or_else(|_| atlas_net::http_client()),
             asset: crate::btc_asset(),
         }
     }

@@ -43,10 +43,10 @@ impl PriceOracle {
     pub fn new() -> Self {
         Self {
             inner: Arc::new(Inner {
-                http: reqwest::Client::builder()
+                http: atlas_net::http_client_builder()
                     .user_agent("Atlas/0.1")
                     .build()
-                    .unwrap_or_else(|_| reqwest::Client::new()),
+                    .unwrap_or_else(|_| atlas_net::http_client()),
                 cache: RwLock::new(HashMap::new()),
             }),
         }

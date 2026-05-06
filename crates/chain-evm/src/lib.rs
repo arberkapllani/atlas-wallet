@@ -43,10 +43,10 @@ impl EvmProvider {
         Self {
             network,
             rpc_url,
-            http: reqwest::Client::builder()
+            http: atlas_net::http_client_builder()
                 .user_agent("Atlas/0.1")
                 .build()
-                .unwrap_or_else(|_| reqwest::Client::new()),
+                .unwrap_or_else(|_| atlas_net::http_client()),
             asset: Asset {
                 id: network.id.into(),
                 symbol: network.symbol.into(),

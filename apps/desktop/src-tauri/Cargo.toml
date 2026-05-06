@@ -80,6 +80,7 @@ atlas-tor = { workspace = true }
 atlas-coincontrol = { workspace = true }
 atlas-node-config = { workspace = true }
 atlas-silent-payments = { workspace = true }
+atlas-net = { workspace = true }
 uuid = { workspace = true }
 
 specta = { workspace = true }

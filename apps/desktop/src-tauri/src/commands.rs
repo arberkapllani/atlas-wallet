@@ -3478,6 +3478,40 @@ async fn persist_tor(state: &Arc<AppState>) -> Result<(), CmdError> {
         .map_err(|e| CmdError::Io(e.to_string()))
 }
 
+/// Apply the current Tor mode + status to the process-global
+/// `atlas_net` proxy state, then rebuild every chain provider so
+/// new HTTP clients pick up the change. This is the single place
+/// where Tor's UI posture turns into actual outbound-traffic
+/// routing.
+///
+/// Decision matrix:
+/// - `Disabled` → direct clearnet, no proxy.
+/// - `Preferred` + Tor `Ready` → SOCKS5 to the configured listener.
+/// - `Preferred` + Tor not ready → direct clearnet (best-effort).
+/// - `Required` + Tor `Ready` → SOCKS5 to the configured listener.
+/// - `Required` + Tor not ready → kill-switch (`atlas_net::set_blocked(true)`).
+async fn apply_tor_to_net(state: &Arc<AppState>) {
+    let mode = *state.tor.mode.read().await;
+    let status = state.tor.provider.status().await;
+    let config = state.tor.config.read().await.clone();
+    match atlas_tor::enforce(mode, &status, &config) {
+        atlas_tor::ProxyDecision::Direct => {
+            atlas_net::set_blocked(false);
+            atlas_net::set_proxy(None);
+        }
+        atlas_tor::ProxyDecision::Socks5 { addr } => {
+            atlas_net::set_blocked(false);
+            atlas_net::set_proxy(Some(format!("socks5h://{addr}")));
+        }
+        atlas_tor::ProxyDecision::Block { .. } => {
+            atlas_net::set_proxy(None);
+            atlas_net::set_blocked(true);
+        }
+    }
+    let policy = state.node_policy.read().await.clone();
+    state.chains.rebuild_all(&state.settings, &policy);
+}
+
 /// Cheap snapshot of the embedded Tor client's lifecycle.
 #[tauri::command]
 #[specta::specta]
@@ -3506,6 +3540,7 @@ pub async fn tor_set_mode(
         *m = mode;
     }
     persist_tor(&state).await?;
+    apply_tor_to_net(&state).await;
     Ok(mode)
 }
 
@@ -3541,12 +3576,14 @@ pub async fn tor_set_config(
 #[specta::specta]
 pub async fn tor_start(state: State<'_, Arc<AppState>>) -> CmdResult<atlas_tor::TorStatus> {
     let cfg = state.tor.config.read().await.clone();
-    state
+    let status = state
         .tor
         .provider
         .start(cfg)
         .await
-        .map_err(|e| CmdError::Wallet(e.to_string()))
+        .map_err(|e| CmdError::Wallet(e.to_string()))?;
+    apply_tor_to_net(&state).await;
+    Ok(status)
 }
 
 /// Stop the embedded Tor client. With mode = Required this means
@@ -3555,6 +3592,7 @@ pub async fn tor_start(state: State<'_, Arc<AppState>>) -> CmdResult<atlas_tor::
 #[specta::specta]
 pub async fn tor_stop(state: State<'_, Arc<AppState>>) -> CmdResult<()> {
     state.tor.provider.stop().await;
+    apply_tor_to_net(&state).await;
     Ok(())
 }
 
@@ -3725,6 +3763,11 @@ pub async fn node_policy_set(
         *guard = canonical;
     }
     persist_node_policy(&state).await?;
+    // The chain registry was built against the old policy. Rebuild
+    // it now so any newly-blocked endpoints stop being reachable
+    // and any newly-allowed ones come online.
+    let policy_snapshot = state.node_policy.read().await.clone();
+    state.chains.rebuild_all(&state.settings, &policy_snapshot);
     Ok(state.node_policy.read().await.clone())
 }
 

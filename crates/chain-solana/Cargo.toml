@@ -12,6 +12,7 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 async-trait = { workspace = true }
 reqwest = { workspace = true }
+atlas-net = { workspace = true }
 bs58 = { workspace = true }
 ed25519-dalek = { workspace = true }
 atlas-chain-traits = { workspace = true }

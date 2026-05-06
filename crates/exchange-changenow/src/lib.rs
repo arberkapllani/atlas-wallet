@@ -196,7 +196,7 @@ impl ChangeNowClient {
         Self {
             base_url: base_url.into(),
             api_key,
-            http: reqwest::Client::builder()
+            http: atlas_net::http_client_builder()
                 .user_agent(concat!("atlas-wallet/", env!("CARGO_PKG_VERSION")))
                 .build()
                 .expect("reqwest client"),

@@ -55,6 +55,7 @@ members = [
     "crates/coincontrol",
     "crates/node-config",
     "crates/silent-payments",
+    "crates/net",
     "apps/desktop/src-tauri",
 ]
 
@@ -101,7 +102,7 @@ bech32 = "0.11"
 ripemd = "0.1"
 
 # HTTP
-reqwest = { version = "0.12", features = ["json", "rustls-tls"], default-features = false }
+reqwest = { version = "0.12", features = ["json", "rustls-tls", "socks"], default-features = false }
 url = "2.5"
 
 # Logging
@@ -163,6 +164,7 @@ atlas-tor = { path = "crates/tor" }
 atlas-coincontrol = { path = "crates/coincontrol" }
 atlas-node-config = { path = "crates/node-config" }
 atlas-silent-payments = { path = "crates/silent-payments" }
+atlas-net = { path = "crates/net" }
 
 # Misc
 uuid = { version = "1.10", features = ["v4", "serde"] }

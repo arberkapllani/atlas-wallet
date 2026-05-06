@@ -9,6 +9,7 @@ description = "Jupiter v6 aggregator client for Solana swaps."
 serde = { workspace = true }
 serde_json = { workspace = true }
 reqwest = { workspace = true }
+atlas-net = { workspace = true }
 thiserror = { workspace = true }
 async-trait = { workspace = true }
 specta = { workspace = true }

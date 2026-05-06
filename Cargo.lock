@@ -210,6 +210,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "atlas-chain-traits",
+ "atlas-net",
  "bitcoin",
  "hex",
  "reqwest 0.12.28",
@@ -225,6 +226,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "atlas-chain-traits",
+ "atlas-net",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
@@ -236,6 +238,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "atlas-chain-traits",
+ "atlas-net",
  "bech32",
  "reqwest 0.12.28",
  "serde",
@@ -248,6 +251,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "atlas-chain-traits",
+ "atlas-net",
  "hex",
  "reqwest 0.12.28",
  "secp256k1",
@@ -263,6 +267,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "atlas-chain-traits",
+ "atlas-net",
  "bs58",
  "ed25519-dalek",
  "reqwest 0.12.28",
@@ -287,6 +292,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "atlas-chain-traits",
+ "atlas-net",
  "bs58",
  "hex",
  "reqwest 0.12.28",
@@ -302,6 +308,7 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "atlas-chain-traits",
+ "atlas-net",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
@@ -376,6 +383,7 @@ dependencies = [
  "atlas-gascost",
  "atlas-multisig-btc",
  "atlas-multisig-evm",
+ "atlas-net",
  "atlas-nft-gallery",
  "atlas-nft-registry",
  "atlas-node-config",
@@ -461,6 +469,7 @@ dependencies = [
 name = "atlas-exchange-1inch"
 version = "0.1.0"
 dependencies = [
+ "atlas-net",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
@@ -474,6 +483,7 @@ name = "atlas-exchange-changenow"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "atlas-net",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
@@ -487,6 +497,7 @@ name = "atlas-exchange-jupiter"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "atlas-net",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
@@ -517,6 +528,7 @@ name = "atlas-exchange-thorchain"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "atlas-net",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
@@ -595,6 +607,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "atlas-net"
+version = "0.1.0"
+dependencies = [
+ "reqwest 0.12.28",
+]
+
+[[package]]
 name = "atlas-nft-gallery"
 version = "0.1.0"
 dependencies = [
@@ -608,6 +627,7 @@ dependencies = [
 name = "atlas-nft-registry"
 version = "0.1.0"
 dependencies = [
+ "atlas-net",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
@@ -671,6 +691,7 @@ name = "atlas-price-oracle"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "atlas-net",
  "reqwest 0.12.28",
  "serde",
  "serde_json",
@@ -761,6 +782,7 @@ dependencies = [
 name = "atlas-token-registry"
 version = "0.1.0"
 dependencies = [
+ "atlas-net",
  "reqwest 0.12.28",
  "serde",
  "serde_json",

@@ -13,6 +13,7 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 async-trait = { workspace = true }
 reqwest = { workspace = true }
+atlas-net = { workspace = true }
 secp256k1 = { workspace = true }
 sha3 = { workspace = true }
 hex = { workspace = true }

@@ -125,7 +125,7 @@ pub async fn fetch_owned_nfts(
     let host =
         reservoir_host_for(chain_id).ok_or_else(|| NftError::UnsupportedChain(chain_id.into()))?;
     let url = format!("{host}/users/{address}/tokens/v6?limit=200&includeTopBid=false");
-    let client = reqwest::Client::new();
+    let client = atlas_net::http_client();
     let mut req = client.get(&url);
     if let Some(key) = api_key {
         req = req.header("x-api-key", key);

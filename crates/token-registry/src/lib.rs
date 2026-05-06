@@ -208,7 +208,7 @@ pub fn parse_uniswap_token_list(body: &[u8]) -> Result<Vec<OwnedTokenMeta>, Toke
 /// to use a curated URL such as `https://tokens.uniswap.org` or one of
 /// the lists registered at <https://tokenlists.org>.
 pub async fn fetch_token_list(url: &str) -> Result<Vec<OwnedTokenMeta>, TokenListError> {
-    let resp = reqwest::Client::builder()
+    let resp = atlas_net::http_client_builder()
         .user_agent("Atlas/0.1")
         .build()
         .map_err(|e| TokenListError::Network(e.to_string()))?

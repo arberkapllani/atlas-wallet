@@ -15,6 +15,8 @@
   import Input from '$lib/ui/Input.svelte';
   import QrScanner from '$lib/ui/QrScanner.svelte';
   import { parsePaymentUri } from '$lib/paymentUri';
+  import { prices } from '$lib/stores/prices';
+  import { COINGECKO_IDS } from '$lib/stores/prices';
 
   /** A unified entry the user can choose to send: a chain's native asset
    * or one of its tokens. */
@@ -218,6 +220,42 @@
       error = errorMessage(e);
       return;
     }
+    // Spend-limit pre-flight. The policy is denominated in USD;
+    // we use the cached CoinGecko price for the asset's chain to
+    // estimate this tx's USD value. If we can't estimate (no price
+    // available) we conservatively pass `0` so per-tx caps still
+    // gate on `Disabled` policies (`evaluate` returns Allowed when
+    // both caps are 0). Daily caps without a price estimate would
+    // under-count, which is acceptable: the user can still see
+    // the policy in Settings and the cap kicks in once the price
+    // feed is online.
+    const cgId = COINGECKO_IDS[selected.chainId];
+    const priceUsd = cgId ? ($prices[cgId]?.price ?? 0) : 0;
+    const amountFloat = Number.parseFloat(amount);
+    const attemptUsd = Number.isFinite(amountFloat) && priceUsd > 0
+      ? Math.round(amountFloat * priceUsd)
+      : 0;
+    let evaluation: import('$lib/api').LimitEvaluation | null = null;
+    try {
+      evaluation = await api.spendEvaluate(
+        Math.floor(Date.now() / 1000),
+        attemptUsd
+      );
+    } catch (e) {
+      console.warn('spend-limit evaluation failed', e);
+    }
+    if (evaluation) {
+      if (evaluation.decision === 'Blocked') {
+        error = `Spend limit blocked this transaction (${evaluation.reason}). Adjust the policy in Settings → Spend limits.`;
+        return;
+      }
+      if (evaluation.decision === 'RequiresConfirmation') {
+        const ok = window.confirm(
+          `Spend limit warning: ${evaluation.reason}. Continue with this transaction?`
+        );
+        if (!ok) return;
+      }
+    }
     busy = true;
     try {
       let r;
@@ -237,6 +275,16 @@
         });
       }
       result = { txid: r.txid };
+      // Persist the spend-limit window after a successful broadcast.
+      // Failures here are non-fatal: the tx already went out and
+      // the next evaluation will catch up at the next window roll.
+      if (evaluation) {
+        try {
+          await api.spendCommit(evaluation.next_state);
+        } catch (e) {
+          console.warn('spend-limit commit failed', e);
+        }
+      }
       void wallet.refreshBalances();
     } catch (e) {
       error = errorMessage(e);

@@ -147,7 +147,7 @@ impl JupiterClient {
     pub fn with_base_url(base_url: impl Into<String>) -> Self {
         Self {
             base_url: base_url.into(),
-            http: reqwest::Client::builder()
+            http: atlas_net::http_client_builder()
                 .user_agent(concat!("atlas-wallet/", env!("CARGO_PKG_VERSION")))
                 .build()
                 .expect("reqwest client"),

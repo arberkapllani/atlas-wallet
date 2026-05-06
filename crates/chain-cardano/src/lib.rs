@@ -46,10 +46,10 @@ impl CardanoProvider {
     /// Construct a provider pointing at a custom Koios-compatible URL.
     pub fn with_api(api_url: String) -> Self {
         Self {
-            http: reqwest::Client::builder()
+            http: atlas_net::http_client_builder()
                 .user_agent("Atlas/0.1")
                 .build()
-                .unwrap_or_else(|_| reqwest::Client::new()),
+                .unwrap_or_else(|_| atlas_net::http_client()),
             api_url,
             asset: Asset {
                 id: "ada".into(),

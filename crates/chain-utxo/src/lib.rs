@@ -103,10 +103,10 @@ impl UtxoProvider {
     /// Construct against a custom Blockchair-compatible base URL.
     pub fn with_api(network: &'static UtxoNetwork, api_url: String) -> Self {
         Self {
-            http: reqwest::Client::builder()
+            http: atlas_net::http_client_builder()
                 .user_agent("Atlas/0.1")
                 .build()
-                .unwrap_or_else(|_| reqwest::Client::new()),
+                .unwrap_or_else(|_| atlas_net::http_client()),
             api_url,
             network,
             asset: Asset {

@@ -103,17 +103,34 @@ pub struct ChainRegistry {
 }
 
 impl ChainRegistry {
-    /// Build the registry from `settings`. Each chain uses the user's
-    /// override if one is set, otherwise the built-in default.
-    pub fn from_settings(settings: &Settings) -> Self {
+    /// Build the registry from `settings`, gated by `policy`.
+    ///
+    /// For each chain we prefer the user's override, then fall back
+    /// to the built-in default. Every candidate URL is run through
+    /// [`atlas_node_config::endpoint_decision`] before a provider is
+    /// constructed. A `Block` decision means the chain is left
+    /// un-registered: better to break a network call loudly than to
+    /// silently leak the user's IP to a hosted RPC SaaS.
+    pub fn from_settings(settings: &Settings, policy: &atlas_node_config::NodePolicy) -> Self {
         let mut map: HashMap<String, Arc<dyn ChainProvider>> = HashMap::new();
         for id in all_chain_ids() {
             let url = settings
                 .rpc_override(id)
                 .or_else(|| default_endpoint(id).map(|s| s.to_string()));
-            if let Some(url) = url {
-                if let Some(p) = build_provider(id, &url) {
-                    map.insert(id.to_string(), p);
+            let Some(url) = url else { continue };
+            match atlas_node_config::endpoint_decision(&url, policy) {
+                Ok(atlas_node_config::NodeDecision::Allow { .. }) => {
+                    if let Some(p) = build_provider(id, &url) {
+                        map.insert(id.to_string(), p);
+                    }
+                }
+                Ok(atlas_node_config::NodeDecision::Block { host, reason }) => {
+                    eprintln!(
+                        "atlas: chain {id} blocked by node policy ({host}: {reason}); not registering provider"
+                    );
+                }
+                Err(e) => {
+                    eprintln!("atlas: chain {id} URL invalid ({e}); not registering provider");
                 }
             }
         }
@@ -141,6 +158,29 @@ impl ChainRegistry {
             .expect("chain registry poisoned")
             .insert(chain_id.to_string(), p);
         true
+    }
+
+    /// Rebuild every provider from `settings`, gated by `policy`.
+    /// Used after the user toggles Tor mode (so new clients pick up
+    /// the proxy) or changes the node policy (so blocked endpoints
+    /// drop out of the registry).
+    pub fn rebuild_all(&self, settings: &Settings, policy: &atlas_node_config::NodePolicy) {
+        let mut new_map: HashMap<String, Arc<dyn ChainProvider>> = HashMap::new();
+        for id in all_chain_ids() {
+            let url = settings
+                .rpc_override(id)
+                .or_else(|| default_endpoint(id).map(|s| s.to_string()));
+            let Some(url) = url else { continue };
+            if let Ok(atlas_node_config::NodeDecision::Allow { .. }) =
+                atlas_node_config::endpoint_decision(&url, policy)
+            {
+                if let Some(p) = build_provider(id, &url) {
+                    new_map.insert(id.to_string(), p);
+                }
+            }
+        }
+        let mut g = self.providers.write().expect("chain registry poisoned");
+        *g = new_map;
     }
 
     #[allow(dead_code)]
@@ -231,13 +271,27 @@ pub struct TorPersisted {
     pub config: atlas_tor::TorConfig,
 }
 
+/// Status of the Tor provider at process start, before the user
+/// has had a chance to press "Start". The stub provider always
+/// reports `Disabled` here; a future arti-backed provider may
+/// auto-resume to `Ready`.
+fn tor_persisted_initial_status() -> atlas_tor::TorStatus {
+    atlas_tor::TorStatus::Disabled
+}
+
 impl AppState {
     pub async fn new(data_dir: PathBuf) -> std::io::Result<Self> {
         let registry = ProfileRegistry::load_or_init(&data_dir)
             .map_err(|e| std::io::Error::other(e.to_string()))?;
         let settings =
             Settings::load_or_init(&data_dir).map_err(|e| std::io::Error::other(e.to_string()))?;
-        let chains = ChainRegistry::from_settings(&settings);
+        // Load node policy BEFORE building the chain registry so the
+        // gate is consulted for every default URL too, not just user
+        // overrides. Without this, defaults like mempool.space would
+        // be dialed even with `require_local=true`.
+        let node_policy =
+            load_json_or_default::<atlas_node_config::NodePolicy>(&data_dir, "node_policy.json");
+        let chains = ChainRegistry::from_settings(&settings, &node_policy);
         let db = Db::open(&data_dir.join("atlas.db"))
             .await
             .map_err(|e| std::io::Error::other(e.to_string()))?;
@@ -249,6 +303,25 @@ impl AppState {
             load_json_or_default::<atlas_blocklist::Blocklist>(&data_dir, "blocklist.json");
         let trades = load_json_or_default::<Vec<atlas_pnl::Trade>>(&data_dir, "trades.json");
         let tor_persisted = load_json_or_default::<TorPersisted>(&data_dir, "tor.json");
+        // Apply the persisted Tor posture to atlas-net BEFORE we
+        // build any HTTP-using state. The chain registry above was
+        // built without a proxy because the wallet starts with the
+        // stub provider in `Disabled` status; we'll rebuild it once
+        // the user actually starts Tor (or right now if their
+        // persisted mode demands a proxy and the stub reports
+        // Ready). For `Required` mode with the stub at Disabled,
+        // the kill-switch trips immediately — the user must press
+        // "Start Tor" to unblock outbound traffic.
+        {
+            let stub_status = tor_persisted_initial_status();
+            match atlas_tor::enforce(tor_persisted.mode, &stub_status, &tor_persisted.config) {
+                atlas_tor::ProxyDecision::Direct => atlas_net::set_proxy(None),
+                atlas_tor::ProxyDecision::Socks5 { addr } => {
+                    atlas_net::set_proxy(Some(format!("socks5h://{addr}")));
+                }
+                atlas_tor::ProxyDecision::Block { .. } => atlas_net::set_blocked(true),
+            }
+        }
         let tor = TorState {
             provider: atlas_tor::default_provider(),
             mode: RwLock::new(tor_persisted.mode),
@@ -258,8 +331,6 @@ impl AppState {
             &data_dir,
             "utxo_labels.json",
         );
-        let node_policy =
-            load_json_or_default::<atlas_node_config::NodePolicy>(&data_dir, "node_policy.json");
         Ok(Self {
             data_dir,
             profiles: RwLock::new(registry),

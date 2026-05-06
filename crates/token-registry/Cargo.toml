@@ -11,5 +11,6 @@ description = "Static metadata for ERC-20 / TRC-20 tokens enabled by default"
 serde = { workspace = true }
 serde_json = { workspace = true }
 reqwest = { workspace = true }
+atlas-net = { workspace = true }
 thiserror = { workspace = true }
 specta = { workspace = true }

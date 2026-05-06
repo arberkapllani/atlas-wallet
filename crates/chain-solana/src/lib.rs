@@ -39,10 +39,10 @@ impl SolanaProvider {
     /// Construct a provider pointing at a custom RPC endpoint.
     pub fn with_rpc(rpc_url: String) -> Self {
         Self {
-            http: reqwest::Client::builder()
+            http: atlas_net::http_client_builder()
                 .user_agent("Atlas/0.1")
                 .build()
-                .unwrap_or_else(|_| reqwest::Client::new()),
+                .unwrap_or_else(|_| atlas_net::http_client()),
             rpc_url,
             asset: Asset {
                 id: "sol".into(),

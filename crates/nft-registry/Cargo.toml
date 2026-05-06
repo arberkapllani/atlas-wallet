@@ -11,5 +11,6 @@ description = "Watch-only NFT discovery via the Reservoir aggregator"
 serde = { workspace = true }
 serde_json = { workspace = true }
 reqwest = { workspace = true }
+atlas-net = { workspace = true }
 thiserror = { workspace = true }
 specta = { workspace = true }
