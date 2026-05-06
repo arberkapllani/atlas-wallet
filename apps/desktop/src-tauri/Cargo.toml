@@ -78,6 +78,7 @@ atlas-eventlog = { workspace = true }
 atlas-spendlimits = { workspace = true }
 atlas-tor = { workspace = true }
 atlas-coincontrol = { workspace = true }
+atlas-node-config = { workspace = true }
 uuid = { workspace = true }
 
 specta = { workspace = true }

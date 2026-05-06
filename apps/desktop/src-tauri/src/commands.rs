@@ -3079,6 +3079,16 @@ pub struct RpcEndpoint {
     pub effective_url: Option<String>,
 }
 
+/// Per-chain row returned by `node_policy_audit_endpoints`. The
+/// `decision` is `None` when the URL did not parse, when no
+/// effective URL is configured, or when the chain has no provider.
+#[derive(Debug, Serialize, specta::Type)]
+pub struct NodePolicyAuditRow {
+    pub chain_id: String,
+    pub url: Option<String>,
+    pub decision: Option<atlas_node_config::NodeDecision>,
+}
+
 fn endpoint_for(state: &AppState, chain_id: &str) -> RpcEndpoint {
     let default_url = crate::state::default_endpoint(chain_id).map(|s| s.to_string());
     let override_url = state.settings.rpc_override(chain_id);
@@ -3112,6 +3122,19 @@ pub async fn set_rpc_endpoint(
 ) -> CmdResult<RpcEndpoint> {
     if crate::state::default_endpoint(&chain_id).is_none() {
         return Err(CmdError::InvalidInput(format!("unknown chain: {chain_id}")));
+    }
+    // Gate: refuse public-RPC URLs when the user has enabled
+    // own-node-only mode. This is the single chokepoint where the
+    // wallet would otherwise persist a third-party endpoint.
+    {
+        let policy = state.node_policy.read().await;
+        let decision = atlas_node_config::endpoint_decision(&url, &policy)
+            .map_err(|e| CmdError::InvalidInput(e.to_string()))?;
+        if let atlas_node_config::NodeDecision::Block { host, reason } = decision {
+            return Err(CmdError::InvalidInput(format!(
+                "node policy blocked {host}: {reason}"
+            )));
+        }
     }
     state
         .settings
@@ -3655,4 +3678,91 @@ pub async fn coincontrol_suggest_selection(
 ) -> CmdResult<atlas_coincontrol::Selection> {
     atlas_coincontrol::suggest_selection(target, &available, strategy)
         .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+// =============================================================================
+// Sovereign node policy (own-node-only mode, refuse public RPC)
+// =============================================================================
+//
+// The user's brief was unambiguous: "ki prarasy qe ne cdo opsion apo
+// kod te ketij projekti te jem i lidhur drejtperdrejt me blockchain,
+// m pak fjale mos te jem i varur nga pale te treta." These commands
+// expose the [`atlas_node_config::NodePolicy`] gate so the user can
+// flip a switch and have the wallet refuse to construct any
+// provider against a hosted RPC SaaS. `set_rpc_endpoint` consults
+// the policy before persisting; the dedicated `node_policy_check_url`
+// command lets the UI preview a decision without applying it.
+
+async fn persist_node_policy(state: &Arc<AppState>) -> Result<(), CmdError> {
+    let snapshot = state.node_policy.read().await.clone();
+    crate::state::save_json(&state.data_dir, "node_policy.json", &snapshot)
+        .map_err(|e| CmdError::Io(e.to_string()))
+}
+
+/// Current sovereign-node policy.
+#[tauri::command]
+#[specta::specta]
+pub async fn node_policy_get(
+    state: State<'_, Arc<AppState>>,
+) -> CmdResult<atlas_node_config::NodePolicy> {
+    Ok(state.node_policy.read().await.clone())
+}
+
+/// Replace the sovereign-node policy with `policy`. The trusted-host
+/// list is canonicalised (trim, lowercase, dedupe) before being
+/// persisted.
+#[tauri::command]
+#[specta::specta]
+pub async fn node_policy_set(
+    state: State<'_, Arc<AppState>>,
+    policy: atlas_node_config::NodePolicy,
+) -> CmdResult<atlas_node_config::NodePolicy> {
+    let mut canonical = policy;
+    let trusted = std::mem::take(&mut canonical.trusted_hosts);
+    canonical.set_trusted_hosts(trusted);
+    {
+        let mut guard = state.node_policy.write().await;
+        *guard = canonical;
+    }
+    persist_node_policy(&state).await?;
+    Ok(state.node_policy.read().await.clone())
+}
+
+/// Run the policy against a candidate URL without applying it.
+/// Useful for the settings card preview row.
+#[tauri::command]
+#[specta::specta]
+pub async fn node_policy_check_url(
+    state: State<'_, Arc<AppState>>,
+    url: String,
+) -> CmdResult<atlas_node_config::NodeDecision> {
+    let policy = state.node_policy.read().await.clone();
+    atlas_node_config::endpoint_decision(&url, &policy)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Run the policy against every currently configured RPC endpoint
+/// (default + override) and return the per-chain decision so the UI
+/// can colour the list.
+#[tauri::command]
+#[specta::specta]
+pub async fn node_policy_audit_endpoints(
+    state: State<'_, Arc<AppState>>,
+) -> CmdResult<Vec<NodePolicyAuditRow>> {
+    let policy = state.node_policy.read().await.clone();
+    let mut out = Vec::new();
+    for id in crate::state::all_chain_ids() {
+        let row = endpoint_for(&state, id);
+        let url = row.effective_url.clone();
+        let decision = match url.as_deref() {
+            Some(u) => atlas_node_config::endpoint_decision(u, &policy).ok(),
+            None => None,
+        };
+        out.push(NodePolicyAuditRow {
+            chain_id: id.to_string(),
+            url,
+            decision,
+        });
+    }
+    Ok(out)
 }

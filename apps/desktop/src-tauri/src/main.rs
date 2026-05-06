@@ -189,6 +189,10 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::coincontrol_label_remove,
             commands::coincontrol_detect_mix,
             commands::coincontrol_suggest_selection,
+            commands::node_policy_get,
+            commands::node_policy_set,
+            commands::node_policy_check_url,
+            commands::node_policy_audit_endpoints,
         ])
         .events(tauri_specta::collect_events![
             events::WalletLockedEvent,

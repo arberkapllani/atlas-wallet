@@ -24,6 +24,7 @@
   import BiometricStatusCard from '$lib/settings/BiometricStatusCard.svelte';
   import TorCard from '$lib/settings/TorCard.svelte';
   import CoinControlCard from '$lib/settings/CoinControlCard.svelte';
+  import NodeConfigCard from '$lib/settings/NodeConfigCard.svelte';
   import { goto } from '$app/navigation';
   import { wallet } from '$lib/stores/wallet';
 </script>
@@ -39,6 +40,8 @@
   <TorCard />
 
   <CoinControlCard />
+
+  <NodeConfigCard />
 
   <RpcEndpointsCard />
 

@@ -193,6 +193,11 @@ pub struct AppState {
     /// as JSON in `data_dir/utxo_labels.json`. Used by the coin-
     /// control settings card and (in a follow-up) the send flow.
     pub utxo_labels: RwLock<atlas_coincontrol::UtxoLabelStore>,
+    /// Sovereign-node policy. When `require_local` is on, the
+    /// wallet refuses to dial public RPC SaaS providers and only
+    /// accepts loopback / `*.onion` / user-trusted hosts. Persisted
+    /// in `data_dir/node_policy.json`.
+    pub node_policy: RwLock<atlas_node_config::NodePolicy>,
 }
 
 /// Bundle of the Tor provider, persisted mode, and current
@@ -253,6 +258,8 @@ impl AppState {
             &data_dir,
             "utxo_labels.json",
         );
+        let node_policy =
+            load_json_or_default::<atlas_node_config::NodePolicy>(&data_dir, "node_policy.json");
         Ok(Self {
             data_dir,
             profiles: RwLock::new(registry),
@@ -269,6 +276,7 @@ impl AppState {
             trades: RwLock::new(trades),
             tor,
             utxo_labels: RwLock::new(utxo_labels),
+            node_policy: RwLock::new(node_policy),
         })
     }
 }

@@ -53,6 +53,7 @@ members = [
     "crates/spendlimits",
     "crates/tor",
     "crates/coincontrol",
+    "crates/node-config",
     "apps/desktop/src-tauri",
 ]
 
@@ -159,6 +160,7 @@ atlas-diversification = { path = "crates/diversification" }
 atlas-spendlimits = { path = "crates/spendlimits" }
 atlas-tor = { path = "crates/tor" }
 atlas-coincontrol = { path = "crates/coincontrol" }
+atlas-node-config = { path = "crates/node-config" }
 
 # Misc
 uuid = { version = "1.10", features = ["v4", "serde"] }

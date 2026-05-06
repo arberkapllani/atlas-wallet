@@ -378,6 +378,7 @@ dependencies = [
  "atlas-multisig-evm",
  "atlas-nft-gallery",
  "atlas-nft-registry",
+ "atlas-node-config",
  "atlas-onramp",
  "atlas-payuri",
  "atlas-phishing",
@@ -611,6 +612,17 @@ dependencies = [
  "serde_json",
  "specta",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "atlas-node-config"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "specta",
+ "thiserror 1.0.69",
+ "url",
 ]
 
 [[package]]

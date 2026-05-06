@@ -86,7 +86,10 @@ export type {
   MixWarning,
   SelectionStrategy,
   PrivacyBucket,
-  Selection
+  Selection,
+  NodePolicy,
+  NodeDecision,
+  NodePolicyAuditRow
 } from './bindings';
 import type {
   Eip1559Suggestion,
@@ -158,7 +161,10 @@ import type {
   MixWarning,
   SelectionStrategy,
   PrivacyBucket,
-  Selection
+  Selection,
+  NodePolicy,
+  NodeDecision,
+  NodePolicyAuditRow
 } from './bindings';
 
 export interface ChainSummary {
@@ -618,7 +624,16 @@ export const api = {
     available: LabeledUtxo[],
     strategy: SelectionStrategy
   ) =>
-    invoke<Selection>('coincontrol_suggest_selection', { target, available, strategy })
+    invoke<Selection>('coincontrol_suggest_selection', { target, available, strategy }),
+
+  // atlas-node-config sovereign-node policy.
+  nodePolicyGet: () => invoke<NodePolicy>('node_policy_get'),
+  nodePolicySet: (policy: NodePolicy) =>
+    invoke<NodePolicy>('node_policy_set', { policy }),
+  nodePolicyCheckUrl: (url: string) =>
+    invoke<NodeDecision>('node_policy_check_url', { url }),
+  nodePolicyAuditEndpoints: () =>
+    invoke<NodePolicyAuditRow[]>('node_policy_audit_endpoints')
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */

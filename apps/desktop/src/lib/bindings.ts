@@ -658,6 +658,25 @@ export const commands = {
 	 *  Private → Anonymous → Unlabelled → Identifying.
 	 */
 	coincontrolSuggestSelection: (target: number, available: LabeledUtxo[], strategy: SelectionStrategy) => typedError<Selection, CmdError>(__TAURI_INVOKE("coincontrol_suggest_selection", { target, available, strategy })),
+	// Current sovereign-node policy.
+	nodePolicyGet: () => typedError<NodePolicy, CmdError>(__TAURI_INVOKE("node_policy_get")),
+	/**
+	 *  Replace the sovereign-node policy with `policy`. The trusted-host
+	 *  list is canonicalised (trim, lowercase, dedupe) before being
+	 *  persisted.
+	 */
+	nodePolicySet: (policy: NodePolicy) => typedError<NodePolicy, CmdError>(__TAURI_INVOKE("node_policy_set", { policy })),
+	/**
+	 *  Run the policy against a candidate URL without applying it.
+	 *  Useful for the settings card preview row.
+	 */
+	nodePolicyCheckUrl: (url: string) => typedError<NodeDecision, CmdError>(__TAURI_INVOKE("node_policy_check_url", { url })),
+	/**
+	 *  Run the policy against every currently configured RPC endpoint
+	 *  (default + override) and return the per-chain decision so the UI
+	 *  can colour the list.
+	 */
+	nodePolicyAuditEndpoints: () => typedError<NodePolicyAuditRow[], CmdError>(__TAURI_INVOKE("node_policy_audit_endpoints")),
 };
 
 /** Events */
@@ -1728,6 +1747,70 @@ export type NetworkStatus =
 "lagging" | 
 // All samples failed.
 "offline";
+
+// Outcome of running [`endpoint_decision`].
+export type NodeDecision = 
+/**
+ *  Endpoint is acceptable. Carries the resolved hostname so the
+ *  UI can show what the policy matched.
+ */
+{ kind: "allow"; 
+// Lower-cased hostname the URL parsed to.
+host: string; 
+/**
+ *  Why it was allowed (loopback / onion / trusted host /
+ *  permissive).
+ */
+reason: string } | 
+/**
+ *  Endpoint is refused; the wallet must not build a provider
+ *  against it.
+ */
+{ kind: "block"; 
+/**
+ *  Lower-cased hostname the URL parsed to (or the raw URL if
+ *  the host could not be extracted).
+ */
+host: string; 
+// Human-readable explanation surfaced to the user.
+reason: string };
+
+/**
+ *  User-controlled policy describing which RPC endpoint URLs the
+ *  wallet is allowed to dial.
+ */
+export type NodePolicy = {
+	/**
+	 *  When `true`, only loopback hosts, `*.onion` (if
+	 *  `allow_tor_onion`), and entries in `trusted_hosts` are
+	 *  accepted. When `false`, the policy is permissive and only
+	 *  rejects malformed URLs.
+	 */
+	require_local: boolean,
+	/**
+	 *  When `true`, `*.onion` hosts are accepted under a strict
+	 *  policy. The user reaches them through their own Tor circuit
+	 *  so they are not "third parties" in the same sense as a
+	 *  hosted RPC SaaS.
+	 */
+	allow_tor_onion: boolean,
+	/**
+	 *  User-curated allow-list of additional hosts. Case-insensitive
+	 *  exact match against the URL's hostname.
+	 */
+	trusted_hosts: string[],
+};
+
+/**
+ *  Per-chain row returned by `node_policy_audit_endpoints`. The
+ *  `decision` is `None` when the URL did not parse, when no
+ *  effective URL is configured, or when the chain has no provider.
+ */
+export type NodePolicyAuditRow = {
+	chain_id: string,
+	url: string | null,
+	decision: NodeDecision | null,
+};
 
 /**
  *  Safe `Operation` enum — `Call` is the default, `DelegateCall` is
