@@ -25,6 +25,7 @@
   import TorCard from '$lib/settings/TorCard.svelte';
   import CoinControlCard from '$lib/settings/CoinControlCard.svelte';
   import NodeConfigCard from '$lib/settings/NodeConfigCard.svelte';
+  import SilentPaymentsCard from '$lib/settings/SilentPaymentsCard.svelte';
   import { goto } from '$app/navigation';
   import { wallet } from '$lib/stores/wallet';
 </script>
@@ -42,6 +43,8 @@
   <CoinControlCard />
 
   <NodeConfigCard />
+
+  <SilentPaymentsCard />
 
   <RpcEndpointsCard />
 

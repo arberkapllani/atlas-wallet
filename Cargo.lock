@@ -387,6 +387,7 @@ dependencies = [
  "atlas-profile",
  "atlas-settings",
  "atlas-shamir",
+ "atlas-silent-payments",
  "atlas-slippage",
  "atlas-spendlimits",
  "atlas-staking",
@@ -709,6 +710,20 @@ dependencies = [
  "hex",
  "rand 0.8.6",
  "serde",
+ "specta",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "atlas-silent-payments"
+version = "0.1.0"
+dependencies = [
+ "bech32",
+ "hex",
+ "secp256k1",
+ "serde",
+ "serde_json",
+ "sha2",
  "specta",
  "thiserror 1.0.69",
 ]

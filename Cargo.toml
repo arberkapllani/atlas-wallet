@@ -54,6 +54,7 @@ members = [
     "crates/tor",
     "crates/coincontrol",
     "crates/node-config",
+    "crates/silent-payments",
     "apps/desktop/src-tauri",
 ]
 
@@ -161,6 +162,7 @@ atlas-spendlimits = { path = "crates/spendlimits" }
 atlas-tor = { path = "crates/tor" }
 atlas-coincontrol = { path = "crates/coincontrol" }
 atlas-node-config = { path = "crates/node-config" }
+atlas-silent-payments = { path = "crates/silent-payments" }
 
 # Misc
 uuid = { version = "1.10", features = ["v4", "serde"] }

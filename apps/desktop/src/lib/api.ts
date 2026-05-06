@@ -89,7 +89,10 @@ export type {
   Selection,
   NodePolicy,
   NodeDecision,
-  NodePolicyAuditRow
+  NodePolicyAuditRow,
+  SpNetwork,
+  SilentPaymentAddress,
+  DemoSilentPayment
 } from './bindings';
 import type {
   Eip1559Suggestion,
@@ -164,7 +167,10 @@ import type {
   Selection,
   NodePolicy,
   NodeDecision,
-  NodePolicyAuditRow
+  NodePolicyAuditRow,
+  SpNetwork,
+  SilentPaymentAddress,
+  DemoSilentPayment
 } from './bindings';
 
 export interface ChainSummary {
@@ -633,7 +639,21 @@ export const api = {
   nodePolicyCheckUrl: (url: string) =>
     invoke<NodeDecision>('node_policy_check_url', { url }),
   nodePolicyAuditEndpoints: () =>
-    invoke<NodePolicyAuditRow[]>('node_policy_audit_endpoints')
+    invoke<NodePolicyAuditRow[]>('node_policy_audit_endpoints'),
+  silentPaymentsGenerate: (network: SpNetwork) =>
+    invoke<DemoSilentPayment>('silent_payments_generate', { network }),
+  silentPaymentsAddressFromSecrets: (
+    network: SpNetwork,
+    scanSecretHex: string,
+    spendSecretHex: string
+  ) =>
+    invoke<string>('silent_payments_address_from_secrets', {
+      network,
+      scanSecretHex,
+      spendSecretHex
+    }),
+  silentPaymentsDecode: (address: string) =>
+    invoke<SilentPaymentAddress>('silent_payments_decode', { address })
 };
 
 /** Format a base-unit `Amount` as a decimal string with full precision. */

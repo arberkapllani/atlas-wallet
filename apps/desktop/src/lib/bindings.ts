@@ -677,6 +677,22 @@ export const commands = {
 	 *  can colour the list.
 	 */
 	nodePolicyAuditEndpoints: () => typedError<NodePolicyAuditRow[], CmdError>(__TAURI_INVOKE("node_policy_audit_endpoints")),
+	/**
+	 *  Generate a fresh silent-payment receive address (scan + spend
+	 *  keypair) for the requested network. Returns the bech32m address
+	 *  plus the secret material so the caller can back it up offline.
+	 */
+	silentPaymentsGenerate: (network: SpNetwork) => typedError<DemoSilentPayment, CmdError>(__TAURI_INVOKE("silent_payments_generate", { network })),
+	/**
+	 *  Re-derive the encoded address from a previously backed-up
+	 *  scan/spend secret pair.
+	 */
+	silentPaymentsAddressFromSecrets: (network: SpNetwork, scanSecretHex: string, spendSecretHex: string) => typedError<string, CmdError>(__TAURI_INVOKE("silent_payments_address_from_secrets", { network, scanSecretHex, spendSecretHex })),
+	/**
+	 *  Validate a bech32m silent-payment address and return the parsed
+	 *  components (network + scan/spend pubkeys hex).
+	 */
+	silentPaymentsDecode: (address: string) => typedError<SilentPaymentAddress, CmdError>(__TAURI_INVOKE("silent_payments_decode", { address })),
 };
 
 /** Events */
@@ -1186,6 +1202,20 @@ export type Delegation = {
 	pending_rewards: number,
 	// Pending unbonding amount in base units (still locked).
 	unbonding: number,
+};
+
+/**
+ *  Wrap-up payload returned by `generate_demo_address` so the front end
+ *  can show the user every component of the address (and back-up the
+ *  secrets locally).
+ */
+export type DemoSilentPayment = {
+	address: string,
+	network: SpNetwork,
+	scan_secret_hex: string,
+	spend_secret_hex: string,
+	scan_pub_hex: string,
+	spend_pub_hex: string,
 };
 
 export type DiversificationBand = "Diversified" | "Balanced" | "Concentrated" | "HighlyConcentrated";
@@ -2386,6 +2416,15 @@ vendor: string } |
 // Watch-only — cannot sign at all.
 { kind: "watch_only" };
 
+// Silent-payment address: scan pubkey ‖ spend pubkey + network.
+export type SilentPaymentAddress = {
+	network: SpNetwork,
+	// Compressed scan pubkey, 33 bytes hex.
+	scan_pub_hex: string,
+	// Compressed spend pubkey, 33 bytes hex.
+	spend_pub_hex: string,
+};
+
 export type SlippageBand = 
 // <= 50 bps (0.50 %).
 "Low" | 
@@ -2403,6 +2442,9 @@ export type SourceQuote = {
 	// Quoted price.
 	price: number,
 };
+
+// Bitcoin network the silent-payment address is bound to.
+export type SpNetwork = "mainnet" | "testnet" | "regtest";
 
 export type SpendPolicy = {
 	// 0 = disabled.

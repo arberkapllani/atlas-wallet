@@ -1,0 +1,14 @@
+[package]
+name = "atlas-silent-payments"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+specta = { workspace = true }
+thiserror = { workspace = true }
+secp256k1 = { workspace = true }
+bech32 = { workspace = true }
+sha2 = { workspace = true }
+hex = { workspace = true }

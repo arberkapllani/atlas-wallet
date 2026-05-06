@@ -193,6 +193,9 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::node_policy_set,
             commands::node_policy_check_url,
             commands::node_policy_audit_endpoints,
+            commands::silent_payments_generate,
+            commands::silent_payments_address_from_secrets,
+            commands::silent_payments_decode,
         ])
         .events(tauri_specta::collect_events![
             events::WalletLockedEvent,

@@ -3766,3 +3766,50 @@ pub async fn node_policy_audit_endpoints(
     }
     Ok(out)
 }
+
+// ---- Silent payments (BIP352) ---------------------------------------
+//
+// Atlas exposes the cryptographic primitives for BIP352 silent
+// payments so that two Atlas wallets can pay each other with
+// receiver-side privacy without depending on any third-party
+// service. The commands below are pure functions over the
+// receiver's keys and the shared bech32m address envelope.
+
+/// Generate a fresh silent-payment receive address (scan + spend
+/// keypair) for the requested network. Returns the bech32m address
+/// plus the secret material so the caller can back it up offline.
+#[tauri::command]
+#[specta::specta]
+pub async fn silent_payments_generate(
+    network: atlas_silent_payments::SpNetwork,
+) -> CmdResult<atlas_silent_payments::DemoSilentPayment> {
+    atlas_silent_payments::generate_demo_address(network)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Re-derive the encoded address from a previously backed-up
+/// scan/spend secret pair.
+#[tauri::command]
+#[specta::specta]
+pub async fn silent_payments_address_from_secrets(
+    network: atlas_silent_payments::SpNetwork,
+    scan_secret_hex: String,
+    spend_secret_hex: String,
+) -> CmdResult<String> {
+    let addr =
+        atlas_silent_payments::address_from_secrets(network, &scan_secret_hex, &spend_secret_hex)
+            .map_err(|e| CmdError::InvalidInput(e.to_string()))?;
+    addr.encode()
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
+
+/// Validate a bech32m silent-payment address and return the parsed
+/// components (network + scan/spend pubkeys hex).
+#[tauri::command]
+#[specta::specta]
+pub async fn silent_payments_decode(
+    address: String,
+) -> CmdResult<atlas_silent_payments::SilentPaymentAddress> {
+    atlas_silent_payments::SilentPaymentAddress::decode(&address)
+        .map_err(|e| CmdError::InvalidInput(e.to_string()))
+}
