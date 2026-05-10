@@ -1,12 +1,7 @@
 <script lang="ts">
   import Card from '$lib/ui/Card.svelte';
   import Button from '$lib/ui/Button.svelte';
-  import {
-    api,
-    errorMessage,
-    type PhishingReport,
-    type PhishingVerdict
-  } from '$lib/api';
+  import { api, errorMessage, type PhishingReport, type PhishingVerdict } from '$lib/api';
 
   let url = '';
   let report: PhishingReport | null = null;

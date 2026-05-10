@@ -15,10 +15,19 @@
 
   async function submit() {
     error = '';
-    if (password.length < 8) { error = 'Password must be at least 8 characters.'; return; }
-    if (password !== confirmPwd) { error = 'Passwords do not match.'; return; }
+    if (password.length < 8) {
+      error = 'Password must be at least 8 characters.';
+      return;
+    }
+    if (password !== confirmPwd) {
+      error = 'Passwords do not match.';
+      return;
+    }
     const wc = phrase.trim().split(/\s+/).length;
-    if (wc !== 12 && wc !== 24) { error = 'Phrase must be 12 or 24 words.'; return; }
+    if (wc !== 12 && wc !== 24) {
+      error = 'Phrase must be 12 or 24 words.';
+      return;
+    }
     busy = true;
     try {
       await wallet.importExisting(password, phrase, passphrase || undefined);
@@ -35,10 +44,32 @@
   <div class="w-full max-w-xl">
     <Card title="Import a wallet" subtitle="Recover an existing BIP-39 wallet on this device.">
       <div class="space-y-4">
-        <Input label="Recovery phrase" multiline rows={4} bind:value={phrase} placeholder="word1 word2 …" autocomplete="off" />
-        <Input label="Passphrase (optional, BIP-39 25th word)" type="password" bind:value={passphrase} autocomplete="off" />
-        <Input label="New password" type="password" bind:value={password} autocomplete="new-password" />
-        <Input label="Confirm password" type="password" bind:value={confirmPwd} autocomplete="new-password" />
+        <Input
+          label="Recovery phrase"
+          multiline
+          rows={4}
+          bind:value={phrase}
+          placeholder="word1 word2 …"
+          autocomplete="off"
+        />
+        <Input
+          label="Passphrase (optional, BIP-39 25th word)"
+          type="password"
+          bind:value={passphrase}
+          autocomplete="off"
+        />
+        <Input
+          label="New password"
+          type="password"
+          bind:value={password}
+          autocomplete="new-password"
+        />
+        <Input
+          label="Confirm password"
+          type="password"
+          bind:value={confirmPwd}
+          autocomplete="new-password"
+        />
         {#if error}<p class="text-sm text-danger">{error}</p>{/if}
         <div class="flex gap-3">
           <Button variant="secondary" on:click={() => goto('/onboarding')}>Back</Button>

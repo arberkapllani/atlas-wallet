@@ -4,6 +4,7 @@ import { api, type ChainSummary, type Amount } from '$lib/api';
 interface WalletState {
   initialized: boolean;
   unlocked: boolean;
+  statusLoaded: boolean;
   chains: ChainSummary[];
   addresses: Record<string, string>; // chainId -> address
   balances: Record<string, Amount | null>;
@@ -13,6 +14,7 @@ interface WalletState {
 const initial: WalletState = {
   initialized: false,
   unlocked: false,
+  statusLoaded: false,
   chains: [],
   addresses: {},
   balances: {},
@@ -26,14 +28,17 @@ function createWallet() {
   const armAutoLock = () => {
     if (autoLockTimer) clearTimeout(autoLockTimer);
     // 5-minute idle auto-lock.
-    autoLockTimer = setTimeout(() => {
-      void lock();
-    }, 5 * 60 * 1000);
+    autoLockTimer = setTimeout(
+      () => {
+        void lock();
+      },
+      5 * 60 * 1000
+    );
   };
 
   async function refreshStatus() {
     const [initialized, unlocked] = await Promise.all([api.vaultExists(), api.isUnlocked()]);
-    state.update((s) => ({ ...s, initialized, unlocked }));
+    state.update((s) => ({ ...s, initialized, unlocked, statusLoaded: true }));
     if (unlocked) armAutoLock();
   }
 
@@ -82,7 +87,7 @@ function createWallet() {
       clearTimeout(autoLockTimer);
       autoLockTimer = null;
     }
-    state.set({ ...initial, initialized: true, unlocked: false });
+    state.set({ ...initial, initialized: true, unlocked: false, statusLoaded: true });
   }
 
   async function createNew(password: string, wordCount: 12 | 24): Promise<string> {

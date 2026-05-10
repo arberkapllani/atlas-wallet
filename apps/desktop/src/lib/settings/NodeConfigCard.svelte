@@ -95,8 +95,8 @@
       <label class="flex items-center gap-2 text-sm">
         <input type="checkbox" bind:checked={policy.require_local} />
         <span>
-          <strong>Require local node</strong> — block any URL that is not loopback,
-          .onion, or in the trusted-hosts list.
+          <strong>Require local node</strong> — block any URL that is not loopback, .onion, or in the
+          trusted-hosts list.
         </span>
       </label>
       <label class="flex items-center gap-2 text-sm">
@@ -128,9 +128,7 @@
           placeholder="https://mainnet.infura.io/v3/..."
           bind:value={previewUrl}
         />
-        <Button on:click={checkPreview} disabled={busy || !previewUrl.trim()}>
-          Check
-        </Button>
+        <Button on:click={checkPreview} disabled={busy || !previewUrl.trim()}>Check</Button>
       </div>
       {#if previewError}
         <p class="text-xs text-rose-400">{previewError}</p>

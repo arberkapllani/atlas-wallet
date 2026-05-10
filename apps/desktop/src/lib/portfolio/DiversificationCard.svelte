@@ -68,7 +68,10 @@
   }
 </script>
 
-<Card title="Diversification" subtitle="Concentration measured by Herfindahl–Hirschman index across priced assets.">
+<Card
+  title="Diversification"
+  subtitle="Concentration measured by Herfindahl–Hirschman index across priced assets."
+>
   <div class="space-y-4 text-sm">
     {#if error}
       <p class="text-rose-400 text-xs">{error}</p>
@@ -104,10 +107,7 @@
               <span class="font-mono text-fg-muted">{pct(p.weight)}</span>
             </div>
             <div class="h-1.5 rounded bg-bg-elevated overflow-hidden">
-              <div
-                class="h-full bg-accent"
-                style="width: {Math.max(p.weight * 100, 0.5)}%"
-              ></div>
+              <div class="h-full bg-accent" style="width: {Math.max(p.weight * 100, 0.5)}%"></div>
             </div>
           </div>
         {/each}

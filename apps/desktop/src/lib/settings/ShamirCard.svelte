@@ -76,20 +76,30 @@
       <div class="grid grid-cols-2 gap-2">
         <label class="text-xs text-fg-muted block">
           Threshold (T)
-          <input type="number" bind:value={threshold} min="1"
-            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono" />
+          <input
+            type="number"
+            bind:value={threshold}
+            min="1"
+            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono"
+          />
         </label>
         <label class="text-xs text-fg-muted block">
           Total shares (N)
-          <input type="number" bind:value={total} min="1"
-            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono" />
+          <input
+            type="number"
+            bind:value={total}
+            min="1"
+            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono"
+          />
         </label>
       </div>
       <Button variant="primary" on:click={split} disabled={busy || !secretHex.trim()}>
         Split into {total} shares (T={threshold})
       </Button>
       {#if shares.length > 0}
-        <ul class="border border-border-subtle rounded-md divide-y divide-border-subtle text-[11px]">
+        <ul
+          class="border border-border-subtle rounded-md divide-y divide-border-subtle text-[11px]"
+        >
           {#each shares as s}
             <li class="px-2 py-1.5 flex gap-2">
               <span class="font-mono text-fg-muted">x={s.x}</span>

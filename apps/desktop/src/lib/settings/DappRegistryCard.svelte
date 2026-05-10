@@ -98,7 +98,9 @@
         <summary class="cursor-pointer text-fg-muted">
           Curated registry ({curated.length} entries)
         </summary>
-        <ul class="mt-2 border border-border-subtle rounded-md divide-y divide-border-subtle max-h-48 overflow-y-auto">
+        <ul
+          class="mt-2 border border-border-subtle rounded-md divide-y divide-border-subtle max-h-48 overflow-y-auto"
+        >
           {#each curated as e}
             <li class="px-3 py-1.5 flex items-center gap-2">
               <span class="font-medium">{e.name}</span>

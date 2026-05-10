@@ -1,6 +1,6 @@
 <script lang="ts">
   /** Visual variant. */
-  export let variant: 'primary' | 'secondary' | 'ghost' | 'danger' = 'primary';
+  export let variant: 'primary' | 'secondary' | 'ghost' | 'danger' | 'accent' = 'primary';
   export let size: 'sm' | 'md' | 'lg' = 'md';
   export let type: 'button' | 'submit' | 'reset' = 'button';
   export let disabled = false;
@@ -9,10 +9,13 @@
 
   const variants: Record<string, string> = {
     primary:
-      'bg-accent hover:bg-accent-hover text-white shadow-glow disabled:opacity-50',
+      'bg-brand-600 hover:bg-brand-500 text-white shadow-glow disabled:opacity-50 disabled:shadow-none',
+    accent:
+      'bg-accent hover:bg-accent-hover text-white shadow-accentGlow disabled:opacity-50 disabled:shadow-none',
     secondary:
       'bg-bg-elevated hover:bg-border text-fg border border-border disabled:opacity-50',
-    ghost: 'bg-transparent hover:bg-bg-elevated text-fg-muted hover:text-fg',
+    ghost:
+      'bg-transparent hover:bg-bg-elevated text-fg-muted hover:text-fg',
     danger: 'bg-danger/90 hover:bg-danger text-white'
   };
   const sizes: Record<string, string> = {
@@ -24,7 +27,7 @@
 
 <button
   {type}
-  class="inline-flex items-center justify-center gap-2 rounded-xl font-medium transition disabled:cursor-not-allowed {variants[
+  class="inline-flex items-center justify-center gap-2 rounded-xl font-semibold tracking-tight transition-all duration-200 ease-smooth active:scale-[0.98] disabled:cursor-not-allowed {variants[
     variant
   ]} {sizes[size]} {fullWidth ? 'w-full' : ''}"
   disabled={disabled || loading}

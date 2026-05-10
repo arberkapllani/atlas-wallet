@@ -144,9 +144,7 @@
           class="h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono"
         />
       </div>
-      <Button variant="secondary" on:click={encodeExecute} disabled={busy}>
-        Encode execute()
-      </Button>
+      <Button variant="secondary" on:click={encodeExecute} disabled={busy}>Encode execute()</Button>
       {#if encodedCallData}
         <p class="text-[10px] text-fg-subtle font-mono break-all">
           callData = {encodedCallData}
@@ -159,38 +157,59 @@
       <div class="mt-2 grid grid-cols-2 gap-2">
         <label>
           callGasLimit
-          <input type="number" bind:value={callGasLimit}
-            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono" />
+          <input
+            type="number"
+            bind:value={callGasLimit}
+            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono"
+          />
         </label>
         <label>
           verificationGasLimit
-          <input type="number" bind:value={verificationGasLimit}
-            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono" />
+          <input
+            type="number"
+            bind:value={verificationGasLimit}
+            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono"
+          />
         </label>
         <label>
           preVerificationGas
-          <input type="number" bind:value={preVerificationGas}
-            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono" />
+          <input
+            type="number"
+            bind:value={preVerificationGas}
+            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono"
+          />
         </label>
         <label>
           maxFeePerGas
-          <input type="number" bind:value={maxFeePerGas}
-            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono" />
+          <input
+            type="number"
+            bind:value={maxFeePerGas}
+            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono"
+          />
         </label>
         <label>
           maxPriorityFeePerGas
-          <input type="number" bind:value={maxPriorityFeePerGas}
-            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono" />
+          <input
+            type="number"
+            bind:value={maxPriorityFeePerGas}
+            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono"
+          />
         </label>
         <label class="col-span-2">
           initCode
-          <input type="text" bind:value={initCode}
-            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono" />
+          <input
+            type="text"
+            bind:value={initCode}
+            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono"
+          />
         </label>
         <label class="col-span-2">
           paymasterAndData
-          <input type="text" bind:value={paymasterAndData}
-            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono" />
+          <input
+            type="text"
+            bind:value={paymasterAndData}
+            class="mt-1 w-full h-9 px-2 rounded-md bg-bg-elevated border border-border-subtle text-fg text-xs font-mono"
+          />
         </label>
       </div>
     </details>
@@ -210,8 +229,8 @@
           <span class="font-mono break-all">{hashes.packed_hash}</span>
         </p>
         <p class="text-[10px] text-fg-subtle">
-          The wallet's signer (HW or seed-derived key) signs <code>userOpHash</code> as a 65-byte
-          ECDSA signature; that becomes the UserOperation.signature field.
+          The wallet's signer (HW or seed-derived key) signs <code>userOpHash</code> as a 65-byte ECDSA
+          signature; that becomes the UserOperation.signature field.
         </p>
       </div>
     {/if}

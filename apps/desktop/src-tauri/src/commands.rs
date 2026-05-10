@@ -546,6 +546,23 @@ pub async fn lock_wallet(app: AppHandle, state: State<'_, Arc<AppState>>) -> Cmd
     Ok(())
 }
 
+/// Decrypt the current vault with the supplied password and return the BIP-39
+/// recovery phrase. Used by the "Backup recovery phrase" screen in settings.
+/// Does **not** alter the in-memory unlock state — the phrase is returned only
+/// to the requesting frontend window and the password is verified each call.
+#[tauri::command]
+#[specta::specta]
+pub async fn reveal_phrase(
+    state: State<'_, Arc<AppState>>,
+    password: String,
+) -> CmdResult<String> {
+    let vault_path = active_hot_vault_path(&state).await?;
+    let bytes = std::fs::read(&vault_path)?;
+    let vault = EncryptedVault::from_bytes(&bytes)?;
+    let phrase = vault.decrypt(&password)?;
+    Ok(phrase.to_string())
+}
+
 // =============================================================================
 // Address / balance / send (works for both hot and watch-only profiles)
 // =============================================================================

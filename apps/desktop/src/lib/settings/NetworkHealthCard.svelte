@@ -69,7 +69,7 @@
         Not measured yet
       {/if}
     </p>
-    <Button variant="secondary" size="sm" loading={loading} on:click={refresh}>
+    <Button variant="secondary" size="sm" {loading} on:click={refresh}>
       {loading ? 'Probing…' : 'Refresh network'}
     </Button>
   </div>

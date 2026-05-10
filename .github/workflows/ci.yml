@@ -43,6 +43,11 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter atlas-desktop check
+      - run: pnpm --filter atlas-desktop lint
+      - run: pnpm --filter atlas-desktop build:vite
+      - name: pnpm audit (advisory)
+        run: pnpm audit --prod --audit-level high
+        continue-on-error: true
 
   audit:
     name: cargo-audit

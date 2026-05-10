@@ -30,11 +30,7 @@
     loading = true;
     error = '';
     try {
-      events = await api.eventsFilter(
-        minLevel,
-        category === '' ? null : category,
-        100
-      );
+      events = await api.eventsFilter(minLevel, category === '' ? null : category, 100);
     } catch (e) {
       error = errorMessage(e);
     } finally {
@@ -94,10 +90,13 @@
     if (timer) clearInterval(timer);
   });
 
-  $: minLevel, category, load();
+  $: (minLevel, category, load());
 </script>
 
-<Card title="Event log" subtitle="In-memory ring buffer (last ~500 events). Cleared when the wallet quits.">
+<Card
+  title="Event log"
+  subtitle="In-memory ring buffer (last ~500 events). Cleared when the wallet quits."
+>
   <div class="space-y-3 text-sm">
     {#if error}
       <p class="text-rose-400 text-xs">{error}</p>
@@ -140,7 +139,9 @@
     {:else if events.length === 0}
       <p class="text-fg-subtle text-xs">No events match the current filter.</p>
     {:else}
-      <ul class="border border-border-subtle rounded-lg max-h-72 overflow-y-auto divide-y divide-border-subtle">
+      <ul
+        class="border border-border-subtle rounded-lg max-h-72 overflow-y-auto divide-y divide-border-subtle"
+      >
         {#each events as ev}
           <li class="px-3 py-2 flex items-start gap-3">
             <span class="font-mono text-xs text-fg-subtle shrink-0 w-20">

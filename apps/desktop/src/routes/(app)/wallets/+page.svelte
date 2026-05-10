@@ -226,14 +226,8 @@
                     Switch
                   </Button>
                 {/if}
-                <Button variant="ghost" size="sm" on:click={() => startRename(p)}>
-                  Rename
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  on:click={() => (confirmDelete = p)}
-                >
+                <Button variant="ghost" size="sm" on:click={() => startRename(p)}>Rename</Button>
+                <Button variant="ghost" size="sm" on:click={() => (confirmDelete = p)}>
                   Delete
                 </Button>
               </div>
@@ -242,9 +236,7 @@
         </div>
       {/each}
       {#if profiles.length === 0}
-        <div class="px-6 py-8 text-sm text-fg-muted text-center">
-          No wallets yet.
-        </div>
+        <div class="px-6 py-8 text-sm text-fg-muted text-center">No wallets yet.</div>
       {/if}
     </div>
   </Card>
@@ -253,13 +245,16 @@
 <!-- Delete confirmation -->
 {#if confirmDelete}
   <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-bg-subtle border border-border-subtle rounded-2xl shadow-card w-full max-w-md p-6 space-y-4">
+    <div
+      class="bg-bg-subtle border border-border-subtle rounded-2xl shadow-card w-full max-w-md p-6 space-y-4"
+    >
       <h3 class="font-semibold text-lg">Delete this wallet?</h3>
       <p class="text-sm text-fg-muted">
         This permanently removes <strong class="text-fg">{confirmDelete.name}</strong>
         and its encrypted vault from disk.
-        <strong class="text-warning">If you have not backed up the seed phrase,
-        the funds will be lost forever.</strong>
+        <strong class="text-warning"
+          >If you have not backed up the seed phrase, the funds will be lost forever.</strong
+        >
       </p>
       <div class="flex justify-end gap-2 pt-2">
         <Button variant="ghost" on:click={() => (confirmDelete = null)}>Cancel</Button>
@@ -278,20 +273,25 @@
 <!-- Add-wallet modal -->
 {#if addOpen}
   <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-    <div class="bg-bg-subtle border border-border-subtle rounded-2xl shadow-card w-full max-w-md p-6 space-y-4">
+    <div
+      class="bg-bg-subtle border border-border-subtle rounded-2xl shadow-card w-full max-w-md p-6 space-y-4"
+    >
       <div class="flex items-center justify-between">
         <h3 class="font-semibold text-lg">Add a new wallet</h3>
-        <button class="text-fg-muted hover:text-fg text-xl leading-none px-2" on:click={closeAdd}>×</button>
+        <button class="text-fg-muted hover:text-fg text-xl leading-none px-2" on:click={closeAdd}
+          >×</button
+        >
       </div>
 
       {#if newPhrase}
         <div class="space-y-3">
           <p class="text-sm text-fg-muted">
             <strong class="text-warning">Write this phrase down now.</strong>
-            It is the only way to recover this wallet. Atlas will never show
-            it again.
+            It is the only way to recover this wallet. GreenWallet will never show it again.
           </p>
-          <div class="grid grid-cols-3 gap-2 font-mono text-sm bg-bg-elevated rounded-xl p-4 border border-border">
+          <div
+            class="grid grid-cols-3 gap-2 font-mono text-sm bg-bg-elevated rounded-xl p-4 border border-border"
+          >
             {#each newPhrase.split(/\s+/) as word, i}
               <div class="flex items-center gap-2">
                 <span class="text-fg-subtle text-xs w-5 text-right">{i + 1}.</span>
@@ -303,8 +303,8 @@
         </div>
       {:else}
         <p class="text-sm text-fg-muted">
-          Each wallet has its own seed phrase and vault password. The new
-          wallet becomes active automatically.
+          Each wallet has its own seed phrase and vault password. The new wallet becomes active
+          automatically.
         </p>
 
         <div class="space-y-3">
@@ -312,13 +312,17 @@
             <span class="text-sm text-fg-muted block mb-2">Phrase length</span>
             <div class="grid grid-cols-2 gap-2">
               <button
-                class="rounded-xl px-3 py-2 border text-sm transition {addWordCount === 12 ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated'}"
-                on:click={() => (addWordCount = 12)}
-              >12 words</button>
+                class="rounded-xl px-3 py-2 border text-sm transition {addWordCount === 12
+                  ? 'border-accent bg-accent/10'
+                  : 'border-border bg-bg-elevated'}"
+                on:click={() => (addWordCount = 12)}>12 words</button
+              >
               <button
-                class="rounded-xl px-3 py-2 border text-sm transition {addWordCount === 24 ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated'}"
-                on:click={() => (addWordCount = 24)}
-              >24 words</button>
+                class="rounded-xl px-3 py-2 border text-sm transition {addWordCount === 24
+                  ? 'border-accent bg-accent/10'
+                  : 'border-border bg-bg-elevated'}"
+                on:click={() => (addWordCount = 24)}>24 words</button
+              >
             </div>
           </div>
 

@@ -148,7 +148,9 @@
         {:else}
           <div class="flex items-center gap-2 text-fg-subtle">
             <span>scan/spend secrets</span>
-            <code class="flex-1">{shortHex(demo.scan_secret_hex)} · {shortHex(demo.spend_secret_hex)}</code>
+            <code class="flex-1"
+              >{shortHex(demo.scan_secret_hex)} · {shortHex(demo.spend_secret_hex)}</code
+            >
           </div>
         {/if}
       </div>
@@ -169,9 +171,7 @@
         bind:value={spendSecret}
       />
     </div>
-    <Button on:click={derive} disabled={busy || !scanSecret || !spendSecret}>
-      Derive
-    </Button>
+    <Button on:click={derive} disabled={busy || !scanSecret || !spendSecret}>Derive</Button>
     {#if deriveError}
       <p class="text-xs text-rose-400">{deriveError}</p>
     {:else if derivedAddress}

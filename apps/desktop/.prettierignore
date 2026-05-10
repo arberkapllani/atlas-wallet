@@ -1,0 +1,9 @@
+.svelte-kit/
+build/
+node_modules/
+src-tauri/target/
+src-tauri/gen/
+src/lib/bindings.ts
+*.log
+package-lock.json
+pnpm-lock.yaml

@@ -3,7 +3,13 @@
   import Card from '$lib/ui/Card.svelte';
   import Input from '$lib/ui/Input.svelte';
   import Button from '$lib/ui/Button.svelte';
-  import { api, errorMessage, type ExchangeQuote, type ExchangeSwapResult, type SlippageBand } from '$lib/api';
+  import {
+    api,
+    errorMessage,
+    type ExchangeQuote,
+    type ExchangeSwapResult,
+    type SlippageBand
+  } from '$lib/api';
 
   /**
    * Phase 5.1 — live swaps via 1inch v6 on Ethereum mainnet.
@@ -238,12 +244,7 @@
             {/each}
           </select>
         </div>
-        <Input
-          type="text"
-          bind:value={amount}
-          on:input={scheduleQuote}
-          placeholder="0.0"
-        />
+        <Input type="text" bind:value={amount} on:input={scheduleQuote} placeholder="0.0" />
       </div>
 
       <div class="flex justify-center">
@@ -297,7 +298,8 @@
           <div class="flex justify-between">
             <span>Rate</span>
             <span class="font-mono text-fg">
-              1 {fromSymbol} ≈ {rate.toFixed(6)} {toSymbol}
+              1 {fromSymbol} ≈ {rate.toFixed(6)}
+              {toSymbol}
             </span>
           </div>
           <div class="flex justify-between">
@@ -324,18 +326,18 @@
             </span>
           {/if}
           <div class="flex gap-1">
-          {#each [50, 100, 300] as bps}
-            <button
-              type="button"
-              on:click={() => (slippageBps = bps)}
-              class="px-2.5 py-1 rounded-lg border text-xs transition
+            {#each [50, 100, 300] as bps}
+              <button
+                type="button"
+                on:click={() => (slippageBps = bps)}
+                class="px-2.5 py-1 rounded-lg border text-xs transition
                      {slippageBps === bps
-                       ? 'bg-accent/15 border-accent text-fg'
-                       : 'bg-bg-elevated border-border text-fg-muted hover:border-accent'}"
-            >
-              {(bps / 100).toFixed(bps % 100 === 0 ? 0 : 1)}%
-            </button>
-          {/each}
+                  ? 'bg-accent/15 border-accent text-fg'
+                  : 'bg-bg-elevated border-border text-fg-muted hover:border-accent'}"
+              >
+                {(bps / 100).toFixed(bps % 100 === 0 ? 0 : 1)}%
+              </button>
+            {/each}
           </div>
         </div>
       </div>
@@ -344,13 +346,15 @@
         {loading ? 'Quoting…' : 'Review swap'}
       </Button>
       <p class="text-[11px] text-fg-subtle text-center">
-        Atlas signs and broadcasts on-device. ERC-20 sources auto-approve before the swap.
+        GreenWallet signs and broadcasts on-device. ERC-20 sources auto-approve before the swap.
       </p>
     </div>
   </Card>
 
   <p class="text-xs text-fg-subtle">
-    Tip: configure your 1inch API key in <a href="/settings" class="text-accent hover:underline">Settings</a>
+    Tip: configure your 1inch API key in <a href="/settings" class="text-accent hover:underline"
+      >Settings</a
+    >
     for higher rate limits.
   </p>
 </div>
@@ -380,7 +384,8 @@
           <div class="flex justify-between">
             <span class="text-fg-muted">You receive (est.)</span>
             <span class="font-mono">
-              {quote ? fromBaseUnits(quote.to_amount, toTok.decimals) : ''} {toSymbol}
+              {quote ? fromBaseUnits(quote.to_amount, toTok.decimals) : ''}
+              {toSymbol}
             </span>
           </div>
           <div class="flex justify-between">
@@ -392,10 +397,12 @@
             <span>{(slippageBps / 100).toFixed(slippageBps % 100 === 0 ? 0 : 1)}%</span>
           </div>
           {#if fromSymbol !== 'ETH'}
-            <p class="text-xs text-warning bg-warning/10 border border-warning/30 rounded-lg p-2.5 mt-3">
-              Atlas will broadcast a one-time
-              <span class="font-mono">approve</span> for {amount} {fromSymbol} to the
-              1inch router before the swap.
+            <p
+              class="text-xs text-warning bg-warning/10 border border-warning/30 rounded-lg p-2.5 mt-3"
+            >
+              GreenWallet will broadcast a one-time
+              <span class="font-mono">approve</span> for {amount}
+              {fromSymbol} to the 1inch router before the swap.
             </p>
           {/if}
         </div>
@@ -418,14 +425,18 @@
           {#if result.approve_txid}
             <div>
               <div class="text-fg-muted text-xs mb-1">Approve tx</div>
-              <div class="font-mono text-xs break-all bg-bg-elevated border border-border rounded-lg p-2">
+              <div
+                class="font-mono text-xs break-all bg-bg-elevated border border-border rounded-lg p-2"
+              >
                 {result.approve_txid}
               </div>
             </div>
           {/if}
           <div>
             <div class="text-fg-muted text-xs mb-1">Swap tx</div>
-            <div class="font-mono text-xs break-all bg-bg-elevated border border-border rounded-lg p-2">
+            <div
+              class="font-mono text-xs break-all bg-bg-elevated border border-border rounded-lg p-2"
+            >
               {result.txid}
             </div>
           </div>

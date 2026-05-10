@@ -253,12 +253,12 @@
     {#if trades.length === 0}
       <p class="text-fg-subtle text-xs">No trades recorded.</p>
     {:else}
-      <ul class="border border-border-subtle rounded-lg divide-y divide-border-subtle max-h-64 overflow-y-auto">
+      <ul
+        class="border border-border-subtle rounded-lg divide-y divide-border-subtle max-h-64 overflow-y-auto"
+      >
         {#each trades as t, i}
           <li class="px-3 py-2 flex items-center gap-3 text-xs">
-            <span
-              class="font-medium {t.kind === 'Buy' ? 'text-emerald-400' : 'text-rose-400'}"
-            >
+            <span class="font-medium {t.kind === 'Buy' ? 'text-emerald-400' : 'text-rose-400'}">
               {t.kind}
             </span>
             <span class="font-mono uppercase">{t.asset}</span>
@@ -290,11 +290,7 @@
           <option value="AverageCost">Average cost</option>
         </select>
       </label>
-      <Button
-        variant="primary"
-        on:click={compute}
-        disabled={busy || trades.length === 0}
-      >
+      <Button variant="primary" on:click={compute} disabled={busy || trades.length === 0}>
         Compute P&L
       </Button>
     </div>
@@ -332,8 +328,7 @@
                 <span class="font-mono">{p.quantity_held}</span>
                 <span class="text-fg-subtle text-[10px] ml-auto">
                   cost: <span class="font-mono">{fmtUsd(p.cost_basis_usd)}</span>
-                  &middot;
-                  mkt: <span class="font-mono">{fmtUsd(p.market_value_usd)}</span>
+                  &middot; mkt: <span class="font-mono">{fmtUsd(p.market_value_usd)}</span>
                   &middot;
                   <span
                     class="font-mono {p.unrealized_pnl_usd >= 0

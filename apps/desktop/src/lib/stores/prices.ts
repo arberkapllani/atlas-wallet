@@ -33,9 +33,7 @@ async function fetchOnce() {
 }
 
 export async function startPriceFeed(chainIds: string[]) {
-  trackedIds = Array.from(
-    new Set(chainIds.map((c) => COINGECKO_IDS[c]).filter(Boolean))
-  );
+  trackedIds = Array.from(new Set(chainIds.map((c) => COINGECKO_IDS[c]).filter(Boolean)));
   await fetchOnce();
   if (interval) clearInterval(interval);
   // CoinGecko cache TTL is 5 min; refresh every 60s and rely on backend

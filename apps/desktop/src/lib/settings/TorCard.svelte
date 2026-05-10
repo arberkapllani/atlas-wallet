@@ -239,10 +239,8 @@
     <div class="flex flex-wrap gap-2">
       <Button variant="secondary" on:click={start} disabled={busy}>Start</Button>
       <Button variant="secondary" on:click={stop} disabled={busy}>Stop</Button>
-      <Button
-        variant="secondary"
-        on:click={newCircuit}
-        disabled={busy || status?.kind !== 'ready'}>New circuit</Button
+      <Button variant="secondary" on:click={newCircuit} disabled={busy || status?.kind !== 'ready'}
+        >New circuit</Button
       >
       <Button variant="secondary" on:click={refresh} disabled={busy}>Refresh</Button>
     </div>

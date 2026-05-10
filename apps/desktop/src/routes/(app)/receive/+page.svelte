@@ -41,10 +41,7 @@
         <div class="flex flex-col items-center gap-4 py-4">
           <QrCode value={address} size={220} />
           <div class="font-mono text-sm break-all text-center px-4 select-all">{address}</div>
-          <button
-            on:click={copy}
-            class="text-xs text-accent hover:text-accent-hover"
-          >
+          <button on:click={copy} class="text-xs text-accent hover:text-accent-hover">
             Copy address
           </button>
           {#if chain}

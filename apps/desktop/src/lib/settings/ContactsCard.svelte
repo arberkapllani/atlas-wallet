@@ -34,9 +34,7 @@
     loading = true;
     error = '';
     try {
-      contacts = q.trim()
-        ? await api.contactsSearch(q)
-        : await api.contactsList();
+      contacts = q.trim() ? await api.contactsSearch(q) : await api.contactsList();
     } catch (e) {
       error = errorMessage(e);
     } finally {
@@ -132,9 +130,7 @@
         placeholder="Search by name or note…"
         class="flex-1 h-10 px-3 rounded-lg bg-bg-elevated border border-border-subtle text-fg focus:outline-none focus:ring-2 focus:ring-accent/40"
       />
-      <Button variant="secondary" on:click={startAdd} disabled={formOpen}>
-        Add contact
-      </Button>
+      <Button variant="secondary" on:click={startAdd} disabled={formOpen}>Add contact</Button>
     </div>
 
     {#if loading}
@@ -161,12 +157,8 @@
               </ul>
             </div>
             <div class="flex flex-col gap-1 shrink-0">
-              <Button variant="secondary" on:click={() => startEdit(c)}>
-                Edit
-              </Button>
-              <Button variant="secondary" on:click={() => remove(c.id)}>
-                Remove
-              </Button>
+              <Button variant="secondary" on:click={() => startEdit(c)}>Edit</Button>
+              <Button variant="secondary" on:click={() => remove(c.id)}>Remove</Button>
             </div>
           </li>
         {/each}
@@ -232,9 +224,7 @@
           >
             {saving ? 'Saving…' : 'Save'}
           </Button>
-          <Button variant="secondary" on:click={resetForm} disabled={saving}>
-            Cancel
-          </Button>
+          <Button variant="secondary" on:click={resetForm} disabled={saving}>Cancel</Button>
         </div>
       </div>
     {/if}

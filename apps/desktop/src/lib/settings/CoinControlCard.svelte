@@ -37,19 +37,8 @@
   let target = 0;
   let strategy: SelectionStrategy = 'largest_first';
 
-  const ORIGINS: Origin[] = [
-    'unknown',
-    'kyc_tainted',
-    'p2p',
-    'mining',
-    'private',
-    'donation'
-  ];
-  const STRATEGIES: SelectionStrategy[] = [
-    'smallest_first',
-    'largest_first',
-    'branch_and_bound'
-  ];
+  const ORIGINS: Origin[] = ['unknown', 'kyc_tainted', 'p2p', 'mining', 'private', 'donation'];
+  const STRATEGIES: SelectionStrategy[] = ['smallest_first', 'largest_first', 'branch_and_bound'];
 
   function originLabel(o: Origin): string {
     switch (o) {
@@ -226,7 +215,10 @@
   onMount(refresh);
 </script>
 
-<Card title="Coin control · UTXO labels" subtitle="Track UTXO provenance to avoid linking KYC-tainted coins with private ones.">
+<Card
+  title="Coin control · UTXO labels"
+  subtitle="Track UTXO provenance to avoid linking KYC-tainted coins with private ones."
+>
   {#if error}
     <p class="text-sm text-rose-400">{error}</p>
   {/if}
@@ -302,7 +294,8 @@
   <section class="space-y-2">
     <h3 class="text-sm font-semibold">Privacy planner</h3>
     <p class="text-xs text-slate-400">
-      Paste an array of <code>LabeledUtxo</code> objects (or load the demo pool) to detect mixing problems and ask the wallet for a single-bucket selection.
+      Paste an array of <code>LabeledUtxo</code> objects (or load the demo pool) to detect mixing problems
+      and ask the wallet for a single-bucket selection.
     </p>
     <div class="flex gap-2">
       <Button on:click={loadDemoPool} disabled={busy}>Load demo pool</Button>
@@ -361,7 +354,9 @@
         </div>
         {#each selection.inputs as input}
           <div class="font-mono text-[11px] text-slate-300">
-            {input.utxo.txid.slice(0, 12)}…:{input.utxo.vout} · {input.value} sats · {originLabel(input.label.origin)}
+            {input.utxo.txid.slice(0, 12)}…:{input.utxo.vout} · {input.value} sats · {originLabel(
+              input.label.origin
+            )}
           </div>
         {/each}
       </div>

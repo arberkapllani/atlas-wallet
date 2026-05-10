@@ -2,12 +2,7 @@
   import { onMount } from 'svelte';
   import Card from '$lib/ui/Card.svelte';
   import Button from '$lib/ui/Button.svelte';
-  import {
-    api,
-    errorMessage,
-    type SpendPolicy,
-    type SpendState
-  } from '$lib/api';
+  import { api, errorMessage, type SpendPolicy, type SpendState } from '$lib/api';
 
   let policy: SpendPolicy = {
     daily_usd_limit: 0,
@@ -137,8 +132,8 @@
     <label class="flex items-start gap-2">
       <input type="checkbox" bind:checked={hardBlock} class="mt-1" />
       <span class="text-fg-muted text-xs">
-        Hard-block daily cap. When unchecked, exceeding the daily limit only
-        requires an extra confirmation; per-transaction limit is always a hard block.
+        Hard-block daily cap. When unchecked, exceeding the daily limit only requires an extra
+        confirmation; per-transaction limit is always a hard block.
       </span>
     </label>
 
@@ -154,11 +149,11 @@
     <div class="rounded-lg border border-border-subtle p-3 space-y-1">
       <p class="font-medium text-xs text-fg-muted">Current 24-hour window</p>
       <p class="font-mono text-xs">
-        spent: {state.spent_in_window_usd} USD &middot; window opened: {fmtTs(state.window_started_at)}
+        spent: {state.spent_in_window_usd} USD &middot; window opened: {fmtTs(
+          state.window_started_at
+        )}
       </p>
-      <Button variant="secondary" on:click={reset} disabled={saving}>
-        Reset window
-      </Button>
+      <Button variant="secondary" on:click={reset} disabled={saving}>Reset window</Button>
     </div>
   </div>
 </Card>

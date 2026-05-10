@@ -2,10 +2,13 @@
   export let title: string | undefined = undefined;
   export let subtitle: string | undefined = undefined;
   export let padded = true;
+  /** Adds a soft brand glow at the top — use sparingly for hero cards. */
+  export let glow = false;
 </script>
 
 <section
-  class="rounded-2xl bg-bg-subtle border border-border-subtle shadow-card overflow-hidden"
+  class="rounded-2xl bg-bg-subtle border border-border-subtle shadow-card overflow-hidden relative"
+  class:bg-brand-soft={glow}
 >
   {#if title}
     <header class="px-6 pt-5 pb-3 border-b border-border-subtle">

@@ -21,8 +21,7 @@
   const defaultConfig: ApprovalConfig = {
     blocklist: [],
     allowlist: [],
-    unlimited_threshold:
-      '1606938044258990275541962092341162602522202993782792835301376',
+    unlimited_threshold: '1606938044258990275541962092341162602522202993782792835301376',
     stale_after_secs: 60 * 60 * 24 * 180
   };
 
@@ -66,8 +65,7 @@
         token_decimals: 6,
         spender_address: '0x0000000000000000000000000000000000000bad',
         spender_label: null,
-        allowance:
-          '115792089237316195423570985008687907853269984665640564039457584007913129639935',
+        allowance: '115792089237316195423570985008687907853269984665640564039457584007913129639935',
         kind: 'Erc20',
         first_seen: now - 86_400 * 30,
         last_used: null
@@ -91,8 +89,7 @@
         token_decimals: 18,
         spender_address: '0xe592427a0aece92de3edee1f18e0157c05861564',
         spender_label: 'Uniswap V3 Router',
-        allowance:
-          '115792089237316195423570985008687907853269984665640564039457584007913129639935',
+        allowance: '115792089237316195423570985008687907853269984665640564039457584007913129639935',
         kind: 'Erc20',
         first_seen: now - 86_400 * 400,
         last_used: now - 86_400 * 300
@@ -145,11 +142,7 @@
 
     <div class="flex items-center gap-2 flex-wrap">
       <Button variant="primary" on:click={loadDemo} disabled={busy}>Load demo data</Button>
-      <Button
-        variant="secondary"
-        on:click={analysePasted}
-        disabled={busy || !pasted.trim()}
-      >
+      <Button variant="secondary" on:click={analysePasted} disabled={busy || !pasted.trim()}>
         Analyse pasted JSON
       </Button>
       {#if rows.length > 0 || pasted}
@@ -187,7 +180,9 @@
     {/if}
 
     {#if rows.length > 0}
-      <ul class="border border-border-subtle rounded-lg divide-y divide-border-subtle max-h-80 overflow-y-auto">
+      <ul
+        class="border border-border-subtle rounded-lg divide-y divide-border-subtle max-h-80 overflow-y-auto"
+      >
         {#each rows as r}
           <li class="px-3 py-2 space-y-1">
             <div class="flex items-baseline justify-between gap-2">

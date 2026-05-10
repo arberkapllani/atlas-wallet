@@ -1,13 +1,7 @@
 <script lang="ts">
   import Card from '$lib/ui/Card.svelte';
   import Button from '$lib/ui/Button.svelte';
-  import {
-    api,
-    errorMessage,
-    type GalleryFilter,
-    type GalleryView,
-    type OwnedNft
-  } from '$lib/api';
+  import { api, errorMessage, type GalleryFilter, type GalleryView, type OwnedNft } from '$lib/api';
 
   let raw = '';
   let hideSpam = true;
@@ -146,7 +140,8 @@
         <div class="flex gap-4">
           <span><span class="text-fg-muted">Collections:</span> {result.total_collections}</span>
           <span><span class="text-fg-muted">Items:</span> {result.total_items}</span>
-          <span><span class="text-fg-muted">Total est. value:</span>
+          <span
+            ><span class="text-fg-muted">Total est. value:</span>
             <span class="font-mono">{fmtUsd(result.total_value_usd)}</span>
           </span>
         </div>
@@ -177,7 +172,8 @@
             <ul class="mt-1 list-disc list-inside text-fg-muted">
               {#each result.hidden_items as h}
                 <li class="font-mono text-[10px]">
-                  {h.chain_id} {h.contract.slice(0, 10)}… #{h.token_id}
+                  {h.chain_id}
+                  {h.contract.slice(0, 10)}… #{h.token_id}
                   {h.name ? `— ${h.name}` : ''}
                 </li>
               {/each}

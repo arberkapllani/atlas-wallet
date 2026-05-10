@@ -2,8 +2,29 @@
 
 Sovereign, multi-chain desktop wallet — a non-custodial, open-source cryptocurrency wallet for Windows, macOS, and Linux.
 
-> **Status:** Phase 1 — scaffolding + Bitcoin + EVM (Ethereum, Polygon, BSC, Arbitrum, Optimism, Base).
-> Solana, Cosmos, and other chains will be added in Phase 2. Swap (Phase 3) and hardware wallets (Phase 4) follow.
+> **Status:** pre-1.0, **unaudited**. Do **not** store significant funds yet. See [SECURITY.md](SECURITY.md) and [AUDIT.md](AUDIT.md).
+
+## What's in the box
+
+**Chains:** Bitcoin (BIP84/Taproot/Silent Payments), Ethereum + EVM L2s
+(Polygon, BSC, Arbitrum, Optimism, Base), Solana, Cosmos hub, Cardano, Tron.
+
+**Trading:** in-app swap aggregator across 1inch, Jupiter, THORChain and
+ChangeNow with a unified routing layer; MoonPay on/off-ramp.
+
+**Wallet types:** hot, watch-only, hardware (Ledger, Trezor), multisig BTC
+(PSBT) and EVM (Safe), ERC-4337 smart-account support, Shamir backups.
+
+**Privacy & safety:** Tor transport, anti-phishing phrase, address-poisoning
+detection, calldata + EIP-712 risk decoding, approvals dashboard, blocklist,
+spend limits, custom RPC + node policy enforcement.
+
+**Other:** WalletConnect v2, dApp registry, NFT gallery, staking aggregator,
+PnL with multiple accounting methods, transaction history, contacts &
+address book, encrypted notes per tx, biometric unlock, recovery drills.
+
+> Not every feature is exposed in the UI yet — the Rust backend ships ahead
+> of the SvelteKit surface. See [CHANGELOG.md](CHANGELOG.md) for status.
 
 ## Architecture
 
@@ -23,8 +44,13 @@ atlas/
     ├── chain-traits/         # ChainProvider trait + shared types
     ├── chain-bitcoin/        # BTC (BIP84/P2WPKH, mempool.space)
     ├── chain-evm/            # Eth + L2s (alloy, EIP-1559)
-    ├── profile/              # Multi-wallet + watch-only registry
-    └── price-oracle/         # CoinGecko price feeds
+    ├── chain-solana/  chain-cosmos/  chain-cardano/  chain-tron/
+    ├── exchange-router/  exchange-1inch/  exchange-jupiter/  exchange-thorchain/  exchange-changenow/
+    ├── walletconnect/  dapp-registry/  aa-erc4337/  multisig-btc/  multisig-evm/
+    ├── hardware-ledger/  hardware-trezor/
+    ├── tor/  silent-payments/  phishing/  address-poisoning/  approvals/  calldata/  eip712/
+    ├── price-oracle/  tx-history/  pnl/  staking/  nft-gallery/  contacts/  txnotes/
+    └── ... (60 crates total)
 ```
 
 ## Prerequisites
@@ -91,11 +117,14 @@ pnpm tauri build
 
 ## Roadmap
 
-- [x] Phase 1: BTC + EVM (Eth, Polygon, BSC, Arbitrum, Optimism, Base)
-- [ ] Phase 2: Solana, Cosmos hub, Avalanche C-Chain
-- [ ] Phase 3: Swap (1inch, Jupiter, THORChain) — KYC-free crypto-to-crypto
-- [ ] Phase 4: Hardware wallets (Ledger, Trezor)
-- [ ] Phase 5: Auto-update + signed builds + distribution
+- [x] Multi-chain backend (BTC, EVM L2s, Solana, Cosmos, Cardano, Tron) — code complete, UI surfacing in progress.
+- [x] Swap aggregator + on-ramp — backend wired, basic UI shipped.
+- [x] Hardware wallets (Ledger, Trezor) — backend wired; pairing UX in progress.
+- [x] WalletConnect v2 + dApp registry — backend wired.
+- [ ] Third-party security audit.
+- [ ] Code-signed installers (Authenticode + Apple Developer ID + GPG).
+- [ ] Signed auto-updater (`tauri-plugin-updater`).
+- [ ] 1.0 release.
 
 ## License
 

@@ -82,9 +82,9 @@
 <Card title="Swap fee &amp; MEV protection">
   <div class="space-y-5 text-sm">
     <p class="text-fg-muted">
-      Atlas takes a small fee on every swap to fund development. Tune it here, set
-      a THORChain affiliate name for cross-chain swaps, and toggle Flashbots Protect
-      to route Ethereum-mainnet transactions through a private mempool.
+      Atlas takes a small fee on every swap to fund development. Tune it here, set a THORChain
+      affiliate name for cross-chain swaps, and toggle Flashbots Protect to route Ethereum-mainnet
+      transactions through a private mempool.
     </p>
 
     <Input
@@ -113,8 +113,8 @@
           <div class="font-medium">Flashbots Protect</div>
           <p class="text-xs text-fg-muted mt-1">
             Routes Ethereum-mainnet transactions through
-            <span class="font-mono">rpc.flashbots.net</span> instead of the public
-            mempool, blocking sandwich and front-run attacks on swaps and large sends.
+            <span class="font-mono">rpc.flashbots.net</span> instead of the public mempool, blocking sandwich
+            and front-run attacks on swaps and large sends.
           </p>
         </div>
         <button
@@ -123,8 +123,8 @@
           disabled={saving}
           class="shrink-0 px-3 py-1.5 rounded-lg text-xs font-medium border transition
                  {flashbots
-                   ? 'bg-success/15 border-success/40 text-success'
-                   : 'bg-bg-elevated border-border text-fg-muted hover:border-accent'}"
+            ? 'bg-success/15 border-success/40 text-success'
+            : 'bg-bg-elevated border-border text-fg-muted hover:border-accent'}"
           aria-pressed={flashbots}
         >
           {flashbots ? 'Enabled' : 'Disabled'}

@@ -63,8 +63,7 @@
   <div class="space-y-4 text-sm">
     <p class="text-fg-muted">
       Atlas talks to the 1inch v6 aggregator for EVM swaps. Get a free API key at
-      <span class="font-mono text-xs">portal.1inch.dev</span> — Atlas stores it locally,
-      never on a server.
+      <span class="font-mono text-xs">portal.1inch.dev</span> — Atlas stores it locally, never on a server.
     </p>
 
     <div class="flex items-center justify-between">
@@ -105,9 +104,7 @@
         {saving ? 'Saving…' : 'Save'}
       </Button>
       {#if cfg?.api_key_set}
-        <Button variant="secondary" on:click={clearKey} disabled={saving}>
-          Clear key
-        </Button>
+        <Button variant="secondary" on:click={clearKey} disabled={saving}>Clear key</Button>
       {/if}
     </div>
   </div>

@@ -1,0 +1,32 @@
+name: Feature request
+description: Suggest an enhancement to Atlas
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user pain point does this address?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+  - type: dropdown
+    id: scope
+    attributes:
+      label: Scope
+      options:
+        - Frontend (UI/UX)
+        - Backend (Rust crate)
+        - New chain support
+        - New exchange / on-ramp integration
+        - Hardware wallet
+        - Other

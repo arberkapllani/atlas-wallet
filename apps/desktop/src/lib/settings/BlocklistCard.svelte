@@ -2,12 +2,7 @@
   import { onMount } from 'svelte';
   import Card from '$lib/ui/Card.svelte';
   import Button from '$lib/ui/Button.svelte';
-  import {
-    api,
-    errorMessage,
-    type BlocklistEntry,
-    type BlocklistCategory
-  } from '$lib/api';
+  import { api, errorMessage, type BlocklistEntry, type BlocklistCategory } from '$lib/api';
 
   const CATEGORIES: BlocklistCategory[] = [
     'Drainer',
@@ -116,7 +111,10 @@
   onMount(load);
 </script>
 
-<Card title="Blocklist" subtitle="Addresses Atlas will refuse to send to. Stored locally; never synced.">
+<Card
+  title="Blocklist"
+  subtitle="Addresses Atlas will refuse to send to. Stored locally; never synced."
+>
   <div class="space-y-3 text-sm">
     {#if error}
       <p class="text-rose-400 text-xs">{error}</p>
@@ -192,7 +190,9 @@
     {#if entries.length === 0}
       <p class="text-fg-subtle text-xs">No addresses blocked.</p>
     {:else}
-      <ul class="border border-border-subtle rounded-lg divide-y divide-border-subtle max-h-64 overflow-y-auto">
+      <ul
+        class="border border-border-subtle rounded-lg divide-y divide-border-subtle max-h-64 overflow-y-auto"
+      >
         {#each entries as e}
           <li class="px-3 py-2 flex items-start gap-3">
             <div class="flex-1 min-w-0">

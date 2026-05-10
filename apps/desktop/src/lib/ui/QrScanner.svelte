@@ -73,7 +73,9 @@
 </script>
 
 <div class="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-  <div class="bg-bg-subtle border border-border-subtle rounded-2xl shadow-card w-full max-w-md overflow-hidden">
+  <div
+    class="bg-bg-subtle border border-border-subtle rounded-2xl shadow-card w-full max-w-md overflow-hidden"
+  >
     <div class="px-5 py-4 border-b border-border-subtle flex items-center justify-between">
       <h2 class="font-semibold">Scan QR code</h2>
       <button
@@ -86,9 +88,7 @@
     <div class="p-5 space-y-3">
       {#if error}
         <p class="text-sm text-danger">Camera error: {error}</p>
-        <p class="text-xs text-fg-subtle">
-          Make sure Atlas has permission to use your camera.
-        </p>
+        <p class="text-xs text-fg-subtle">Make sure Atlas has permission to use your camera.</p>
       {:else}
         <div class="relative aspect-square w-full bg-black rounded-xl overflow-hidden">
           <!-- svelte-ignore a11y-media-has-caption -->

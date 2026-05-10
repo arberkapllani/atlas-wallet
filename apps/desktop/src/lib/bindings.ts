@@ -13,6 +13,13 @@ export const commands = {
 	importWallet: (args: ImportWalletArgs) => typedError<null, CmdError>(__TAURI_INVOKE("import_wallet", { args })),
 	unlockWallet: (password: string) => typedError<null, CmdError>(__TAURI_INVOKE("unlock_wallet", { password })),
 	lockWallet: () => typedError<null, CmdError>(__TAURI_INVOKE("lock_wallet")),
+	/**
+	 *  Decrypt the current vault with the supplied password and return the BIP-39
+	 *  recovery phrase. Used by the "Backup recovery phrase" screen in settings.
+	 *  Does **not** alter the in-memory unlock state — the phrase is returned only
+	 *  to the requesting frontend window and the password is verified each call.
+	 */
+	revealPhrase: (password: string) => typedError<string, CmdError>(__TAURI_INVOKE("reveal_phrase", { password })),
 	isUnlocked: () => typedError<boolean, CmdError>(__TAURI_INVOKE("is_unlocked")),
 	listChains: () => typedError<ChainSummary[], CmdError>(__TAURI_INVOKE("list_chains")),
 	listTokens: () => typedError<TokenSummary[], CmdError>(__TAURI_INVOKE("list_tokens")),

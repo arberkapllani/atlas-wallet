@@ -295,25 +295,21 @@ export const api = {
       args: { password, word_count: wordCount, name: name ?? null }
     }),
 
-  importWallet: (
-    password: string,
-    phrase: string,
-    passphrase?: string,
-    name?: string | null
-  ) =>
+  importWallet: (password: string, phrase: string, passphrase?: string, name?: string | null) =>
     invoke<void>('import_wallet', {
       args: { password, phrase, passphrase: passphrase ?? null, name: name ?? null }
     }),
 
   unlockWallet: (password: string) => invoke<void>('unlock_wallet', { password }),
   lockWallet: () => invoke<void>('lock_wallet'),
+  /** Decrypt the active vault with the password and return the BIP-39 phrase. */
+  revealPhrase: (password: string) => invoke<string>('reveal_phrase', { password }),
 
   // Profile management
   listProfiles: () => invoke<ProfileSummary[]>('list_profiles'),
   activeProfile: () => invoke<ProfileSummary | null>('active_profile'),
   switchProfile: (id: string) => invoke<void>('switch_profile', { id }),
-  renameProfile: (id: string, newName: string) =>
-    invoke<void>('rename_profile', { id, newName }),
+  renameProfile: (id: string, newName: string) => invoke<void>('rename_profile', { id, newName }),
   deleteProfile: (id: string) => invoke<void>('delete_profile', { id }),
   createWatchOnlyProfile: (name: string, accounts: WatchAccount[]) =>
     invoke<ProfileSummary>('create_watch_only_profile', { args: { name, accounts } }),
@@ -325,25 +321,16 @@ export const api = {
   listRpcEndpoints: () => invoke<RpcEndpoint[]>('list_rpc_endpoints'),
   setRpcEndpoint: (chainId: string, url: string) =>
     invoke<RpcEndpoint>('set_rpc_endpoint', { chainId, url }),
-  clearRpcEndpoint: (chainId: string) =>
-    invoke<RpcEndpoint>('clear_rpc_endpoint', { chainId }),
+  clearRpcEndpoint: (chainId: string) => invoke<RpcEndpoint>('clear_rpc_endpoint', { chainId }),
   getAddress: (chainId: string) => invoke<string>('get_address', { chainId }),
   getBalance: (chainId: string) => invoke<Amount>('get_balance', { chainId }),
   getFeeOptions: (chainId: string) => invoke<FeeOption[]>('get_fee_options', { chainId }),
 
-  sendNative: (args: {
-    chain_id: string;
-    to: string;
-    amount: string;
-    fee_level: string;
-  }) => invoke<SendNativeResult>('send_native', { args }),
+  sendNative: (args: { chain_id: string; to: string; amount: string; fee_level: string }) =>
+    invoke<SendNativeResult>('send_native', { args }),
 
-  sendToken: (args: {
-    token_id: string;
-    to: string;
-    amount: string;
-    fee_level: string;
-  }) => invoke<SendNativeResult>('send_token', { args }),
+  sendToken: (args: { token_id: string; to: string; amount: string; fee_level: string }) =>
+    invoke<SendNativeResult>('send_token', { args }),
 
   getPrices: (ids: string[], currency?: FiatCurrency) =>
     invoke<Record<string, PricePoint>>('get_prices', { ids, currency }),
@@ -354,15 +341,18 @@ export const api = {
   /** Auto-lock timeout in minutes. `0` means disabled. */
   getAutoLockMinutes: () => invoke<number>('get_auto_lock_minutes'),
   /** Persist a new auto-lock timeout. `0` disables. Backend clamps to ≤1440. */
-  setAutoLockMinutes: (minutes: number) =>
-    invoke<number>('set_auto_lock_minutes', { minutes }),
+  setAutoLockMinutes: (minutes: number) => invoke<number>('set_auto_lock_minutes', { minutes }),
 
-  networkHealth: (chainId: string) =>
-    invoke<NetworkHealth>('network_health', { chainId }),
+  /** Anti-phishing phrase shown on every unlock screen (`null` if not set). */
+  getAntiPhishingPhrase: () => invoke<string | null>('get_anti_phishing_phrase'),
+  /** Pass `null` to clear. Backend trims and stores in the encrypted vault. */
+  setAntiPhishingPhrase: (phrase: string | null) =>
+    invoke<string | null>('set_anti_phishing_phrase', { phrase }),
+
+  networkHealth: (chainId: string) => invoke<NetworkHealth>('network_health', { chainId }),
   networkHealthAll: () => invoke<NetworkHealth[]>('network_health_all'),
 
-  getExchangeSettings: () =>
-    invoke<ExchangeSettings>('get_exchange_settings'),
+  getExchangeSettings: () => invoke<ExchangeSettings>('get_exchange_settings'),
   setExchangeSettings: (args: { api_key: string | null; base_url: string | null }) =>
     invoke<ExchangeSettings>('set_exchange_settings', { args }),
   exchangeQuote: (args: { chain_id: number; src: string; dst: string; amount: string }) =>
@@ -378,15 +368,13 @@ export const api = {
 
   // Atlas swap fee + THORChain affiliate.
   getSwapFeeConfig: () => invoke<SwapFeeConfig>('get_swap_fee_config'),
-  setSwapFeeBps: (bps: number) =>
-    invoke<number>('set_swap_fee_bps', { bps }),
+  setSwapFeeBps: (bps: number) => invoke<number>('set_swap_fee_bps', { bps }),
   setThorchainAffiliate: (name: string | null) =>
     invoke<string | null>('set_thorchain_affiliate', { name }),
 
   // Flashbots Protect (private mempool for Ethereum mainnet).
   flashbotsProtectEnabled: () => invoke<boolean>('flashbots_protect_enabled'),
-  setFlashbotsProtect: (enabled: boolean) =>
-    invoke<boolean>('set_flashbots_protect', { enabled }),
+  setFlashbotsProtect: (enabled: boolean) => invoke<boolean>('set_flashbots_protect', { enabled }),
 
   // ---- Phase-9 wired crates ----------------------------------------
 
@@ -402,17 +390,12 @@ export const api = {
     invoke<number>('fees_utxo_sats', { satPerVbyte, vsize }),
 
   // atlas-ens.
-  ensLooksLikeEns: (name: string) =>
-    invoke<boolean>('ens_looks_like_ens', { name }),
+  ensLooksLikeEns: (name: string) => invoke<boolean>('ens_looks_like_ens', { name }),
   ensNormalise: (name: string) => invoke<string>('ens_normalise', { name }),
   ensNamehash: (name: string) => invoke<string>('ens_namehash', { name }),
 
   // atlas-gascost. `effectiveGasPriceWei` is a u128 decimal string.
-  gascostEstimate: (
-    gasUsed: number,
-    effectiveGasPriceWei: string,
-    nativePriceUsdMicro: number
-  ) =>
+  gascostEstimate: (gasUsed: number, effectiveGasPriceWei: string, nativePriceUsdMicro: number) =>
     invoke<GasCost>('gascost_estimate', {
       gasUsed,
       effectiveGasPriceWei,
@@ -428,8 +411,7 @@ export const api = {
   // atlas-slippage. u128 amounts are decimal strings.
   slippageValidate: (slippageBps: number, deadlineSecs: number) =>
     invoke<SwapSettings>('slippage_validate', { slippageBps, deadlineSecs }),
-  slippageBand: (slippageBps: number) =>
-    invoke<SlippageBand>('slippage_band', { slippageBps }),
+  slippageBand: (slippageBps: number) => invoke<SlippageBand>('slippage_band', { slippageBps }),
   slippageMinOut: (amountOutQuote: string, slippageBps: number) =>
     invoke<string>('slippage_min_out', { amountOutQuote, slippageBps }),
   slippageMaxIn: (amountInQuote: string, slippageBps: number) =>
@@ -438,61 +420,39 @@ export const api = {
     invoke<number>('slippage_deadline_unix', { nowUnix, deadlineSecs }),
 
   // atlas-fmt: presentation helpers backed by the same crate the host uses.
-  fmtCurrency: (
-    amount: number,
-    code: string,
-    localeTag: string,
-    decimals: number
-  ) =>
+  fmtCurrency: (amount: number, code: string, localeTag: string, decimals: number) =>
     invoke<string>('fmt_currency', { amount, code, localeTag, decimals }),
   fmtCompact: (value: number) => invoke<string>('fmt_compact', { value }),
-  fmtTokenAmount: (
-    baseUnits: string,
-    decimals: number,
-    maxSignificant: number
-  ) =>
+  fmtTokenAmount: (baseUnits: string, decimals: number, maxSignificant: number) =>
     invoke<string>('fmt_token_amount', {
       baseUnits,
       decimals,
       maxSignificant
     }),
-  fmtTruncateAddress: (addr: string) =>
-    invoke<string>('fmt_truncate_address', { addr }),
+  fmtTruncateAddress: (addr: string) => invoke<string>('fmt_truncate_address', { addr }),
 
   // atlas-txnotes (per-tx notes + tags, persisted to data_dir/txnotes.json).
   txnotesList: () => invoke<TxNote[]>('txnotes_list'),
   txnotesGet: (chain: TxNotesChain, txid: string) =>
     invoke<TxNote | null>('txnotes_get', { chain, txid }),
-  txnotesUpsert: (
-    chain: TxNotesChain,
-    txid: string,
-    note: string,
-    tags: string[]
-  ) => invoke<void>('txnotes_upsert', { chain, txid, note, tags }),
+  txnotesUpsert: (chain: TxNotesChain, txid: string, note: string, tags: string[]) =>
+    invoke<void>('txnotes_upsert', { chain, txid, note, tags }),
   txnotesRemove: (chain: TxNotesChain, txid: string) =>
     invoke<boolean>('txnotes_remove', { chain, txid }),
-  txnotesListByTag: (tag: string) =>
-    invoke<TxNote[]>('txnotes_list_by_tag', { tag }),
+  txnotesListByTag: (tag: string) => invoke<TxNote[]>('txnotes_list_by_tag', { tag }),
   txnotesAllTags: () => invoke<string[]>('txnotes_all_tags'),
 
   // atlas-contacts (address book, persisted to data_dir/contacts.json).
   contactsList: () => invoke<Contact[]>('contacts_list'),
-  contactsGet: (id: string) =>
-    invoke<Contact | null>('contacts_get', { id }),
+  contactsGet: (id: string) => invoke<Contact | null>('contacts_get', { id }),
   contactsAdd: (name: string, note: string, addresses: ContactAddress[]) =>
     invoke<string>('contacts_add', { name, note, addresses }),
-  contactsUpdate: (
-    id: string,
-    name: string,
-    note: string,
-    addresses: ContactAddress[]
-  ) => invoke<void>('contacts_update', { id, name, note, addresses }),
-  contactsRemove: (id: string) =>
-    invoke<boolean>('contacts_remove', { id }),
+  contactsUpdate: (id: string, name: string, note: string, addresses: ContactAddress[]) =>
+    invoke<void>('contacts_update', { id, name, note, addresses }),
+  contactsRemove: (id: string) => invoke<boolean>('contacts_remove', { id }),
   contactsFindByAddress: (chain: ContactChain, address: string) =>
     invoke<Contact | null>('contacts_find_by_address', { chain, address }),
-  contactsSearch: (query: string) =>
-    invoke<Contact[]>('contacts_search', { query }),
+  contactsSearch: (query: string) => invoke<Contact[]>('contacts_search', { query }),
 
   // atlas-eventlog (in-memory ring, max 500 records).
   eventsRecord: (
@@ -507,39 +467,27 @@ export const api = {
       category,
       message
     }),
-  eventsRecent: (limit: number) =>
-    invoke<EventRecord[]>('events_recent', { limit }),
-  eventsFilter: (
-    minLevel: EventLevel,
-    category: EventCategory | null,
-    limit: number
-  ) =>
+  eventsRecent: (limit: number) => invoke<EventRecord[]>('events_recent', { limit }),
+  eventsFilter: (minLevel: EventLevel, category: EventCategory | null, limit: number) =>
     invoke<EventRecord[]>('events_filter', { minLevel, category, limit }),
   eventsClear: () => invoke<void>('events_clear'),
-  eventsExportRedacted: () =>
-    invoke<EventRecord[]>('events_export_redacted'),
+  eventsExportRedacted: () => invoke<EventRecord[]>('events_export_redacted'),
 
   // atlas-spendlimits (daily/per-tx USD caps, persisted to data_dir/spend.json).
   spendGetPolicy: () => invoke<SpendPolicy>('spend_get_policy'),
-  spendSetPolicy: (policy: SpendPolicy) =>
-    invoke<void>('spend_set_policy', { policy }),
+  spendSetPolicy: (policy: SpendPolicy) => invoke<void>('spend_set_policy', { policy }),
   spendGetState: () => invoke<SpendState>('spend_get_state'),
   spendEvaluate: (nowUnix: number, attemptUsd: number) =>
     invoke<LimitEvaluation>('spend_evaluate', { nowUnix, attemptUsd }),
-  spendCommit: (nextState: SpendState) =>
-    invoke<void>('spend_commit', { nextState }),
+  spendCommit: (nextState: SpendState) => invoke<void>('spend_commit', { nextState }),
   spendReset: () => invoke<void>('spend_reset'),
 
   // atlas-blocklist (malicious-address registry, persisted to data_dir/blocklist.json).
-  blocklistCheck: (address: string) =>
-    invoke<BlocklistVerdict>('blocklist_check', { address }),
+  blocklistCheck: (address: string) => invoke<BlocklistVerdict>('blocklist_check', { address }),
   blocklistList: () => invoke<BlocklistEntry[]>('blocklist_list'),
-  blocklistAdd: (entry: BlocklistEntry) =>
-    invoke<string>('blocklist_add', { entry }),
-  blocklistRemove: (address: string) =>
-    invoke<boolean>('blocklist_remove', { address }),
-  blocklistImportJson: (json: string) =>
-    invoke<number>('blocklist_import_json', { json }),
+  blocklistAdd: (entry: BlocklistEntry) => invoke<string>('blocklist_add', { entry }),
+  blocklistRemove: (address: string) => invoke<boolean>('blocklist_remove', { address }),
+  blocklistImportJson: (json: string) => invoke<number>('blocklist_import_json', { json }),
 
   // atlas-address-poisoning live recipient check (consumes the contact book).
   poisoningCheckCandidate: (candidate: string) =>
@@ -564,11 +512,8 @@ export const api = {
   eip712Classify: (json: string) => invoke<Eip712Report>('eip712_classify', { json }),
 
   // atlas-pnl + persisted trade history.
-  pnlCompute: (
-    trades: Trade[],
-    prices: Record<string, number>,
-    method: AccountingMethod
-  ) => invoke<PortfolioReport>('pnl_compute', { trades, prices, method }),
+  pnlCompute: (trades: Trade[], prices: Record<string, number>, method: AccountingMethod) =>
+    invoke<PortfolioReport>('pnl_compute', { trades, prices, method }),
   tradesList: () => invoke<Trade[]>('trades_list'),
   tradesAdd: (trade: Trade) => invoke<number>('trades_add', { trade }),
   tradesRemove: (index: number) => invoke<boolean>('trades_remove', { index }),
@@ -621,25 +566,20 @@ export const api = {
   coincontrolLabelList: () => invoke<LabeledUtxoEntry[]>('coincontrol_label_list'),
   coincontrolLabelUpsert: (utxo: UtxoRef, label: UtxoLabel) =>
     invoke<null>('coincontrol_label_upsert', { utxo, label }),
-  coincontrolLabelRemove: (utxo: UtxoRef) =>
-    invoke<boolean>('coincontrol_label_remove', { utxo }),
+  coincontrolLabelRemove: (utxo: UtxoRef) => invoke<boolean>('coincontrol_label_remove', { utxo }),
   coincontrolDetectMix: (selected: LabeledUtxo[]) =>
     invoke<MixWarning[]>('coincontrol_detect_mix', { selected }),
   coincontrolSuggestSelection: (
     target: number,
     available: LabeledUtxo[],
     strategy: SelectionStrategy
-  ) =>
-    invoke<Selection>('coincontrol_suggest_selection', { target, available, strategy }),
+  ) => invoke<Selection>('coincontrol_suggest_selection', { target, available, strategy }),
 
   // atlas-node-config sovereign-node policy.
   nodePolicyGet: () => invoke<NodePolicy>('node_policy_get'),
-  nodePolicySet: (policy: NodePolicy) =>
-    invoke<NodePolicy>('node_policy_set', { policy }),
-  nodePolicyCheckUrl: (url: string) =>
-    invoke<NodeDecision>('node_policy_check_url', { url }),
-  nodePolicyAuditEndpoints: () =>
-    invoke<NodePolicyAuditRow[]>('node_policy_audit_endpoints'),
+  nodePolicySet: (policy: NodePolicy) => invoke<NodePolicy>('node_policy_set', { policy }),
+  nodePolicyCheckUrl: (url: string) => invoke<NodeDecision>('node_policy_check_url', { url }),
+  nodePolicyAuditEndpoints: () => invoke<NodePolicyAuditRow[]>('node_policy_audit_endpoints'),
   silentPaymentsGenerate: (network: SpNetwork) =>
     invoke<DemoSilentPayment>('silent_payments_generate', { network }),
   silentPaymentsAddressFromSecrets: (
@@ -708,4 +648,3 @@ export function errorMessage(e: unknown): string {
   }
   return String(e);
 }
-

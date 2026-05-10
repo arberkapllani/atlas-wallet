@@ -1,0 +1,58 @@
+name: Bug report
+description: Report a defect in Atlas
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for filing a bug report. **Please do not include private
+        keys, mnemonics, or any other sensitive material in this report.**
+        Security vulnerabilities should be reported privately — see
+        [SECURITY.md](../../SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: Atlas version
+      placeholder: "0.1.0 (or commit hash if built from source)"
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Linux (specify in description)
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear description of the bug, including the chain and operation involved if relevant.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Atlas
+        2. Go to ...
+        3. Click ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Run with `RUST_LOG=Atlas=debug` and paste relevant output. Redact addresses if you prefer.

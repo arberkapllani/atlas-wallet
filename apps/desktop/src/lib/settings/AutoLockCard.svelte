@@ -48,8 +48,8 @@
 <Card title="Auto-lock">
   <div class="space-y-3 text-sm">
     <p class="text-fg-muted">
-      Atlas locks the in-memory seed after this period of inactivity. The page reverts to the
-      unlock screen and your password is required again.
+      Atlas locks the in-memory seed after this period of inactivity. The page reverts to the unlock
+      screen and your password is required again.
     </p>
 
     <label class="block">

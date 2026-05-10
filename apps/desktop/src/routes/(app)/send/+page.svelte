@@ -146,9 +146,7 @@
     if (parsed.scheme) {
       const chainId = SCHEME_TO_CHAIN[parsed.scheme];
       if (chainId) {
-        const match = assets.find(
-          (a) => a.kind === 'native' && a.chainId === chainId
-        );
+        const match = assets.find((a) => a.kind === 'native' && a.chainId === chainId);
         if (match) selectedKey = match.key;
       }
     }
@@ -165,10 +163,7 @@
   $: assets = buildAssets($wallet.chains, tokens);
   $: selected = assets.find((a) => a.key === selectedKey);
 
-  function buildAssets(
-    chains: ChainSummary[],
-    allTokens: TokenSummary[]
-  ): SendableAsset[] {
+  function buildAssets(chains: ChainSummary[], allTokens: TokenSummary[]): SendableAsset[] {
     const out: SendableAsset[] = [];
     for (const c of chains) {
       out.push({
@@ -232,15 +227,11 @@
     const cgId = COINGECKO_IDS[selected.chainId];
     const priceUsd = cgId ? ($prices[cgId]?.price ?? 0) : 0;
     const amountFloat = Number.parseFloat(amount);
-    const attemptUsd = Number.isFinite(amountFloat) && priceUsd > 0
-      ? Math.round(amountFloat * priceUsd)
-      : 0;
+    const attemptUsd =
+      Number.isFinite(amountFloat) && priceUsd > 0 ? Math.round(amountFloat * priceUsd) : 0;
     let evaluation: import('$lib/api').LimitEvaluation | null = null;
     try {
-      evaluation = await api.spendEvaluate(
-        Math.floor(Date.now() / 1000),
-        attemptUsd
-      );
+      evaluation = await api.spendEvaluate(Math.floor(Date.now() / 1000), attemptUsd);
     } catch (e) {
       console.warn('spend-limit evaluation failed', e);
     }
@@ -341,7 +332,9 @@
               class="h-3.5 w-3.5"
               aria-hidden="true"
             >
-              <path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2" />
+              <path
+                d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"
+              />
               <path d="M7 7h4v4H7zM13 7h4v4h-4zM7 13h4v4H7zM13 13h2M17 13v4M13 17h4" />
             </svg>
             Scan QR
@@ -349,7 +342,9 @@
         </div>
         <Input bind:value={to} placeholder="bc1q… / 0x… / vitalik.eth" />
         {#if blocklistHit}
-          <div class="mt-2 rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-xs space-y-0.5">
+          <div
+            class="mt-2 rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-xs space-y-0.5"
+          >
             <p class="text-rose-300 font-semibold">
               Blocked: {blocklistHit.category}
               <span class="text-rose-300/80 font-normal">(source: {blocklistHit.source})</span>
@@ -358,23 +353,27 @@
               <p class="text-rose-200/90">{blocklistHit.note}</p>
             {/if}
             <p class="text-rose-200/80">
-              This address is on your local blocklist. Atlas will not let you send to it.
+              This address is on your local blocklist. GreenWallet will not let you send to it.
             </p>
           </div>
         {/if}
         {#if mimicMatches.length > 0}
-          <div class="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs space-y-1">
-            <p class="text-amber-300 font-semibold">
-              Possible address-poisoning attempt
-            </p>
+          <div
+            class="mt-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs space-y-1"
+          >
+            <p class="text-amber-300 font-semibold">Possible address-poisoning attempt</p>
             <p class="text-amber-200/90">
-              This recipient closely resembles {mimicMatches.length === 1 ? 'a' : `${mimicMatches.length}`} contact{mimicMatches.length === 1 ? '' : 's'} in your address book
-              but is not an exact match. Verify carefully before sending.
+              This recipient closely resembles {mimicMatches.length === 1
+                ? 'a'
+                : `${mimicMatches.length}`} contact{mimicMatches.length === 1 ? '' : 's'} in your address
+              book but is not an exact match. Verify carefully before sending.
             </p>
             {#each mimicMatches.slice(0, 3) as m}
               <p class="font-mono text-amber-200/80 break-all">
                 resembles 0x{m.trusted_address}
-                <span class="text-amber-200/60">(prefix {m.matching_prefix} / suffix {m.matching_suffix})</span>
+                <span class="text-amber-200/60"
+                  >(prefix {m.matching_prefix} / suffix {m.matching_suffix})</span
+                >
               </p>
             {/each}
           </div>
@@ -390,7 +389,7 @@
               Namehash: <span class="font-mono">{ensHint.namehash}</span>
             </p>
             <p class="text-amber-400">
-              ENS resolution is not wired into Atlas yet — paste the resolved 0x address to send.
+              ENS resolution is not wired into GreenWallet yet — paste the resolved 0x address to send.
             </p>
           </div>
         {:else if ensHint.kind === 'error'}
@@ -414,12 +413,18 @@
           <div class="grid grid-cols-3 gap-2">
             {#each feeOptions as opt}
               <button
-                class="rounded-xl px-3 py-3 border text-left transition {selectedLevel === opt.level ? 'border-accent bg-accent/10' : 'border-border bg-bg-elevated'}"
+                class="rounded-xl px-3 py-3 border text-left transition {selectedLevel === opt.level
+                  ? 'border-accent bg-accent/10'
+                  : 'border-border bg-bg-elevated'}"
                 on:click={() => (selectedLevel = opt.level)}
               >
                 <div class="text-sm font-semibold capitalize">{opt.level}</div>
-                <div class="text-xs text-fg-muted font-mono mt-1">{formatAmount(opt.estimated_fee)}</div>
-                <div class="text-[10px] text-fg-subtle mt-0.5">~{Math.max(1, Math.round(opt.eta_seconds / 60))} min</div>
+                <div class="text-xs text-fg-muted font-mono mt-1">
+                  {formatAmount(opt.estimated_fee)}
+                </div>
+                <div class="text-[10px] text-fg-subtle mt-0.5">
+                  ~{Math.max(1, Math.round(opt.eta_seconds / 60))} min
+                </div>
               </button>
             {/each}
           </div>

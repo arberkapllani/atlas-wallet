@@ -23,13 +23,15 @@
   }
 
   function loadDemoBtc() {
-    raw = 'bitcoin:bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq?amount=0.0125&label=Donation&message=Thanks';
+    raw =
+      'bitcoin:bc1qar0srrr7xfkvy5l643lydnw9re59gtzzwf5mdq?amount=0.0125&label=Donation&message=Thanks';
     result = null;
     error = '';
   }
 
   function loadDemoEth() {
-    raw = 'ethereum:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48@1/transfer?address=0x6e1cE03Aef9C92aD3431106f2cC2db4cF9Aa9b66&uint256=1500000';
+    raw =
+      'ethereum:0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48@1/transfer?address=0x6e1cE03Aef9C92aD3431106f2cC2db4cF9Aa9b66&uint256=1500000';
     result = null;
     error = '';
   }
@@ -111,7 +113,9 @@
             </p>
           {/if}
           {#if result.gas}
-            <p><span class="text-fg-muted">Gas:</span> <span class="font-mono">{result.gas}</span></p>
+            <p>
+              <span class="text-fg-muted">Gas:</span> <span class="font-mono">{result.gas}</span>
+            </p>
           {/if}
         {/if}
       </div>

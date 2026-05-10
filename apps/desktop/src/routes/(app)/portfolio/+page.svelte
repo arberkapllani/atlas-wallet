@@ -30,10 +30,10 @@
   }
 </script>
 
-<div class="p-8 space-y-6 max-w-5xl">
-  <header class="flex items-baseline justify-between">
+<div class="p-4 sm:p-6 lg:p-8 space-y-6 max-w-6xl mx-auto animate-fade-in-up">
+  <header class="flex flex-wrap items-baseline justify-between gap-3">
     <div>
-      <h1 class="text-2xl font-bold">Portfolio</h1>
+      <h1 class="text-2xl sm:text-3xl font-display font-bold tracking-tight">Portfolio</h1>
       <p class="text-fg-muted text-sm mt-1">Your assets across every supported chain.</p>
     </div>
     <Button variant="secondary" on:click={() => wallet.refreshBalances()} loading={$wallet.loading}>
@@ -41,10 +41,44 @@
     </Button>
   </header>
 
-  <Card>
-    <div class="text-fg-subtle text-xs uppercase tracking-wider">Total balance</div>
-    <div class="mt-2 text-4xl font-bold tracking-tight">
-      {$formatFiatStore(total)}
+  <!-- Hero balance card -->
+  <Card glow>
+    <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
+      <div>
+        <div class="text-fg-subtle text-[10px] uppercase tracking-[0.18em]">Total balance</div>
+        <div class="mt-2 text-4xl sm:text-5xl font-display font-bold tracking-tight gradient-text">
+          {$formatFiatStore(total)}
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <a
+          href="/send"
+          class="inline-flex h-10 px-4 items-center gap-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold shadow-glow transition active:scale-[0.98]"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14M13 6l6 6-6 6" />
+          </svg>
+          Send
+        </a>
+        <a
+          href="/receive"
+          class="inline-flex h-10 px-4 items-center gap-2 rounded-xl bg-bg-elevated hover:bg-border text-fg border border-border font-semibold transition active:scale-[0.98]"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5M11 18l-6-6 6-6" />
+          </svg>
+          Receive
+        </a>
+        <a
+          href="/exchange"
+          class="inline-flex h-10 px-4 items-center gap-2 rounded-xl bg-accent hover:bg-accent-hover text-white font-semibold shadow-accentGlow transition active:scale-[0.98]"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" class="h-4 w-4">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M7 16V4m0 0L3 8m4-4l4 4m6 4v12m0 0l4-4m-4 4l-4-4" />
+          </svg>
+          Swap
+        </a>
+      </div>
     </div>
   </Card>
 
@@ -55,10 +89,19 @@
         {@const fiat = balanceFiat(bal, chain.id)}
         {@const cg = COINGECKO_IDS[chain.id]}
         {@const change = cg ? $prices[cg]?.change_24h : undefined}
-        <div class="flex items-center justify-between px-6 py-4 border-t border-border-subtle">
-          <div>
-            <div class="font-semibold">{chain.display_name}</div>
-            <div class="text-xs text-fg-muted">{chain.symbol}</div>
+        <div
+          class="flex items-center justify-between px-6 py-4 border-t border-border-subtle hover:bg-bg-elevated/40 transition"
+        >
+          <div class="flex items-center gap-3">
+            <div
+              class="h-9 w-9 rounded-full bg-brand-gradient grid place-items-center text-white text-xs font-bold ring-1 ring-white/10"
+            >
+              {chain.symbol.slice(0, 2)}
+            </div>
+            <div>
+              <div class="font-semibold">{chain.display_name}</div>
+              <div class="text-xs text-fg-muted">{chain.symbol}</div>
+            </div>
           </div>
           <div class="text-right">
             <div class="font-mono text-sm">

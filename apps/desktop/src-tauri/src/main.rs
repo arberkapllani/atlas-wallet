@@ -22,6 +22,7 @@ fn specta_builder() -> tauri_specta::Builder<tauri::Wry> {
             commands::import_wallet,
             commands::unlock_wallet,
             commands::lock_wallet,
+            commands::reveal_phrase,
             commands::is_unlocked,
             commands::list_chains,
             commands::list_tokens,
